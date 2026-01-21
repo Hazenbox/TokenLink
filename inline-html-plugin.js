@@ -24,8 +24,9 @@ class InlineHTMLPlugin {
               const uiJsContent = uiJsAsset.source();
               
               // Replace the script src reference with inline script
+              // Need to escape special regex characters and handle different attribute orders
               htmlContent = htmlContent.replace(
-                /<script\s+defer="defer"\s+src="ui\.js"><\/script>/,
+                /<script[^>]*src="ui\.js"[^>]*><\/script>/g,
                 `<script>${uiJsContent}</script>`
               );
               

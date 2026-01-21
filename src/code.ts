@@ -3,9 +3,11 @@
 // Main plugin entry point - runs in Figma's plugin sandbox
 
 console.log('[FigZag] Plugin starting...');
+// @ts-ignore - __html__ is injected by webpack post-build plugin
 console.log('[FigZag] HTML available:', typeof __html__);
 
 // Show the plugin UI
+// @ts-ignore - __html__ is injected by webpack post-build plugin
 figma.showUI(__html__, {
   width: 1200,
   height: 800,

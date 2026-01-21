@@ -1,6 +1,6 @@
 const path = require('path');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
-const InlineHTMLPlugin = require('./inline-html-plugin');
+const webpack = require('webpack');
+const fs = require('fs');
 
 module.exports = (env, argv) => ({
   mode: argv.mode === 'production' ? 'production' : 'development',
@@ -43,12 +43,31 @@ module.exports = (env, argv) => ({
   },
 
   plugins: [
-    new HtmlWebpackPlugin({
-      template: './src/ui/index.html',
-      filename: 'ui.html',
-      chunks: ['ui'],
-      inject: 'body',
-    }),
-    new InlineHTMLPlugin(),
+    {
+      apply: (compiler) => {
+        compiler.hooks.afterEmit.tapAsync('InlineUIPlugin', (compilation, callback) => {
+          const distPath = path.resolve(__dirname, 'dist');
+          const codePath = path.join(distPath, 'code.js');
+          const uiPath = path.join(distPath, 'ui.js');
+          const templatePath = path.resolve(__dirname, 'src/ui-template.html');
+          
+          try {
+            const template = fs.readFileSync(templatePath, 'utf8');
+            const uiCode = fs.readFileSync(uiPath, 'utf8');
+            const codeJs = fs.readFileSync(codePath, 'utf8');
+            
+            const html = template.replace('%%UI_CODE%%', uiCode);
+            const finalCode = `var __html__=${JSON.stringify(html)};\n${codeJs}`;
+            
+            fs.writeFileSync(codePath, finalCode);
+            console.log('✓ Inlined ui.js into code.js');
+          } catch (err) {
+            console.error('Failed to inline UI:', err);
+          }
+          
+          callback();
+        });
+      }
+    }
   ],
 });
