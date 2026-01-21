@@ -1,0 +1,244 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://figzag.io/schemas/token-graph.schema.json",
+  "title": "Token Graph Schema",
+  "description": "JSON Schema for FigZag Token Graph data structure",
+  "type": "object",
+  "required": ["collections", "groups", "variables", "aliases"],
+  "properties": {
+    "collections": {
+      "type": "array",
+      "description": "Array of variable collections",
+      "items": {
+        "$ref": "#/definitions/Collection"
+      }
+    },
+    "groups": {
+      "type": "array",
+      "description": "Array of variable groups",
+      "items": {
+        "$ref": "#/definitions/Group"
+      }
+    },
+    "variables": {
+      "type": "array",
+      "description": "Array of variables",
+      "items": {
+        "$ref": "#/definitions/Variable"
+      }
+    },
+    "aliases": {
+      "type": "array",
+      "description": "Array of alias relationships",
+      "items": {
+        "$ref": "#/definitions/Alias"
+      }
+    }
+  },
+  "definitions": {
+    "Collection": {
+      "type": "object",
+      "required": ["id", "name", "type", "modes"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the collection"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable name"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["primitive", "semantic", "interaction", "theme"],
+          "description": "Type of collection"
+        },
+        "modes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Available mode IDs in this collection"
+        }
+      }
+    },
+    "Group": {
+      "type": "object",
+      "required": ["id", "name", "collectionId"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the group"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable name"
+        },
+        "collectionId": {
+          "type": "string",
+          "description": "ID of the parent collection"
+        }
+      }
+    },
+    "Variable": {
+      "type": "object",
+      "required": ["id", "name", "type", "groupId", "collectionId", "modes"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the variable"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable name"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["COLOR", "FLOAT", "STRING", "BOOLEAN"],
+          "description": "Variable type"
+        },
+        "groupId": {
+          "type": "string",
+          "description": "ID of the parent group"
+        },
+        "collectionId": {
+          "type": "string",
+          "description": "ID of the parent collection"
+        },
+        "modes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Mode"
+          },
+          "minItems": 1,
+          "description": "Modes for this variable"
+        }
+      }
+    },
+    "Mode": {
+      "type": "object",
+      "required": ["id", "name"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the mode"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable name"
+        },
+        "value": {
+          "description": "Primitive value (string, number, boolean, RGB, or RGBA)",
+          "oneOf": [
+            { "type": "string" },
+            { "type": "number" },
+            { "type": "boolean" },
+            { "$ref": "#/definitions/RGB" },
+            { "$ref": "#/definitions/RGBA" }
+          ]
+        },
+        "alias": {
+          "$ref": "#/definitions/AliasReference",
+          "description": "Reference to another variable's mode"
+        }
+      },
+      "oneOf": [
+        { "required": ["value"] },
+        { "required": ["alias"] }
+      ]
+    },
+    "RGB": {
+      "type": "object",
+      "required": ["r", "g", "b"],
+      "properties": {
+        "r": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Red component (0-1)"
+        },
+        "g": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Green component (0-1)"
+        },
+        "b": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Blue component (0-1)"
+        }
+      }
+    },
+    "RGBA": {
+      "type": "object",
+      "required": ["r", "g", "b", "a"],
+      "properties": {
+        "r": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Red component (0-1)"
+        },
+        "g": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Green component (0-1)"
+        },
+        "b": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Blue component (0-1)"
+        },
+        "a": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Alpha component (0-1)"
+        }
+      }
+    },
+    "AliasReference": {
+      "type": "object",
+      "required": ["variableId", "modeId"],
+      "properties": {
+        "variableId": {
+          "type": "string",
+          "description": "ID of the target variable"
+        },
+        "modeId": {
+          "type": "string",
+          "description": "ID of the target mode"
+        }
+      }
+    },
+    "Alias": {
+      "type": "object",
+      "required": ["id", "fromVariableId", "toVariableId", "modeMap"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the alias"
+        },
+        "fromVariableId": {
+          "type": "string",
+          "description": "Source variable ID"
+        },
+        "toVariableId": {
+          "type": "string",
+          "description": "Target variable ID"
+        },
+        "modeMap": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Maps source mode IDs to target mode IDs"
+        }
+      }
+    }
+  }
+}

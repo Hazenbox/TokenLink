@@ -1,0 +1,159 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://figzag.io/schemas/rule-definition.schema.json",
+  "title": "Rule Definition Schema",
+  "description": "JSON Schema for FigZag Rule definitions",
+  "type": "object",
+  "required": ["id", "name", "rules", "version"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the rule set"
+    },
+    "name": {
+      "type": "string",
+      "description": "Name of the rule set"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional description"
+    },
+    "rules": {
+      "type": "array",
+      "description": "Array of rules",
+      "items": {
+        "$ref": "#/definitions/Rule"
+      }
+    },
+    "version": {
+      "type": "string",
+      "description": "Schema version"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Creation timestamp"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last update timestamp"
+    }
+  },
+  "definitions": {
+    "Rule": {
+      "type": "object",
+      "required": ["id", "name", "when", "then", "enabled"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the rule"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional description"
+        },
+        "when": {
+          "$ref": "#/definitions/RuleCondition",
+          "description": "Condition that triggers the rule"
+        },
+        "then": {
+          "$ref": "#/definitions/RuleAction",
+          "description": "Action to perform"
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the rule is active"
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical"],
+          "description": "Rule priority"
+        },
+        "scope": {
+          "type": "string",
+          "enum": ["all", "collection", "group"],
+          "description": "Execution scope"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Tags for organization"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "createdBy": {
+          "type": "string"
+        }
+      }
+    },
+    "RuleCondition": {
+      "type": "object",
+      "properties": {
+        "collection": {
+          "type": "string",
+          "description": "Collection name or type to match"
+        },
+        "group": {
+          "type": "string",
+          "description": "Group name pattern to match"
+        },
+        "variableName": {
+          "type": "string",
+          "description": "Variable name pattern to match"
+        },
+        "mode": {
+          "type": "string",
+          "description": "Mode name to match"
+        },
+        "collectionType": {
+          "type": "string",
+          "enum": ["primitive", "semantic", "interaction", "theme"],
+          "description": "Collection type to match"
+        },
+        "custom": {
+          "type": "object",
+          "description": "Custom conditions"
+        }
+      }
+    },
+    "RuleAction": {
+      "type": "object",
+      "required": ["aliasTo"],
+      "properties": {
+        "aliasTo": {
+          "type": "string",
+          "description": "Target path in format 'collection/group/variable'"
+        },
+        "modeMappingStrategy": {
+          "type": "string",
+          "enum": ["exact", "default", "custom"],
+          "description": "Mode mapping strategy"
+        },
+        "modeMapping": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Custom mode mappings"
+        },
+        "overrideExisting": {
+          "type": "boolean",
+          "description": "Whether to override existing aliases"
+        }
+      }
+    }
+  }
+}

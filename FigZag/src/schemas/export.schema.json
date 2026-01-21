@@ -1,0 +1,246 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://figzag.io/schemas/export.schema.json",
+  "title": "Token Graph Export Schema",
+  "description": "JSON Schema for complete FigZag token graph exports",
+  "type": "object",
+  "required": ["metadata", "graph"],
+  "properties": {
+    "metadata": {
+      "$ref": "#/definitions/ExportMetadata",
+      "description": "Export metadata"
+    },
+    "graph": {
+      "type": "object",
+      "required": ["collections", "groups", "variables", "aliases"],
+      "properties": {
+        "collections": {
+          "type": "array",
+          "items": {
+            "$ref": "token-graph.schema.json#/definitions/Collection"
+          }
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "$ref": "token-graph.schema.json#/definitions/Group"
+          }
+        },
+        "variables": {
+          "type": "array",
+          "items": {
+            "$ref": "token-graph.schema.json#/definitions/Variable"
+          }
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "$ref": "token-graph.schema.json#/definitions/Alias"
+          }
+        }
+      }
+    },
+    "rules": {
+      "$ref": "rule-definition.schema.json",
+      "description": "Optional rule set"
+    },
+    "statistics": {
+      "$ref": "#/definitions/ExportStatistics",
+      "description": "Optional statistics"
+    },
+    "validation": {
+      "$ref": "#/definitions/ExportValidationResult",
+      "description": "Optional validation results"
+    }
+  },
+  "definitions": {
+    "ExportMetadata": {
+      "type": "object",
+      "required": ["version", "exportedAt"],
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "Schema version"
+        },
+        "exportedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Export timestamp"
+        },
+        "figmaFileId": {
+          "type": "string",
+          "description": "Figma file ID"
+        },
+        "figmaFileName": {
+          "type": "string",
+          "description": "Figma file name"
+        },
+        "rulesApplied": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Rule IDs applied before export"
+        },
+        "exportedBy": {
+          "type": "string",
+          "description": "User or system that created export"
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional description"
+        },
+        "environment": {
+          "type": "object",
+          "properties": {
+            "pluginVersion": {
+              "type": "string"
+            },
+            "figmaApiVersion": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "ExportStatistics": {
+      "type": "object",
+      "required": ["totalCollections", "totalGroups", "totalVariables", "totalAliases", "brokenAliases", "circularDependencies", "orphanedVariables"],
+      "properties": {
+        "totalCollections": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "totalGroups": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "totalVariables": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "totalAliases": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "brokenAliases": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "circularDependencies": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "orphanedVariables": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "collectionsByType": {
+          "type": "object",
+          "properties": {
+            "primitive": { "type": "integer", "minimum": 0 },
+            "semantic": { "type": "integer", "minimum": 0 },
+            "interaction": { "type": "integer", "minimum": 0 },
+            "theme": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "variablesByType": {
+          "type": "object",
+          "properties": {
+            "COLOR": { "type": "integer", "minimum": 0 },
+            "FLOAT": { "type": "integer", "minimum": 0 },
+            "STRING": { "type": "integer", "minimum": 0 },
+            "BOOLEAN": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "modeStatistics": {
+          "type": "object",
+          "properties": {
+            "totalModes": { "type": "integer", "minimum": 0 },
+            "averageModesPerVariable": { "type": "number", "minimum": 0 },
+            "commonModes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "count": { "type": "integer", "minimum": 0 }
+                }
+              }
+            }
+          }
+        },
+        "aliasStatistics": {
+          "type": "object",
+          "properties": {
+            "primitiveVariables": { "type": "integer", "minimum": 0 },
+            "aliasedVariables": { "type": "integer", "minimum": 0 },
+            "topAliasTargets": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "variableId": { "type": "string" },
+                  "count": { "type": "integer", "minimum": 0 }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "ExportValidationResult": {
+      "type": "object",
+      "required": ["valid", "issues", "summary"],
+      "properties": {
+        "valid": {
+          "type": "boolean"
+        },
+        "issues": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ValidationIssue"
+          }
+        },
+        "summary": {
+          "type": "object",
+          "required": ["errors", "warnings", "info"],
+          "properties": {
+            "errors": { "type": "integer", "minimum": 0 },
+            "warnings": { "type": "integer", "minimum": 0 },
+            "info": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "ValidationIssue": {
+      "type": "object",
+      "required": ["id", "type", "category", "message"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["error", "warning", "info"]
+        },
+        "category": {
+          "type": "string",
+          "enum": ["circular-dependency", "broken-alias", "orphaned-variable", "missing-mode", "invalid-value", "other"]
+        },
+        "message": {
+          "type": "string"
+        },
+        "affectedId": {
+          "type": "string"
+        },
+        "suggestion": {
+          "type": "string"
+        },
+        "context": {
+          "type": "object"
+        }
+      }
+    }
+  }
+}
