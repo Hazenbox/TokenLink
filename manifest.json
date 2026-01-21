@@ -1,10 +1,1 @@
-{
-  "name": "FigZag - Variables Automation",
-  "id": "figzag-variables-automation",
-  "api": "1.0.0",
-  "main": "dist/code.js",
-  "editorType": ["figma"],
-  "networkAccess": {
-    "allowedDomains": ["none"]
-  }
-}
+{"name":"FigZag - Variables Automation","id":"figzag-variables-automation","api":"1.0.0","main":"dist/code.js","ui":"dist/ui.html","editorType":["figma"],"networkAccess":{"allowedDomains":["none"]}}
