@@ -55,13 +55,19 @@ module.exports = (env, argv) => ({
           HtmlWebpackPlugin.getHooks(compilation).beforeEmit.tapAsync(
             'InlineScriptPlugin',
             (data, cb) => {
-              // Replace script src with inline script
+              // Replace ALL script tags with src="ui.js" with inline script
               const uiJsAsset = compilation.assets['ui.js'];
               if (uiJsAsset) {
                 const jsContent = uiJsAsset.source();
+                // Remove all external script references to ui.js
                 data.html = data.html.replace(
-                  /<script[^>]*src="ui\.js"[^>]*><\/script>/,
-                  `<script>${jsContent}</script>`
+                  /<script[^>]*src="ui\.js"[^>]*><\/script>/g,
+                  ''
+                );
+                // Add single inline script at the end of body
+                data.html = data.html.replace(
+                  '</body>',
+                  `<script>${jsContent}</script></body>`
                 );
               }
               cb(null, data);
