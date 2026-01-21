@@ -6,7 +6,8 @@
   "scripts": {
     "build:code": "tsc -p tsconfig.code.json",
     "build:ui": "vite build",
-    "build": "npm run build:code && npm run build:ui && node scripts/inject-html.js",
+    "build": "npm run build:code && npm run build:ui && node scripts/inject-html.js && node scripts/prepare-for-figma.js",
+    "prepare": "node scripts/prepare-for-figma.js",
     "watch:code": "tsc -p tsconfig.code.json --watch",
     "watch:ui": "vite build --watch",
     "watch": "npm run watch:code & npm run watch:ui",

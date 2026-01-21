@@ -69,14 +69,24 @@ This will:
 - Build React UI → `dist/ui.html` and assets
 - Copy `manifest.json` to `dist/`
 - Inject the UI HTML into the plugin code
+- **Copy all plugin files to root** (so Figma can find them)
 
 You should see output like:
 ```
 ✓ Built successfully
 ✓ Injected UI HTML into code.js
+✓ Copied code.js to root
+✓ Copied ui.html to root
+✓ Copied manifest.json to root
+✓ Copied assets folder to root
+✅ Plugin files ready!
 ```
 
+**Note:** The build script automatically copies files to the root directory because Figma resolves plugin paths relative to the workspace root.
+
 ### Step 3: Load Plugin in Figma
+
+**⚠️ IMPORTANT:** You must import the manifest from the `dist/` folder, and Figma will look for files relative to your workspace root.
 
 1. **Open Figma Desktop App** (not the web browser)
 
@@ -87,7 +97,8 @@ You should see output like:
    - OR use shortcut: `Cmd + /` (Mac) or `Ctrl + /` (Windows), then type "Import plugin"
 
 4. **Select the manifest file:**
-   - Navigate to: `/Users/upendranath.kaki/Desktop/Codes/FigZag/dist/manifest.json`
+   - **Navigate to:** `/Users/upendranath.kaki/Desktop/Codes/FigZag/manifest.json`
+   - **Select the manifest.json in the ROOT directory** (the build script copies it there)
    - Click "Open"
 
 5. **Run the plugin:**
@@ -97,6 +108,8 @@ You should see output like:
 6. **You should see:**
    - A sidebar panel opens on the right
    - Text displays: **"Variable Orchestrator – Plugin Loaded"**
+
+**Note:** After building, plugin files are automatically copied to the root directory. Import `manifest.json` from the root, not from `dist/`.
 
 ## 🔄 Development Workflow
 
@@ -167,11 +180,36 @@ npm install
 2. Check that `dist/manifest.json` exists
 3. Try: `Menu` → `Plugins` → `Development` → `Import plugin from manifest...` again
 
-### "Plugin failed to load" error
+### "Plugin failed to load" error / "ENOENT: no such file or directory, lstat 'code.js'"
 
-1. Check Terminal for build errors
-2. Make sure `dist/code.js` and `dist/ui.html` exist
-3. Rebuild: `npm run build`
+This error means Figma can't find `code.js`. Here's how to fix it:
+
+1. **Make sure you've built the plugin:**
+   ```bash
+   npm run build
+   ```
+   This should copy files to the root directory automatically.
+
+2. **Verify files exist in root:**
+   ```bash
+   ls -la manifest.json code.js ui.html
+   ```
+   All three files should exist in the root directory.
+
+3. **Verify you imported the correct manifest:**
+   - Import: `/Users/upendranath.kaki/Desktop/Codes/FigZag/manifest.json` (root directory)
+   - NOT: `/Users/upendranath.kaki/Desktop/Codes/FigZag/dist/manifest.json`
+
+4. **Remove and re-import the plugin in Figma:**
+   - Go to: `Menu` → `Plugins` → `Development` → `Manage plugins...`
+   - Find "Variable Orchestrator" and remove it
+   - Re-import using the root `manifest.json`
+
+5. **If files are missing from root**, manually copy them:
+   ```bash
+   npm run prepare
+   ```
+   This runs the prepare script that copies files to root.
 
 ### Changes not showing
 
