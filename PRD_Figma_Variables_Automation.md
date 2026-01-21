@@ -1,7 +1,3 @@
-
----
-
-```md
 # PRD: Automated Figma Variables Orchestration Tool
 
 ## Author
@@ -84,7 +80,6 @@ This tool should feel like:
 ### Variable Graph Model
 
 ```
-
 Primitive Collection
 └── Group
 └── Variable
@@ -100,8 +95,7 @@ Interaction Collection
 ↓ (Aliased to)
 
 Semantic / Brand / Theme Collection
-
-````
+```
 
 ### First-Class Entities
 - Collection
@@ -171,8 +165,8 @@ Alias {
   fromVariableId
   toVariableId
   modeMap
-}
-````
+|}
+```
 
 ---
 
@@ -243,9 +237,9 @@ Remove manual work using **rules**.
 
 ### Rule Examples
 
-* “All Interaction/Hover map to Primitive/Default”
-* “Dark mode aliases Dark primitives automatically”
-* “States inherit from base group”
+* "All Interaction/Hover map to Primitive/Default"
+* "Dark mode aliases Dark primitives automatically"
+* "States inherit from base group"
 
 ### Rule Types
 
