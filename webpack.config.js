@@ -48,5 +48,27 @@ module.exports = (env, argv) => ({
       chunks: ['ui'],
       inject: 'body',
     }),
+    // Custom plugin to inline JavaScript into HTML for Figma
+    {
+      apply: (compiler) => {
+        compiler.hooks.compilation.tap('InlineScriptPlugin', (compilation) => {
+          HtmlWebpackPlugin.getHooks(compilation).beforeEmit.tapAsync(
+            'InlineScriptPlugin',
+            (data, cb) => {
+              // Replace script src with inline script
+              const uiJsAsset = compilation.assets['ui.js'];
+              if (uiJsAsset) {
+                const jsContent = uiJsAsset.source();
+                data.html = data.html.replace(
+                  /<script[^>]*src="ui\.js"[^>]*><\/script>/,
+                  `<script>${jsContent}</script>`
+                );
+              }
+              cb(null, data);
+            }
+          );
+        });
+      }
+    }
   ],
 });
