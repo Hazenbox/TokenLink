@@ -58,7 +58,14 @@ module.exports = (env, argv) => ({
               // Replace ALL script tags with src="ui.js" with inline script
               const uiJsAsset = compilation.assets['ui.js'];
               if (uiJsAsset) {
-                const jsContent = uiJsAsset.source();
+                let jsContent = uiJsAsset.source();
+                
+                // CRITICAL: Escape script tags to prevent document.write() from breaking
+                // When Figma uses document.write(), it will break on </script> in the JS
+                // We escape it as <\/script> so it's treated as a string, not a closing tag
+                jsContent = jsContent.replace(/<\/script>/gi, '<\\/script>');
+                jsContent = jsContent.replace(/<script>/gi, '<\\script>');
+                
                 // Remove all external script references to ui.js
                 data.html = data.html.replace(
                   /<script[^>]*src="ui\.js"[^>]*><\/script>/g,
