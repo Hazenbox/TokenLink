@@ -7,17 +7,26 @@ import { buildGraph } from '../services/graphBuilder';
 import GraphView from './GraphView';
 
 const App: React.FC = () => {
+  console.log('[FigZag UI] App component mounting...');
   const dispatch = useAppDispatch();
   const { collections, variables, loading, error } = useAppSelector(state => state.variables);
   const { nodes, edges } = useAppSelector(state => state.graph);
 
+  console.log('[FigZag UI] State:', { collections: collections.length, variables: variables.length, loading, error });
+
   // Listen for messages from Figma plugin
   useEffect(() => {
+    console.log('[FigZag UI] Setting up message listener...');
     window.onmessage = (event) => {
+      console.log('[FigZag UI] Received message:', event.data);
       const msg = event.data.pluginMessage;
       
-      if (!msg) return;
+      if (!msg) {
+        console.log('[FigZag UI] No plugin message in event');
+        return;
+      }
 
+      console.log('[FigZag UI] Message type:', msg.type);
       switch (msg.type) {
         case 'variables-loaded':
           handleVariablesLoaded(msg.data);
@@ -31,14 +40,17 @@ const App: React.FC = () => {
     };
 
     // Request initial data load
+    console.log('[FigZag UI] Requesting initial data load...');
     dispatch(setLoading(true));
     parent.postMessage({ pluginMessage: { type: 'load-variables' } }, '*');
   }, [dispatch]);
 
   const handleVariablesLoaded = useCallback((data: any) => {
     try {
+      console.log('[FigZag UI] Handling variables loaded:', data);
       // Parse Figma data into internal models
       const parsed = parseFigmaData(data.collections, data.variables);
+      console.log('[FigZag UI] Parsed data:', parsed);
       
       // Update variables store
       dispatch(loadVariablesData(parsed));

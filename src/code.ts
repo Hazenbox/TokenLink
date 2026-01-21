@@ -2,12 +2,17 @@
 
 // Main plugin entry point - runs in Figma's plugin sandbox
 
+console.log('[FigZag] Plugin starting...');
+console.log('[FigZag] HTML available:', typeof __html__);
+
 // Show the plugin UI
 figma.showUI(__html__, {
   width: 1200,
   height: 800,
   title: 'FigZag - Variables Automation',
 });
+
+console.log('[FigZag] UI shown');
 
 // Handle messages from UI
 figma.ui.onmessage = async (msg: any) => {
@@ -30,8 +35,10 @@ figma.ui.onmessage = async (msg: any) => {
  */
 async function loadAndSendVariables() {
   try {
+    console.log('[FigZag] Loading variables...');
     // Get all local variable collections
     const collections = figma.variables.getLocalVariableCollections();
+    console.log('[FigZag] Found collections:', collections.length);
     
     if (collections.length === 0) {
       figma.ui.postMessage({
@@ -85,6 +92,10 @@ async function loadAndSendVariables() {
     }
 
     // Send data to UI for parsing
+    console.log('[FigZag] Sending data to UI:', {
+      collections: collectionsData.length,
+      variables: allVariables.length,
+    });
     figma.ui.postMessage({
       type: 'variables-loaded',
       data: {
@@ -103,4 +114,5 @@ async function loadAndSendVariables() {
 }
 
 // Auto-load variables when plugin opens
+console.log('[FigZag] Auto-loading variables...');
 loadAndSendVariables();

@@ -1,5 +1,6 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const webpack = require('webpack');
 
 module.exports = (env, argv) => ({
   mode: argv.mode === 'production' ? 'production' : 'development',
@@ -47,6 +48,19 @@ module.exports = (env, argv) => ({
       filename: 'ui.html',
       chunks: ['ui'],
       inject: 'body',
+    }),
+    new webpack.DefinePlugin({
+      __html__: JSON.stringify(
+        require('fs').readFileSync(path.resolve(__dirname, 'src/ui/index.html'), 'utf8')
+          .replace(
+            '</head>',
+            '<script>const exports = {};</script></head>'
+          )
+          .replace(
+            '</body>',
+            '<script src="ui.js"></script></body>'
+          )
+      ),
     }),
   ],
 });
