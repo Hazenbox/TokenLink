@@ -14,37 +14,6 @@ const App: React.FC = () => {
 
   console.log('[FigZag UI] State:', { collections: collections.length, variables: variables.length, loading, error });
 
-  // Listen for messages from Figma plugin
-  useEffect(() => {
-    console.log('[FigZag UI] Setting up message listener...');
-    window.onmessage = (event) => {
-      console.log('[FigZag UI] Received message:', event.data);
-      const msg = event.data.pluginMessage;
-      
-      if (!msg) {
-        console.log('[FigZag UI] No plugin message in event');
-        return;
-      }
-
-      console.log('[FigZag UI] Message type:', msg.type);
-      switch (msg.type) {
-        case 'variables-loaded':
-          handleVariablesLoaded(msg.data);
-          break;
-          
-        case 'error':
-          dispatch(setError(msg.message));
-          dispatch(setLoading(false));
-          break;
-      }
-    };
-
-    // Request initial data load
-    console.log('[FigZag UI] Requesting initial data load...');
-    dispatch(setLoading(true));
-    parent.postMessage({ pluginMessage: { type: 'load-variables' } }, '*');
-  }, [dispatch]);
-
   const handleVariablesLoaded = useCallback((data: any) => {
     try {
       console.log('[FigZag UI] Handling variables loaded:', data);
@@ -73,6 +42,45 @@ const App: React.FC = () => {
       dispatch(setLoading(false));
     }
   }, [dispatch]);
+
+  // Listen for messages from Figma plugin
+  useEffect(() => {
+    console.log('[FigZag UI] Setting up message listener...');
+    
+    const handleMessage = (event: MessageEvent) => {
+      console.log('[FigZag UI] Received message:', event.data);
+      const msg = event.data.pluginMessage;
+      
+      if (!msg) {
+        console.log('[FigZag UI] No plugin message in event');
+        return;
+      }
+
+      console.log('[FigZag UI] Message type:', msg.type);
+      switch (msg.type) {
+        case 'variables-loaded':
+          handleVariablesLoaded(msg.data);
+          break;
+          
+        case 'error':
+          dispatch(setError(msg.message));
+          dispatch(setLoading(false));
+          break;
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    // Request initial data load
+    console.log('[FigZag UI] Requesting initial data load...');
+    dispatch(setLoading(true));
+    parent.postMessage({ pluginMessage: { type: 'load-variables' } }, '*');
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [dispatch, handleVariablesLoaded]);
 
   const handleRefresh = useCallback(() => {
     dispatch(setLoading(true));

@@ -7,10 +7,11 @@ import './styles.css';
 
 const root = ReactDOM.createRoot(document.getElementById('root')!);
 
-root.render(
-  <React.StrictMode>
-    <Provider store={store}>
-      <App />
-    </Provider>
-  </React.StrictMode>
+// Only use StrictMode in development (causes double-rendering)
+const AppWithProvider = (
+  <Provider store={store}>
+    <App />
+  </Provider>
 );
+
+root.render(AppWithProvider);
