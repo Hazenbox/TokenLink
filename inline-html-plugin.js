@@ -1,6 +1,6 @@
 /**
- * Custom Webpack plugin to inline the generated HTML into the code.js bundle
- * This makes the HTML available as the __html__ variable for figma.showUI()
+ * Custom Webpack plugin to inline both HTML and UI JS into the code.js bundle
+ * This makes them available for figma.showUI() in the plugin sandbox
  */
 class InlineHTMLPlugin {
   apply(compiler) {
@@ -14,12 +14,21 @@ class InlineHTMLPlugin {
         HtmlWebpackPlugin.getHooks(compilation).afterEmit.tapAsync(
           'InlineHTMLPlugin',
           (data, cb) => {
-            // Get the generated HTML content
-            const htmlContent = compilation.assets['ui.html'].source();
-            
-            // Find the code.js asset and prepend the HTML as a variable
+            // Get the generated HTML and UI JS
+            const htmlAsset = compilation.assets['ui.html'];
+            const uiJsAsset = compilation.assets['ui.js'];
             const codeAsset = compilation.assets['code.js'];
-            if (codeAsset) {
+            
+            if (htmlAsset && uiJsAsset && codeAsset) {
+              let htmlContent = htmlAsset.source();
+              const uiJsContent = uiJsAsset.source();
+              
+              // Replace the script src reference with inline script
+              htmlContent = htmlContent.replace(
+                /<script\s+defer="defer"\s+src="ui\.js"><\/script>/,
+                `<script>${uiJsContent}</script>`
+              );
+              
               const originalSource = codeAsset.source();
               const htmlVariable = `var __html__ = ${JSON.stringify(htmlContent)};\n`;
               
