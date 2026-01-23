@@ -1,0 +1,21 @@
+[
+  {
+    "name": "VarCar Plugin Bundle",
+    "path": "dist/code.js",
+    "limit": "800 KB",
+    "webpack": false
+  },
+  {
+    "name": "UI Bundle",
+    "path": "dist/ui.js",
+    "limit": "600 KB",
+    "webpack": false
+  },
+  {
+    "name": "Color System",
+    "path": "dist/assets/*.js",
+    "limit": "400 KB",
+    "webpack": false,
+    "ignore": ["node_modules"]
+  }
+]
