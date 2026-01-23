@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { Step, PaletteSteps, StepScales } from "@colors/color-utils";
 import { generateAllScales, createDefaultPalette } from "@colors/scale-generator";
 import { loadPalettesFromJSON } from "@colors/palette-loader";
+import { safeStorage } from "@/lib/storage";
 
 export type GeneratedScalesMap = Record<Step, StepScales | null>;
 
@@ -269,7 +270,7 @@ export const usePaletteStore = create<PaletteState>()(
     },
     {
       name: "varcar-palettes",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => safeStorage),
       partialize: (state) => ({
         palettes: state.palettes,
         activePaletteId: state.activePaletteId

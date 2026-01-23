@@ -1,4 +1,5 @@
 import * as React from "react";
+import { safeStorage } from "@/lib/storage";
 
 type Theme = "light" | "dark" | "system";
 
@@ -22,7 +23,7 @@ export function ThemeProvider({
 }: ThemeProviderProps) {
   const [theme, setThemeState] = React.useState<Theme>(() => {
     if (typeof window !== "undefined") {
-      const stored = localStorage.getItem(storageKey);
+      const stored = safeStorage.getItem(storageKey);
       return (stored as Theme) || defaultTheme;
     }
     return defaultTheme;
@@ -43,7 +44,7 @@ export function ThemeProvider({
 
   const setTheme = React.useCallback(
     (newTheme: Theme) => {
-      localStorage.setItem(storageKey, newTheme);
+      safeStorage.setItem(storageKey, newTheme);
       setThemeState(newTheme);
     },
     [storageKey]
