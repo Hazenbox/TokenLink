@@ -1,6 +1,8 @@
 import * as React from "react";
 import { Plus, MoreHorizontal, ChevronRight, HelpCircle, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CompactButton } from "../common/CompactButton";
+import { IconButton } from "../common/IconButton";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -177,20 +179,20 @@ function PaletteItem({
 
       <Popover open={menuOpen} onOpenChange={setMenuOpen}>
         <PopoverTrigger asChild>
-          <Button
+          <IconButton
+            icon={MoreHorizontal}
             variant="ghost"
-            size="icon"
+            size="sm"
+            aria-label="More options"
             className={cn(
-              "h-5 w-5 rounded-full cursor-pointer transition-opacity",
+              "h-5 w-5 transition-opacity",
               menuOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
             )}
             onClick={(e) => {
               e.stopPropagation();
               setMenuOpen(true);
             }}
-          >
-            <MoreHorizontal className="h-3 w-3 opacity-50" />
-          </Button>
+          />
         </PopoverTrigger>
         <PopoverContent
           ref={menuRef}
@@ -382,15 +384,17 @@ export function ColorSidebar() {
 
   return (
     <div className="flex h-full w-48 flex-col bg-sidebar-background relative z-10">
-      <div className="flex items-center justify-end px-3 pt-5 pb-3">
+      <div className="flex flex-col gap-2 px-2 pt-5 pb-3">
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <TooltipProvider delayDuration={300}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <DialogTrigger asChild>
-                  <Button variant="secondary" size="icon" className="h-7 w-7 rounded-full cursor-pointer bg-surface">
-                    <Plus className="h-3.5 w-3.5 opacity-60" />
-                  </Button>
+                  <CompactButton 
+                    icon={Plus} 
+                    label="New Palette" 
+                    className="w-full"
+                  />
                 </DialogTrigger>
               </TooltipTrigger>
               <TooltipContent side="bottom">
@@ -430,18 +434,18 @@ export function ColorSidebar() {
 
       <div className="px-2 py-2">
         <div className="relative group">
-          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="text"
             placeholder="Search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-8 px-3 pl-8 pr-8 text-sm"
+            className="h-7 px-2 pl-7 pr-7 text-xs"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-muted rounded-full transition-colors cursor-pointer"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 hover:bg-muted rounded-full transition-colors cursor-pointer"
             >
               <X className="h-3 w-3 text-muted-foreground" />
             </button>

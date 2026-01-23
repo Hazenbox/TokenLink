@@ -23,7 +23,7 @@
     --grid-opacity: 0.15%;              /* 15% opacity for grid */
     
     /* Text Hierarchy - Tailwind Gray Scale */
-    --foreground: 0 0% 98%;            /* gray-50 - Primary text (white) */
+    --foreground: 0 0% 87.1%;          /* gray-200 - Primary text (softer white) */
     --foreground-secondary: 0 0% 63.1%; /* gray-400 - Secondary text */
     --foreground-tertiary: 0 0% 45.1%;  /* gray-500 - Tertiary text */
     --foreground-disabled: 0 0% 32.2%;  /* gray-600 - Disabled text */
@@ -42,7 +42,7 @@
     --primary: 0 0% 32.2%;             /* gray-600 - Primary actions */
     --primary-hover: 0 0% 45.1%;       /* gray-500 - Hover state */
     --primary-pressed: 0 0% 23.1%;     /* gray-700 - Pressed state */
-    --primary-foreground: 0 0% 98%;    /* gray-50 - White text on primary */
+    --primary-foreground: 0 0% 87.1%;  /* gray-200 - Softer white text on primary */
     --primary-glow: 255 255 255 / 0.15; /* White glow only */
     
     /* Semantic Colors - Gray Variants (No Colors) */
@@ -103,7 +103,7 @@
     /* Tooltips - Tailwind Gray Scale */
     --tooltip-bg: 0 0% 14.9%;          /* gray-800 - Tooltip background */
     --tooltip-border: 0 0% 23.1%;      /* gray-700 - Tooltip border */
-    --tooltip-text: 0 0% 98%;          /* gray-50 - Tooltip text */
+    --tooltip-text: 0 0% 87.1%;        /* gray-200 - Tooltip text */
     
     /* Context Menus - Tailwind Gray Scale */
     --menu-bg: 0 0% 9%;                /* gray-900 - Menu background */
@@ -113,19 +113,19 @@
     
     /* Card & Popover - Tailwind Gray Scale */
     --card: 0 0% 14.9%;                /* gray-800 - Card background */
-    --card-foreground: 0 0% 98%;       /* gray-50 - Card text */
+    --card-foreground: 0 0% 87.1%;     /* gray-200 - Card text */
     --popover: 0 0% 14.9%;             /* gray-800 - Popover background */
-    --popover-foreground: 0 0% 98%;    /* gray-50 - Popover text */
+    --popover-foreground: 0 0% 87.1%;  /* gray-200 - Popover text */
     
     /* Secondary & Accent - Tailwind Gray Scale */
     --secondary: 0 0% 14.9%;           /* gray-800 - Secondary background */
-    --secondary-foreground: 0 0% 98%;  /* gray-50 - Secondary text */
+    --secondary-foreground: 0 0% 87.1%; /* gray-200 - Secondary text */
     --accent: 0 0% 14.9%;              /* gray-800 - Accent background */
-    --accent-foreground: 0 0% 98%;     /* gray-50 - Accent text */
+    --accent-foreground: 0 0% 87.1%;   /* gray-200 - Accent text */
     
     /* Destructive - Tailwind Gray Scale (No Red) */
     --destructive: 0 0% 45.1%;         /* gray-500 - Destructive (gray, not red) */
-    --destructive-foreground: 0 0% 98%; /* gray-50 - Destructive text */
+    --destructive-foreground: 0 0% 87.1%; /* gray-200 - Destructive text */
     
     /* Ring (focus ring) - Tailwind Gray Scale */
     --ring: 0 0% 32.2%;                /* gray-600 - Focus ring (gray, not blue) */

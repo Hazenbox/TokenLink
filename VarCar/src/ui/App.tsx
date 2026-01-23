@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { FileCog, Download, Upload, Keyboard } from 'lucide-react';
+import { IconButton } from './components/common/IconButton';
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { VariableGraphView } from './components/VariableGraphView';
 import { AliasModal } from './components/AliasModal';
 import { RuleList } from './components/RuleList';
@@ -1420,103 +1422,75 @@ const App: React.FC = () => {
       >
         {/* Show header content when not loading and no error */}
         {!loading && !error && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '12px' }}>
-            {/* Rules Engine Button */}
-            <button
-              onClick={() => setIsRulesSideSheetOpen(true)}
-              onMouseEnter={(e) => showTooltip('Rules Engine', e)}
-              onMouseLeave={hideTooltip}
-              style={{
-                height: '24px',
-                padding: '4px 12px',
-                background: 'var(--card-bg)',
-                color: 'var(--text-color)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                fontSize: '12px',
-              }}
-            >
-              <FileCog size={14} />
-              Rules
-            </button>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
+            <TooltipProvider delayDuration={300}>
+              {/* Rules Engine Button */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <IconButton
+                    icon={FileCog}
+                    variant="secondary"
+                    size="md"
+                    aria-label="Rules Engine"
+                    onClick={() => setIsRulesSideSheetOpen(true)}
+                  />
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p className="text-xs">Rules Engine</p>
+                </TooltipContent>
+              </Tooltip>
+              
+              {/* Export JSON Button */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <IconButton
+                    icon={Download}
+                    variant="secondary"
+                    size="md"
+                    aria-label="Export JSON"
+                    disabled={isExporting}
+                    onClick={handleExportGraph}
+                  />
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p className="text-xs">{isExporting ? 'Exporting...' : 'Export JSON'}</p>
+                </TooltipContent>
+              </Tooltip>
+              
+              {/* Keyboard Shortcuts Button */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <IconButton
+                    icon={Keyboard}
+                    variant="secondary"
+                    size="md"
+                    aria-label="Keyboard Shortcuts"
+                    onClick={() => setIsShortcutsPanelOpen(true)}
+                  />
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p className="text-xs">Keyboard Shortcuts</p>
+                </TooltipContent>
+              </Tooltip>
+              
+              {/* Import JSON Button */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <IconButton
+                    icon={Upload}
+                    variant="secondary"
+                    size="md"
+                    aria-label="Import JSON"
+                    disabled={isImporting}
+                    onClick={handleImportClick}
+                  />
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p className="text-xs">{isImporting ? 'Importing...' : 'Import JSON'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             
-            {/* Export JSON Button */}
-            <button
-              onClick={handleExportGraph}
-              onMouseEnter={(e) => showTooltip('Export JSON', e)}
-              onMouseLeave={hideTooltip}
-              disabled={isExporting}
-              style={{
-                height: '24px',
-                padding: '4px 12px',
-                background: isExporting ? 'var(--border-color)' : 'var(--card-bg)',
-                color: isExporting ? 'var(--text-secondary)' : 'var(--text-color)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '6px',
-                cursor: isExporting ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                fontSize: '12px',
-              }}
-            >
-              <Download size={14} />
-              {isExporting ? 'Exporting...' : 'Export'}
-            </button>
-            
-            {/* Keyboard Shortcuts Button */}
-            <button
-              onClick={() => setIsShortcutsPanelOpen(true)}
-              onMouseEnter={(e) => showTooltip('Keyboard Shortcuts (?)', e)}
-              onMouseLeave={hideTooltip}
-              style={{
-                height: '24px',
-                padding: '4px 12px',
-                background: 'var(--card-bg)',
-                color: 'var(--text-color)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                fontSize: '12px',
-              }}
-            >
-              <Keyboard size={14} />
-            </button>
-            
-            {/* Import JSON Button */}
-            <button
-              onClick={handleImportClick}
-              onMouseEnter={(e) => showTooltip('Import JSON', e)}
-              onMouseLeave={hideTooltip}
-              disabled={isImporting}
-              style={{
-                height: '24px',
-                padding: '4px 12px',
-                background: isImporting ? 'var(--border-color)' : 'var(--card-bg)',
-                color: isImporting ? 'var(--text-secondary)' : 'var(--text-color)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '6px',
-                cursor: isImporting ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                fontSize: '12px',
-              }}
-            >
-              <Upload size={14} />
-              {isImporting ? 'Importing...' : 'Import'}
-            </button>
             <input
               ref={fileInputRef}
               type="file"

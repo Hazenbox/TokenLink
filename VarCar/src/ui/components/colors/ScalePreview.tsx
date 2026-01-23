@@ -5,6 +5,7 @@ import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/comp
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { IconButton } from "../common/IconButton";
 import { ColorSwatch } from "./ColorSwatch";
 import { ContrastPreview } from "./ContrastPreview";
 import { usePaletteStore } from "@/store/palette-store";
@@ -897,14 +898,13 @@ export function ScalePreview() {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
+                <IconButton
+                  icon={ArrowUpDown}
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 p-0 cursor-pointer"
+                  aria-label={sortOrder === "asc" ? "Sort 2500 → 200" : "Sort 200 → 2500"}
                   onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-                >
-                  <ArrowUpDown className="h-3.5 w-3.5 opacity-50" />
-                </Button>
+                />
               </TooltipTrigger>
               <TooltipContent side="bottom">
                 <p className="text-xs">{sortOrder === "asc" ? "Sort 2500 → 200" : "Sort 200 → 2500"}</p>
@@ -913,18 +913,13 @@ export function ScalePreview() {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
+                <IconButton
+                  icon={viewMode === "grid" ? List : LayoutGrid}
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 p-0 cursor-pointer"
+                  aria-label={viewMode === "grid" ? "List View" : "Grid View"}
                   onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
-                >
-                  {viewMode === "grid" ? (
-                    <List className="h-3.5 w-3.5 opacity-50" />
-                  ) : (
-                    <LayoutGrid className="h-3.5 w-3.5 opacity-50" />
-                  )}
-                </Button>
+                />
               </TooltipTrigger>
               <TooltipContent side="bottom">
                 <p className="text-xs">{viewMode === "grid" ? "List View" : "Grid View"}</p>
@@ -933,18 +928,13 @@ export function ScalePreview() {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
+                <IconButton
+                  icon={isFullscreen ? Minimize2 : Maximize2}
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 p-0 cursor-pointer"
+                  aria-label={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
                   onClick={toggleFullscreen}
-                >
-                  {isFullscreen ? (
-                    <Minimize2 className="h-3.5 w-3.5 opacity-50" />
-                  ) : (
-                    <Maximize2 className="h-3.5 w-3.5 opacity-50" />
-                  )}
-                </Button>
+                />
               </TooltipTrigger>
               <TooltipContent side="bottom">
                 <p className="text-xs">{isFullscreen ? "Exit Fullscreen" : "Fullscreen"}</p>
@@ -955,15 +945,13 @@ export function ScalePreview() {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
+                <IconButton
+                  icon={Layers}
                   variant="secondary"
-                  size="icon"
-                  className="h-7 w-7 rounded-full cursor-pointer bg-surface"
+                  size="md"
+                  aria-label="Surface Stacking"
                   onClick={() => usePaletteStore.getState().setViewMode("surface-stacking")}
-                >
-                  <Layers className="h-3.5 w-3.5" />
-                  <span className="sr-only">Surface Stacking</span>
-                </Button>
+                />
               </TooltipTrigger>
               <TooltipContent side="bottom">
                 <p className="text-xs">Surface Stacking Preview</p>
