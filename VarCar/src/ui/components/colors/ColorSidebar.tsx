@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Plus, MoreHorizontal, ChevronRight, HelpCircle, Search, GripVertical, X, Network } from "lucide-react";
+import { Plus, MoreHorizontal, ChevronRight, HelpCircle, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -15,8 +15,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { ThemeToggle } from "../theme/ThemeToggle";
-import { useViewStore } from "@/store/view-store";
 import { usePaletteStore } from "@/store/palette-store";
 import { STEPS, Step, PaletteSteps, getReadableTextColor, isValidHex } from "@colors/color-utils";
 import { cn } from "@colors/utils";
@@ -153,19 +151,13 @@ function PaletteItem({
   return (
     <div
       className={cn(
-        "group flex h-7 items-center justify-between rounded-lg pl-3 pr-1 text-sm transition-colors cursor-pointer select-none",
+        "group flex h-7 items-center justify-between rounded-lg pl-3 pr-1 text-xs transition-colors cursor-pointer select-none",
         isActive
           ? "bg-surface-elevated"
           : "hover:bg-surface"
       )}
       onClick={onSelect}
     >
-      <div
-        className="mr-2 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-50 transition-opacity touch-none"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <GripVertical className="h-3.5 w-3.5 pointer-events-none" />
-      </div>
       {isEditing ? (
         <Input
           value={editingName}
@@ -180,7 +172,7 @@ function PaletteItem({
           onClick={(e) => e.stopPropagation()}
         />
       ) : (
-        <span className="flex-1 truncate">{palette.name}</span>
+        <span className="flex-1 truncate text-xs">{palette.name}</span>
       )}
 
       <Popover open={menuOpen} onOpenChange={setMenuOpen}>
@@ -356,8 +348,6 @@ export function ColorSidebar() {
     viewMode,
     setViewMode,
   } = usePaletteStore();
-  
-  const { setMainView } = useViewStore();
 
   const [newPaletteName, setNewPaletteName] = React.useState("");
   const [dialogOpen, setDialogOpen] = React.useState(false);
@@ -386,12 +376,12 @@ export function ColorSidebar() {
     setEditingName(name);
   };
 
-  const filteredPalettes = palettes.filter((p) =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredPalettes = palettes
+    .filter((p) => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <div className="flex h-full w-56 flex-col bg-sidebar-background relative z-10">
+    <div className="flex h-full w-48 flex-col bg-sidebar-background relative z-10">
       <div className="flex items-center justify-end px-3 pt-5 pb-3">
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <TooltipProvider delayDuration={300}>
@@ -500,7 +490,7 @@ export function ColorSidebar() {
         </div>
       </ScrollArea>
 
-      <div className="p-3 space-y-2">
+      <div className="p-3">
         <button
           onClick={() => setViewMode("how-it-works")}
           className={cn(
@@ -513,16 +503,6 @@ export function ColorSidebar() {
           <HelpCircle className="h-3.5 w-3.5" />
           <span>How it works</span>
         </button>
-        
-        <button
-          onClick={() => setMainView("graph")}
-          className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors cursor-pointer text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
-        >
-          <Network className="h-3.5 w-3.5" />
-          <span>FigZig Variables</span>
-        </button>
-        
-        <ThemeToggle />
       </div>
     </div>
   );

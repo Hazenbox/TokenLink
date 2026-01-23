@@ -31,7 +31,7 @@ export const NavRailItem = React.forwardRef<HTMLButtonElement, NavRailItemProps>
         {/* Icon container with background */}
         <div
           className={cn(
-            "w-8 h-8 flex items-center justify-center rounded-full",
+            "w-10 h-8 flex items-center justify-center rounded-full",
             "transition-all duration-instant ease-snappy",
             isActive
               ? "bg-surface-elevated glow-primary"
@@ -40,7 +40,7 @@ export const NavRailItem = React.forwardRef<HTMLButtonElement, NavRailItemProps>
         >
           <Icon 
             className={cn(
-              "w-4 h-4 shrink-0 transition-colors duration-instant ease-snappy",
+              "w-3.5 h-3.5 shrink-0 transition-colors duration-instant ease-snappy",
               isActive
                 ? "text-foreground"
                 : "text-foreground-tertiary group-hover:text-foreground-secondary"
