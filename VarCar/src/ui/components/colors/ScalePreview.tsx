@@ -10,6 +10,7 @@ import { ContrastPreview } from "./ContrastPreview";
 import { usePaletteStore } from "@/store/palette-store";
 import { STEPS, Step, StepScales, PaletteSteps, isValidHex, normalizeHex, getReadableTextColor, ScaleResult } from "@colors/color-utils";
 import { cn } from "@colors/utils";
+import { safeStorage } from "@/lib/storage";
 
 type ViewMode = "grid" | "list";
 type SortOrder = "asc" | "desc";
@@ -703,7 +704,19 @@ function ListViewCard({ step, scales, paletteValue, showDots, paletteId, onUpdat
 
 export function ScalePreview() {
   const { generatedScales, activePaletteId, palettes, updatePaletteStep, updatePrimaryStep, isFullscreen, toggleFullscreen } = usePaletteStore();
-  const [viewMode, setViewMode] = React.useState<ViewMode>("list");
+  
+  // Load viewMode from storage with "list" as default
+  const [viewMode, setViewModeState] = React.useState<ViewMode>(() => {
+    const stored = safeStorage.getItem("varcar-scale-view-mode");
+    return (stored as ViewMode) || "list";
+  });
+  
+  // Persist viewMode changes to storage
+  const setViewMode = React.useCallback((mode: ViewMode) => {
+    safeStorage.setItem("varcar-scale-view-mode", mode);
+    setViewModeState(mode);
+  }, []);
+  
   const [sortOrder, setSortOrder] = React.useState<SortOrder>("desc");
   const [downloadOpen, setDownloadOpen] = React.useState(false);
   const [primaryOpen, setPrimaryOpen] = React.useState(false);

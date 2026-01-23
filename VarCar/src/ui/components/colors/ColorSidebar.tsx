@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Plus, MoreHorizontal, ChevronRight, HelpCircle, Search, GripVertical, X } from "lucide-react";
+import { Plus, MoreHorizontal, ChevronRight, HelpCircle, Search, GripVertical, X, Network } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -15,6 +15,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { ThemeToggle } from "../theme/ThemeToggle";
+import { useAppSwitcher } from "@/ui/AppSwitcher";
 import { usePaletteStore } from "@/store/palette-store";
 import { STEPS, Step, PaletteSteps, getReadableTextColor, isValidHex } from "@colors/color-utils";
 import { cn } from "@colors/utils";
@@ -358,10 +360,13 @@ export function ColorSidebar() {
     deletePalette,
     setActivePalette,
     renamePalette,
+    reorderPalettes,
     duplicatePalette,
     viewMode,
     setViewMode,
   } = usePaletteStore();
+  
+  const { switchToApp } = useAppSwitcher();
 
   const [newPaletteName, setNewPaletteName] = React.useState("");
   const [dialogOpen, setDialogOpen] = React.useState(false);
@@ -530,6 +535,16 @@ export function ColorSidebar() {
           <HelpCircle className="h-3.5 w-3.5" />
           <span>How it works</span>
         </button>
+        
+        <button
+          onClick={() => switchToApp("figzig")}
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors cursor-pointer text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
+        >
+          <Network className="h-3.5 w-3.5" />
+          <span>FigZig Variables</span>
+        </button>
+        
+        <ThemeToggle />
       </div>
     </div>
   );

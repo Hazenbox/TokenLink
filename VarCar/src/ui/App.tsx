@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ListTree, Network, FileCog, Download, Upload, Keyboard } from 'lucide-react';
+import { ListTree, Network, FileCog, Download, Upload, Keyboard, Palette } from 'lucide-react';
 import VariableTree from './components/VariableTree';
 import { VariableGraphView } from './components/VariableGraphView';
 import { AliasModal } from './components/AliasModal';
@@ -22,6 +22,7 @@ import { Rule, createDefaultRule } from '../models/rules';
 import { downloadJSON } from '../utils/export';
 import { useMultiSelect } from './hooks/useMultiSelect';
 import { useKeyboardShortcuts, KeyboardShortcut } from './hooks/useKeyboardShortcuts';
+import { useAppSwitcher } from './AppSwitcher';
 
 // Build timestamp for cache busting
 const BUILD_TIMESTAMP = new Date().toISOString();
@@ -367,6 +368,8 @@ const buttonStyle: React.CSSProperties = {
 };
 
 const App: React.FC = () => {
+  const { switchToApp } = useAppSwitcher();
+  
   // State to store the variable graph data
   const [graphData, setGraphData] = useState<GraphData | null>(null);
   // Loading state to show while fetching data
@@ -1429,6 +1432,30 @@ const App: React.FC = () => {
         {!loading && !error && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              {/* Back to Color App Button */}
+              <button
+                onClick={() => switchToApp('color')}
+                onMouseEnter={(e) => showTooltip('Color System', e)}
+                onMouseLeave={hideTooltip}
+                style={{
+                  height: '24px',
+                  padding: '4px 12px',
+                  background: 'var(--card-bg)',
+                  color: 'var(--text-color)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  fontSize: '12px',
+                }}
+              >
+                <Palette size={14} />
+                Colors
+              </button>
+              
               {/* View Toggle and Actions - Only show when graphData exists */}
               {graphData && (
                 <>
@@ -2017,4 +2044,5 @@ const App: React.FC = () => {
   );
 };
 
+export { App };
 export default App;

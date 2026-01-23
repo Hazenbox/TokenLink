@@ -1,6 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { ColorApp } from './ColorApp';
+import { AppSwitcher } from './AppSwitcher';
 
 // Get the root element
 const rootElement = document.getElementById('root');
@@ -13,7 +13,7 @@ if (!rootElement) {
 const root = createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <ColorApp />
+    <AppSwitcher />
   </React.StrictMode>
 );
 
