@@ -32,7 +32,7 @@ export const useViewStore = create<ViewState>()(
       setGraphSubView: (view) => set({ graphSubView: view }),
     }),
     {
-      name: "varcar-view-state",
+      name: "figmap-view-state",
       storage: createJSONStorage(() => safeStorage),
     }
   )

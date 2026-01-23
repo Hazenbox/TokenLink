@@ -1,6 +1,6 @@
 {
-  "name": "VarCar",
-  "id": "varcar-plugin",
+  "name": "FigMap",
+  "id": "figmap-plugin",
   "api": "1.0.0",
   "main": "dist/code.js",
   "ui": "dist/ui/src/ui/index.html",
@@ -11,7 +11,7 @@
   },
   "menu": [
     {
-      "name": "Open VarCar",
+      "name": "Open FigMap",
       "command": "open"
     }
   ]

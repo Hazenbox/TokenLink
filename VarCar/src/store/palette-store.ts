@@ -269,7 +269,7 @@ export const usePaletteStore = create<PaletteState>()(
       };
     },
     {
-      name: "varcar-palettes",
+      name: "figmap-palettes",
       storage: createJSONStorage(() => safeStorage),
       partialize: (state) => ({
         palettes: state.palettes,

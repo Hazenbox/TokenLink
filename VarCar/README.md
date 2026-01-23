@@ -1,4 +1,4 @@
-# FigZig - Figma Plugin
+# FigMap - Figma Plugin
 
 A Figma plugin built with TypeScript, React, and Vite for automating Figma Variables orchestration.
 

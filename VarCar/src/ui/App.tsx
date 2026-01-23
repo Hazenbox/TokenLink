@@ -16,7 +16,6 @@ import { RenameModal } from './components/RenameModal';
 import { Toast } from './components/Toast';
 import { BulkAliasPicker } from './components/BulkAliasPicker';
 import { KeyboardShortcutsPanel } from './components/KeyboardShortcutsPanel';
-import { ResizeHandle } from './components/ResizeHandle';
 import { createGraph, addCollection, addGroup, addVariable } from '../models/graph';
 import { Collection as InternalCollection, Group as InternalGroup, Variable as InternalVariable } from '../models/types';
 import { Rule, createDefaultRule } from '../models/rules';
@@ -926,14 +925,6 @@ const App: React.FC = () => {
       message: `Creating ${mappings.length} alias${mappings.length !== 1 ? 'es' : ''}...` 
     });
     setTimeout(() => setNotification(null), 3000);
-  };
-
-  // Handler for window resize
-  const handleResize = (width: number, height: number) => {
-    window.parent.postMessage(
-      { pluginMessage: { type: 'resize', width, height } },
-      '*'
-    );
   };
 
   // Handler for deleting alias
@@ -1878,15 +1869,6 @@ const App: React.FC = () => {
         isOpen={isShortcutsPanelOpen}
         onClose={() => setIsShortcutsPanelOpen(false)}
         shortcuts={keyboardShortcuts}
-      />
-      
-      {/* Resize Handle */}
-      <ResizeHandle
-        onResize={handleResize}
-        minWidth={800}
-        minHeight={600}
-        maxWidth={2400}
-        maxHeight={1600}
       />
       
       <style>{`

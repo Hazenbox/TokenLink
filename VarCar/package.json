@@ -1,7 +1,7 @@
 {
-  "name": "varcar",
+  "name": "figmap",
   "version": "0.1.0",
-  "description": "VarCar - Figma Variables Orchestration & Intelligent Color Scale Generation",
+  "description": "FigMap - Figma Variables Orchestration & Intelligent Color Scale Generation",
   "private": true,
   "scripts": {
     "build": "npm run build:ui && npm run build:code && node build-plugin.js",

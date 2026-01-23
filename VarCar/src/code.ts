@@ -1151,7 +1151,7 @@ if (figma.command === 'open') {
     figma.showUI(__html__, {
       width,
       height,
-      title: 'FigZig',
+      title: 'FigMap',
       themeColors: true
     });
   })();

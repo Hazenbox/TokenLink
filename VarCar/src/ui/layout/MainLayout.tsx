@@ -2,6 +2,7 @@ import * as React from "react";
 import { ThemeProvider } from "../components/theme/ThemeProvider";
 import { NavigationRail } from "./NavigationRail";
 import { CanvasBackground } from "./CanvasBackground";
+import { ResizeHandle } from "../components/ResizeHandle";
 import { ColorApp } from "../ColorApp";
 import { App } from "../App";
 import { useViewStore } from "@/store/view-store";
@@ -9,8 +10,16 @@ import { useViewStore } from "@/store/view-store";
 export function MainLayout() {
   const { mainView } = useViewStore();
 
+  // Handler for window resize
+  const handleResize = (width: number, height: number) => {
+    window.parent.postMessage(
+      { pluginMessage: { type: 'resize', width, height } },
+      '*'
+    );
+  };
+
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="varcar-theme">
+    <ThemeProvider defaultTheme="dark" storageKey="figmap-theme">
       <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground">
         <NavigationRail />
         
@@ -19,6 +28,9 @@ export function MainLayout() {
           
           {mainView === "colors" ? <ColorApp /> : <App />}
         </div>
+        
+        {/* Resize Handle - available across all views */}
+        <ResizeHandle onResize={handleResize} />
       </div>
     </ThemeProvider>
   );
