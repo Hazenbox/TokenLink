@@ -3,7 +3,7 @@
   "id": "varcar-plugin",
   "api": "1.0.0",
   "main": "dist/code.js",
-  "ui": "dist/ui/index.html",
+  "ui": "dist/ui/src/ui/index.html",
   "editorType": ["figma"],
   "documentAccess": "dynamic-page",
   "networkAccess": {
