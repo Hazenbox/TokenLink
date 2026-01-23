@@ -27,25 +27,33 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    /* Figma-inspired dark mode colors */
+    --background: 18 18 18;        /* #121212 - Figma's main dark bg */
+    --foreground: 255 255 255;     /* #FFFFFF - Primary text */
+    --card: 24 24 24;              /* #181818 - Card/surface bg */
+    --card-foreground: 255 255 255;
+    --popover: 24 24 24;
+    --popover-foreground: 255 255 255;
+    --primary: 0 122 255;           /* #007AFF - Figma blue */
+    --primary-foreground: 255 255 255;
+    --secondary: 32 32 32;         /* #202020 - Secondary bg */
+    --secondary-foreground: 255 255 255;
+    --muted: 32 32 32;             /* #202020 - Muted backgrounds */
+    --muted-foreground: 180 180 180; /* #B4B4B4 - Muted text */
+    --accent: 45 45 45;            /* #2D2D2D - Accent/hover states */
+    --accent-foreground: 255 255 255;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --destructive-foreground: 255 255 255;
+    --border: 40 40 40;            /* #282828 - Subtle borders */
+    --input: 32 32 32;
+    --ring: 0 122 255;             /* Primary for focus rings */
+    
+    /* Micro-detail colors */
+    --handle-color: 40 40 40;      /* Border color for handles */
+    --edge-color: 180 180 180;     /* Muted foreground for edges */
+    --edge-active: 0 122 255;      /* Active edges (primary) */
+    --divider-color: 40 40 40;     /* Dividers/separators */
+    --focus-ring: 0 122 255;       /* Primary color for focus */
   }
 }
 
@@ -55,5 +63,68 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  /* Fast transitions for sleek interactions */
+  .transition-fast {
+    transition-duration: 100ms;
+    transition-timing-function: ease-out;
+  }
+  
+  .transition-fast-in {
+    transition-duration: 100ms;
+    transition-timing-function: ease-in;
+  }
+  
+  /* Compact spacing utilities */
+  .compact-px {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  
+  .compact-py {
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+  }
+  
+  /* No shadows - use borders instead */
+  .no-shadow {
+    box-shadow: none;
+  }
+  
+  /* Micro-detail utilities */
+  .handle-default {
+    color: hsl(var(--handle-color) / 0.6);
+  }
+  
+  .handle-hover {
+    color: hsl(var(--handle-color) / 0.8);
+  }
+  
+  .handle-active {
+    color: hsl(var(--primary) / 0.5);
+  }
+  
+  .edge-default {
+    stroke: hsl(var(--edge-color) / 0.4);
+  }
+  
+  .edge-hover {
+    stroke: hsl(var(--edge-color) / 0.6);
+  }
+  
+  .edge-active {
+    stroke: hsl(var(--edge-active) / 0.7);
+  }
+  
+  .divider {
+    border-color: hsl(var(--divider-color) / 0.5);
+  }
+  
+  .focus-ring {
+    outline: 1px solid hsl(var(--focus-ring) / 0.3);
+    outline-offset: 2px;
   }
 }
