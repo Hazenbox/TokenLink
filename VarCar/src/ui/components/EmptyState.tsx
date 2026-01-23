@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Plus, Search, FileQuestion } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn } from "@colors/utils";
 
 interface EmptyStateProps {
   icon?: React.ReactNode;

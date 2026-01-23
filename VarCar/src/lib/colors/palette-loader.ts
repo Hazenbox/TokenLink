@@ -1,6 +1,5 @@
 import { Palette } from "@/store/palette-store";
-import { Step, PaletteSteps } from "@/lib/color-utils";
-import { oklchToHex } from "@/lib/color-utils";
+import { Step, PaletteSteps, oklchToHex } from "./color-utils";
 import colorPalettesData from "./color-palettes.json";
 
 interface JSONPalette {

@@ -15,9 +15,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { usePaletteStore } from "@/lib/stores/paletteStore";
-import { STEPS, Step, PaletteSteps, getReadableTextColor, isValidHex } from "@/lib/color/colorUtils";
-import { cn } from "@/lib/utils";
+import { usePaletteStore } from "@/store/palette-store";
+import { STEPS, Step, PaletteSteps, getReadableTextColor, isValidHex } from "@colors/color-utils";
+import { cn } from "@colors/utils";
 
 // Download utility functions
 function downloadFile(content: string, filename: string, type: string) {

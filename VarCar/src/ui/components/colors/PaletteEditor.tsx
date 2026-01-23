@@ -3,9 +3,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { usePaletteStore } from "@/lib/stores/paletteStore";
-import { STEPS, Step, isValidHex, normalizeHex, getReadableTextColor } from "@/lib/color/colorUtils";
-import { cn } from "@/lib/utils";
+import { usePaletteStore } from "@/store/palette-store";
+import { STEPS, Step, isValidHex, normalizeHex, getReadableTextColor } from "@colors/color-utils";
+import { cn } from "@colors/utils";
 
 interface ColorInputProps {
   step: Step;

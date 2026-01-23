@@ -3,9 +3,9 @@ import { ArrowLeft, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { usePaletteStore } from "@/lib/stores/paletteStore";
-import { STEPS, Step, isValidHex, getReadableTextColor, getContrastRatio } from "@/lib/color/colorUtils";
-import { cn } from "@/lib/utils";
+import { usePaletteStore } from "@/store/palette-store";
+import { STEPS, Step, isValidHex, getReadableTextColor, getContrastRatio } from "@colors/color-utils";
+import { cn } from "@colors/utils";
 
 interface StackingCellProps {
     label: string;

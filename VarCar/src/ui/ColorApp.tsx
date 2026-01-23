@@ -9,8 +9,8 @@ import { HowItWorks } from "./components/HowItWorks";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { LoadingState } from "./components/LoadingState";
 import { ErrorState } from "./components/ErrorState";
-import { usePaletteStore } from "./lib/stores/paletteStore";
-import { cn } from "./lib/utils";
+import { usePaletteStore } from "@/store/palette-store";
+import { cn } from "@colors/utils";
 
 export function ColorApp() {
   const { viewMode, isFullscreen } = usePaletteStore();

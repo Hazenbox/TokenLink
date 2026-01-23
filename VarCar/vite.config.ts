@@ -25,5 +25,8 @@ export default defineConfig({
       '@': path.resolve(__dirname, 'src'),
       '@colors': path.resolve(__dirname, 'src/lib/colors')
     }
+  },
+  css: {
+    postcss: './postcss.config.js'
   }
 });

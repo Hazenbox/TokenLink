@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ColorSwatch } from "./ColorSwatch";
 import { ContrastPreview } from "./ContrastPreview";
-import { usePaletteStore } from "@/lib/stores/paletteStore";
-import { STEPS, Step, StepScales, PaletteSteps, isValidHex, normalizeHex, getReadableTextColor, ScaleResult } from "@/lib/color/colorUtils";
-import { cn } from "@/lib/utils";
+import { usePaletteStore } from "@/store/palette-store";
+import { STEPS, Step, StepScales, PaletteSteps, isValidHex, normalizeHex, getReadableTextColor, ScaleResult } from "@colors/color-utils";
+import { cn } from "@colors/utils";
 
 type ViewMode = "grid" | "list";
 type SortOrder = "asc" | "desc";
