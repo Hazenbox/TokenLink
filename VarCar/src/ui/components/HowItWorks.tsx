@@ -1,0 +1,370 @@
+import * as React from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+
+const SCALE_DATA = [
+  {
+    name: "Surface",
+    contrastTarget: "N/A",
+    logic: [
+      "The base background color for each step in the palette",
+      "All other scales are calculated relative to this surface color",
+      "Determines whether dark or light contrasting color is needed",
+    ],
+    exampleLight: "Surface 2400 = #f3f4ff (light purple background)",
+    exampleDark: "Surface 200 = #0b0034 (dark indigo background)",
+  },
+  {
+    name: "High",
+    contrastTarget: "Maximum",
+    logic: [
+      "Uses the contrasting color at 100% opacity (no transparency)",
+      "Light surface → uses step 200 (darkest color in palette)",
+      "Dark surface → uses step 2500 (lightest color in palette)",
+      "Provides maximum contrast for primary text and important elements",
+    ],
+    exampleLight: "Surface 2400 (light) → High = step 200 (#0b0034)",
+    exampleDark: "Surface 200 (dark) → High = step 2500 (#ffffff)",
+  },
+  {
+    name: "Medium",
+    contrastTarget: "Between High & Low",
+    logic: [
+      "Uses the same contrasting color as High, but with reduced opacity",
+      "Alpha = midpoint between 1.0 (High) and Low's alpha",
+      "Formula: alpha = round((1.0 + Low_alpha) / 2)",
+      "Provides moderate contrast for secondary text",
+    ],
+    exampleLight: "Surface 2400, Low alpha=0.56 → Medium = step 200 at 78% opacity",
+    exampleDark: "Surface 200, Low alpha=0.55 → Medium = step 2500 at 77% opacity",
+  },
+  {
+    name: "Low",
+    contrastTarget: "≥ 4.5:1",
+    logic: [
+      "Uses the High contrasting color (step 200 or 2500)",
+      "Starts at 1% opacity and increases until contrast ≥ 4.5:1",
+      "Finds the lowest integer percentage (e.g., 57% -> 4.49 fail, 58% -> 4.51 pass)",
+      "If full opacity contrast < 4.5:1, searches for a palette step instead",
+    ],
+    exampleLight: "Surface 2400 → Low = step 200 at 56% opacity (4.5:1 contrast)",
+    exampleDark: "Surface 200 → Low = step 2500 at 55% opacity (4.5:1 contrast)",
+  },
+  {
+    name: "Bold",
+    contrastTarget: "≥ 3.0:1",
+    logic: [
+      "Starts from the user-selected base step (e.g., 600)",
+      "Checks if contrast ratio against surface is ≥ 3.0:1",
+      "If contrast fails, moves toward the contrasting color step by step",
+      "Continues until finding a step with ≥ 3.0:1 contrast",
+      "Suitable for large text (18pt+) and UI components",
+    ],
+    exampleLight: "Base 600, Surface 2400 → 600 passes (3.2:1) → Bold = 600",
+    exampleDark: "Base 600, Surface 200 → 600 fails (1.67:1) → 1000 passes (3.51:1)",
+  },
+  {
+    name: "Bold A11Y",
+    contrastTarget: "≥ 4.5:1",
+    logic: [
+      "Starts from the user-selected base step (e.g., 600)",
+      "Checks if contrast ratio against surface is ≥ 4.5:1",
+      "If contrast fails, moves toward the contrasting color step by step",
+      "Continues until finding a step with ≥ 4.5:1 contrast",
+      "Ensures WCAG AA compliance for normal text",
+    ],
+    exampleLight: "Base 600, Surface 2400 → step 200 passes (4.5:1)",
+    exampleDark: "Base 600, Surface 200 → step 1200 passes (4.79:1)",
+  },
+  {
+    name: "Heavy",
+    contrastTarget: "High contrast",
+    logic: [
+      "Dark CC (light surface): Midpoint between Bold step and step 200",
+      "Capped at step 800 (never goes above 800)",
+      "Light CC (dark surface): Same as BoldA11Y",
+      "Exception: If BoldA11Y is >3 steps away from surface, uses step 2500",
+    ],
+    exampleLight: "Surface 2400, Bold=600 → Heavy = (600 + 200) / 2 = 400",
+    exampleDark: "Surface 200, BoldA11Y=1200 → Heavy = 1200 (same as BoldA11Y)",
+  },
+  {
+    name: "Minimal",
+    contrastTarget: "Low (decorative)",
+    logic: [
+      "Provides subtle, low-contrast color for decorative elements",
+      "Dark CC (High = 200): Subtract 200 from surface (e.g., 1500 → 1300)",
+      "Light CC (High = 2500): Add 200 to surface (e.g., 400 → 600)",
+      "Always moves away from the contrasting color by 2 steps",
+      "Not intended for text; use for borders, dividers, backgrounds",
+    ],
+    exampleLight: "Surface 2400 (CC=200) → Minimal = 2200 (2400 - 200)",
+    exampleDark: "Surface 200 (CC=2500) → Minimal = 400 (200 + 200)",
+  },
+];
+
+const WCAG_DATA = [
+  {
+    type: "Normal Text",
+    level: "AA",
+    ratio: "≥ 4.5:1",
+    description: "Text smaller than 18pt (or 14pt bold)",
+  },
+  {
+    type: "Normal Text",
+    level: "AAA",
+    ratio: "≥ 7.0:1",
+    description: "Enhanced contrast for better readability",
+  },
+  {
+    type: "Large Text",
+    level: "AA",
+    ratio: "≥ 3.0:1",
+    description: "Text 18pt+ (or 14pt+ bold)",
+  },
+  {
+    type: "Large Text",
+    level: "AAA",
+    ratio: "≥ 4.5:1",
+    description: "Enhanced contrast for large text",
+  },
+  {
+    type: "Graphics/UI",
+    level: "AA",
+    ratio: "≥ 3.0:1",
+    description: "Icons, borders, form controls, focus indicators",
+  },
+];
+
+const TERMINOLOGY_DATA = [
+  {
+    term: "Surface",
+    definition: "The background color on which other colors are placed. Each step (200-2500) can be used as a surface.",
+  },
+  {
+    term: "Contrasting Color (CC)",
+    definition: "The color used for text/elements on a surface. Automatically determined based on surface lightness.",
+  },
+  {
+    term: "Dark CC",
+    definition: "When surface is light (contrast vs white < 4.5:1), uses dark colors (toward step 200) for contrast.",
+  },
+  {
+    term: "Light CC",
+    definition: "When surface is dark (contrast vs white ≥ 4.5:1), uses light colors (toward step 2500) for contrast.",
+  },
+  {
+    term: "Base Step",
+    definition: "User-selected step (default: 600) used as starting point for Bold calculation. Set via the Base dropdown.",
+  },
+  {
+    term: "Step",
+    definition: "A position in the color scale (200-2500). Step 200 is darkest, step 2500 is lightest.",
+  },
+  {
+    term: "Alpha",
+    definition: "Transparency value (0-1). Used to blend contrasting color with surface to achieve specific contrast ratios.",
+  },
+  {
+    term: "Contrast Ratio",
+    definition: "WCAG measure of luminance difference between two colors. Higher ratios = better readability.",
+  },
+  {
+    term: "Truncation (Floor)",
+    definition: "The rounding method used for contrast checks. Ratios are always cut off at 2 decimal places (e.g. 4.499 becomes 4.49) to ensure strict compliance.",
+  },
+];
+
+export function HowItWorks() {
+  return (
+    <div className="flex h-full flex-col">
+      <div className="flex items-center justify-between px-4 py-3 border-b">
+        <div>
+          <h2 className="font-semibold">How It Works</h2>
+        </div>
+      </div>
+
+      <Tabs defaultValue="logic" className="flex flex-1 flex-col overflow-hidden">
+        <div className="border-b flex items-end -mt-px px-4">
+          <TabsList className="h-10 w-auto bg-transparent p-0 gap-1">
+            <TabsTrigger
+              value="logic"
+              className="text-xs px-3 py-2 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground"
+            >
+              Logic
+            </TabsTrigger>
+            <TabsTrigger
+              value="terminology"
+              className="text-xs px-3 py-2 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground"
+            >
+              Terminology
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent value="logic" className="flex-1 m-0 overflow-hidden">
+          <ScrollArea className="h-full">
+            <div className="p-4 space-y-8">
+              <section>
+                <h3 className="text-sm font-semibold mb-3">Scale Generation Rules</h3>
+                <div className="overflow-x-auto rounded-lg border">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="px-3 py-2 text-left font-semibold whitespace-nowrap w-28">Scale</th>
+                        <th className="px-3 py-2 text-left font-semibold w-[55%]">Logic</th>
+                        <th className="px-3 py-2 text-left font-semibold w-[30%]">Examples</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {SCALE_DATA.map((scale, index) => (
+                        <tr
+                          key={scale.name}
+                          className={index % 2 === 0 ? "bg-background" : "bg-muted/30"}
+                        >
+                          <td className="px-3 py-2 align-top">
+                            <div className="font-medium">{scale.name}</div>
+                            <div className="text-[10px] text-muted-foreground font-normal">({scale.contrastTarget})</div>
+                          </td>
+                          <td className="px-3 py-2 text-muted-foreground align-top">
+                            <ul className="space-y-0.5">
+                              {scale.logic.map((item, i) => (
+                                <li key={i} className="flex gap-1.5">
+                                  <span className="text-muted-foreground/50">•</span>
+                                  <span>{item}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </td>
+                          <td className="px-3 py-2 text-[10px] font-mono text-muted-foreground align-top">
+                            <div className="space-y-1">
+                              <div><span className="text-foreground/70">Light:</span> {scale.exampleLight}</div>
+                              <div><span className="text-foreground/70">Dark:</span> {scale.exampleDark}</div>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section>
+                <h3 className="text-sm font-semibold mb-3">WCAG 2.1 Contrast Requirements</h3>
+                <div className="overflow-x-auto rounded-lg border">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="px-3 py-2 text-left font-semibold">Content Type</th>
+                        <th className="px-3 py-2 text-left font-semibold">Level</th>
+                        <th className="px-3 py-2 text-left font-semibold">Ratio</th>
+                        <th className="px-3 py-2 text-left font-semibold">Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {WCAG_DATA.map((item, index) => (
+                        <tr
+                          key={`${item.type}-${item.level}`}
+                          className={index % 2 === 0 ? "bg-background" : "bg-muted/30"}
+                        >
+                          <td className="px-3 py-2 font-medium">{item.type}</td>
+                          <td className="px-3 py-2">
+                            <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${item.level === "AA"
+                              ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                              : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                              }`}>
+                              {item.level}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 font-mono">{item.ratio}</td>
+                          <td className="px-3 py-2 text-muted-foreground">{item.description}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section>
+                <h3 className="text-sm font-semibold mb-3">Quick Reference</h3>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="rounded-lg border p-3 space-y-2">
+                    <h4 className="text-xs font-semibold">Light Surface (e.g., step 2400)</h4>
+                    <ul className="text-[11px] text-muted-foreground space-y-1">
+                      <li>• Contrast vs white &lt; 4.5:1</li>
+                      <li>• Contrasting color: Dark (step 200)</li>
+                      <li>• Bold: Base step → move toward 200 until ≥ 3.0:1</li>
+                      <li>• BoldA11Y: Base step → move toward 200 until ≥ 4.5:1</li>
+                      <li>• Heavy: Midpoint(Bold, 200), capped at 800</li>
+                      <li>• Minimal: Surface - 200 (e.g., 2400 → 2200)</li>
+                    </ul>
+                  </div>
+                  <div className="rounded-lg border p-3 space-y-2">
+                    <h4 className="text-xs font-semibold">Dark Surface (e.g., step 400)</h4>
+                    <ul className="text-[11px] text-muted-foreground space-y-1">
+                      <li>• Contrast vs white ≥ 4.5:1</li>
+                      <li>• Contrasting color: Light (step 2500)</li>
+                      <li>• Bold: Base step → move toward 2500 until ≥ 3.0:1</li>
+                      <li>• BoldA11Y: Base step → move toward 2500 until ≥ 4.5:1</li>
+                      <li>• Heavy: Same as BoldA11Y (or 2500 if &gt;3 steps away)</li>
+                      <li>• Minimal: Surface + 200 (e.g., 400 → 600)</li>
+                    </ul>
+                  </div>
+                  <div className="rounded-lg border p-3 space-y-2">
+                    <h4 className="text-xs font-semibold">Alpha Blending (High/Medium/Low)</h4>
+                    <ul className="text-[11px] text-muted-foreground space-y-1">
+                      <li>• High: 100% opacity (alpha = 1.0)</li>
+                      <li>• Low: Minimum alpha for 4.5:1 contrast</li>
+                      <li>• Medium: floor((1.0 + Low_alpha) / 2)</li>
+                      <li>• All use the same contrasting color (step 200 or 2500)</li>
+                    </ul>
+                  </div>
+                  <div className="rounded-lg border p-3 space-y-2">
+                    <h4 className="text-xs font-semibold">Minimal Step Mapping</h4>
+                    <ul className="text-[11px] text-muted-foreground space-y-1">
+                      <li>• Dark CC (High = 200): Surface - 200 (e.g., 1500→1300)</li>
+                      <li>• Light CC (High = 2500): Surface + 200 (e.g., 400→600)</li>
+                      <li>• Always moves away from the contrasting color</li>
+                      <li>• Used for subtle, decorative elements only</li>
+                    </ul>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="terminology" className="flex-1 m-0 overflow-hidden">
+          <ScrollArea className="h-full">
+            <div className="p-4">
+              <section>
+                <h3 className="text-sm font-semibold mb-3">Terminology</h3>
+                <div className="overflow-x-auto rounded-lg border">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="px-3 py-2 text-left font-semibold w-40">Term</th>
+                        <th className="px-3 py-2 text-left font-semibold">Definition</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {TERMINOLOGY_DATA.map((item, index) => (
+                        <tr
+                          key={item.term}
+                          className={index % 2 === 0 ? "bg-background" : "bg-muted/30"}
+                        >
+                          <td className="px-3 py-2 font-medium">{item.term}</td>
+                          <td className="px-3 py-2 text-muted-foreground">{item.definition}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            </div>
+          </ScrollArea>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
