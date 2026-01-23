@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ListTree, Network, FileCog, Download, Upload, Keyboard, Palette } from 'lucide-react';
-import VariableTree from './components/VariableTree';
+import { FileCog, Download, Upload, Keyboard } from 'lucide-react';
 import { VariableGraphView } from './components/VariableGraphView';
 import { AliasModal } from './components/AliasModal';
 import { RuleList } from './components/RuleList';
@@ -378,8 +377,6 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   // Loading progress state to show dynamic progress
   const [loadingProgress, setLoadingProgress] = useState<LoadingProgress | null>(null);
-  // View mode state (tree or graph)
-  const [viewMode, setViewMode] = useState<'tree' | 'graph'>('graph');
   // Rules engine side sheet state
   const [isRulesSideSheetOpen, setIsRulesSideSheetOpen] = useState<boolean>(false);
   // Tooltip state
@@ -397,8 +394,6 @@ const App: React.FC = () => {
   const [selectedTargetModeForAlias, setSelectedTargetModeForAlias] = useState<string | undefined>(undefined);
   // Success/error notifications
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  // Sync status for real-time variable sync indicator
-  const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error'>('synced');
   // Rule engine state
   const [rules, setRules] = useState<Rule[]>([]);
   const [isRuleEditorOpen, setIsRuleEditorOpen] = useState<boolean>(false);
@@ -598,23 +593,19 @@ const App: React.FC = () => {
       if (msg.type === 'variables-updated') {
         // Real-time sync: variables changed in Figma
         console.log('Received real-time variable update from Figma');
-        setSyncStatus('syncing');
         setGraphData(msg.data);
         // Show subtle notification
         setNotification({ type: 'success', message: 'Variables synced' });
         setTimeout(() => {
           setNotification(null);
-          setSyncStatus('synced');
         }, 2000);
       }
       
       if (msg.type === 'sync-error') {
         // Error syncing variables
-        setSyncStatus('error');
         setNotification({ type: 'error', message: msg.data.message });
         setTimeout(() => {
           setNotification(null);
-          setSyncStatus('synced');
         }, 3000);
       }
       
@@ -723,7 +714,6 @@ const App: React.FC = () => {
           variables: msg.data.graph.variables.length,
         });
         setGraphData(msg.data.graph);
-        setSyncStatus('synced');
         setNotification({ type: 'success', message: 'Collection created successfully!' });
         setTimeout(() => setNotification(null), 3000);
       }
@@ -1430,205 +1420,111 @@ const App: React.FC = () => {
       >
         {/* Show header content when not loading and no error */}
         {!loading && !error && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-              {/* Back to Color App Button */}
-              <button
-                onClick={() => setMainView('colors')}
-                onMouseEnter={(e) => showTooltip('Color System', e)}
-                onMouseLeave={hideTooltip}
-                style={{
-                  height: '24px',
-                  padding: '4px 12px',
-                  background: 'var(--card-bg)',
-                  color: 'var(--text-color)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  fontSize: '12px',
-                }}
-              >
-                <Palette size={14} />
-                Colors
-              </button>
-              
-              {/* View Toggle and Actions - Only show when graphData exists */}
-              {graphData && (
-                <>
-                  {/* Segmented Control */}
-                  <div style={{ display: 'flex', border: '1px solid var(--border-color)', borderRadius: '6px', overflow: 'hidden' }}>
-                    <button
-                      onClick={() => setViewMode('tree')}
-                      onMouseEnter={(e) => showTooltip('Tree View', e)}
-                      onMouseLeave={hideTooltip}
-                      style={{
-                        height: '24px',
-                        padding: '4px 12px',
-                        background: viewMode === 'tree' ? 'var(--primary-color)' : 'transparent',
-                        color: viewMode === 'tree' ? 'white' : 'var(--text-color)',
-                        border: 'none',
-                        borderRight: '1px solid var(--border-color)',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <ListTree size={16} />
-                    </button>
-                    <button
-                      onClick={() => setViewMode('graph')}
-                      onMouseEnter={(e) => showTooltip('Graph View', e)}
-                      onMouseLeave={hideTooltip}
-                      style={{
-                        height: '24px',
-                        padding: '4px 12px',
-                        background: viewMode === 'graph' ? 'var(--primary-color)' : 'transparent',
-                        color: viewMode === 'graph' ? 'white' : 'var(--text-color)',
-                        border: 'none',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Network size={16} />
-                    </button>
-                  </div>
-                  
-                  {/* Rules Engine Button */}
-                  <button
-                    onClick={() => setIsRulesSideSheetOpen(true)}
-                    onMouseEnter={(e) => showTooltip('Rules Engine', e)}
-                    onMouseLeave={hideTooltip}
-                    style={{
-                      height: '24px',
-                      padding: '4px 12px',
-                      background: 'var(--card-bg)',
-                      color: 'var(--text-color)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      fontSize: '12px',
-                    }}
-                    >
-                    <FileCog size={14} />
-                    Rules
-                  </button>
-                  
-                  {/* Export JSON Button */}
-                  <button
-                    onClick={handleExportGraph}
-                    onMouseEnter={(e) => showTooltip('Export JSON', e)}
-                    onMouseLeave={hideTooltip}
-                    disabled={isExporting}
-                    style={{
-                      height: '24px',
-                      padding: '4px 12px',
-                      background: isExporting ? 'var(--border-color)' : 'var(--card-bg)',
-                      color: isExporting ? 'var(--text-secondary)' : 'var(--text-color)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '6px',
-                      cursor: isExporting ? 'not-allowed' : 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      fontSize: '12px',
-                    }}
-                    >
-                    <Download size={14} />
-                    {isExporting ? 'Exporting...' : 'Export'}
-                  </button>
-                  
-                  {/* Keyboard Shortcuts Button */}
-                  <button
-                    onClick={() => setIsShortcutsPanelOpen(true)}
-                    onMouseEnter={(e) => showTooltip('Keyboard Shortcuts (?)', e)}
-                    onMouseLeave={hideTooltip}
-                    style={{
-                      height: '24px',
-                      padding: '4px 12px',
-                      background: 'var(--card-bg)',
-                      color: 'var(--text-color)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      fontSize: '12px',
-                    }}
-                  >
-                    <Keyboard size={14} />
-                  </button>
-                </>
-              )}
-              
-              {/* Import JSON Button - Always visible */}
-              <button
-                onClick={handleImportClick}
-                onMouseEnter={(e) => showTooltip('Import JSON', e)}
-                onMouseLeave={hideTooltip}
-                disabled={isImporting}
-                style={{
-                  height: '24px',
-                  padding: '4px 12px',
-                  background: isImporting ? 'var(--border-color)' : 'var(--card-bg)',
-                  color: isImporting ? 'var(--text-secondary)' : 'var(--text-color)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '6px',
-                  cursor: isImporting ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  fontSize: '12px',
-                }}
-              >
-                <Upload size={14} />
-                {isImporting ? 'Importing...' : 'Import'}
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json"
-                onChange={handleImportGraph}
-                disabled={isImporting}
-                style={{ display: 'none' }}
-              />
-            </div>
-
-            {/* Sync Status Indicator - Only show when graphData exists */}
-            {graphData && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div
-                  style={{
-                    width: '8px',
-                    height: '8px',
-                    borderRadius: '50%',
-                    background: syncStatus === 'synced' ? 'var(--success-color)' : 
-                                syncStatus === 'syncing' ? 'var(--warning-color)' : 'var(--error-color)',
-                    transition: 'background 0.3s ease',
-                  }}
-                  title={syncStatus === 'synced' ? 'Synced with Figma' :
-                         syncStatus === 'syncing' ? 'Syncing...' : 'Sync error'}
-                />
-                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 500 }}>
-                  {syncStatus === 'synced' ? 'Synced' :
-                   syncStatus === 'syncing' ? 'Syncing...' : 'Sync error'}
-                </span>
-              </div>
-            )}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '12px' }}>
+            {/* Rules Engine Button */}
+            <button
+              onClick={() => setIsRulesSideSheetOpen(true)}
+              onMouseEnter={(e) => showTooltip('Rules Engine', e)}
+              onMouseLeave={hideTooltip}
+              style={{
+                height: '24px',
+                padding: '4px 12px',
+                background: 'var(--card-bg)',
+                color: 'var(--text-color)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                fontSize: '12px',
+              }}
+            >
+              <FileCog size={14} />
+              Rules
+            </button>
+            
+            {/* Export JSON Button */}
+            <button
+              onClick={handleExportGraph}
+              onMouseEnter={(e) => showTooltip('Export JSON', e)}
+              onMouseLeave={hideTooltip}
+              disabled={isExporting}
+              style={{
+                height: '24px',
+                padding: '4px 12px',
+                background: isExporting ? 'var(--border-color)' : 'var(--card-bg)',
+                color: isExporting ? 'var(--text-secondary)' : 'var(--text-color)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '6px',
+                cursor: isExporting ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                fontSize: '12px',
+              }}
+            >
+              <Download size={14} />
+              {isExporting ? 'Exporting...' : 'Export'}
+            </button>
+            
+            {/* Keyboard Shortcuts Button */}
+            <button
+              onClick={() => setIsShortcutsPanelOpen(true)}
+              onMouseEnter={(e) => showTooltip('Keyboard Shortcuts (?)', e)}
+              onMouseLeave={hideTooltip}
+              style={{
+                height: '24px',
+                padding: '4px 12px',
+                background: 'var(--card-bg)',
+                color: 'var(--text-color)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                fontSize: '12px',
+              }}
+            >
+              <Keyboard size={14} />
+            </button>
+            
+            {/* Import JSON Button */}
+            <button
+              onClick={handleImportClick}
+              onMouseEnter={(e) => showTooltip('Import JSON', e)}
+              onMouseLeave={hideTooltip}
+              disabled={isImporting}
+              style={{
+                height: '24px',
+                padding: '4px 12px',
+                background: isImporting ? 'var(--border-color)' : 'var(--card-bg)',
+                color: isImporting ? 'var(--text-secondary)' : 'var(--text-color)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '6px',
+                cursor: isImporting ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                fontSize: '12px',
+              }}
+            >
+              <Upload size={14} />
+              {isImporting ? 'Importing...' : 'Import'}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleImportGraph}
+              disabled={isImporting}
+              style={{ display: 'none' }}
+            />
           </div>
         )}
       </div>
@@ -1713,31 +1609,20 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* Tree or Graph View */}
+        {/* Graph View */}
         {!loading && !error && graphData && internalGraph && (
-          <>
-            {viewMode === 'tree' ? (
-              <VariableTree 
-                data={graphData}
-                onCollectionContextMenu={handleCollectionContextMenu}
-                onGroupContextMenu={handleGroupContextMenu}
-                onVariableContextMenu={handleVariableContextMenu}
-              />
-            ) : (
-              <VariableGraphView 
-                graph={internalGraph}
-                onNodeClick={handleNodeClick}
-                onEdgeClick={(edgeId) => console.log('Edge clicked:', edgeId)}
-                onCreateAlias={handleCreateAlias}
-                onDeleteAlias={handleDeleteAlias}
-                onCollectionContextMenu={handleCollectionContextMenu}
-                onVariableContextMenu={handleVariableContextMenu}
-                onModeContextMenu={handleModeContextMenu}
-                onCanvasContextMenu={handleCanvasContextMenu}
-                multiSelect={multiSelect}
-              />
-            )}
-          </>
+          <VariableGraphView 
+            graph={internalGraph}
+            onNodeClick={handleNodeClick}
+            onEdgeClick={(edgeId) => console.log('Edge clicked:', edgeId)}
+            onCreateAlias={handleCreateAlias}
+            onDeleteAlias={handleDeleteAlias}
+            onCollectionContextMenu={handleCollectionContextMenu}
+            onVariableContextMenu={handleVariableContextMenu}
+            onModeContextMenu={handleModeContextMenu}
+            onCanvasContextMenu={handleCanvasContextMenu}
+            multiSelect={multiSelect}
+          />
         )}
 
         {/* Notification Toast */}

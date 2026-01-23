@@ -956,17 +956,13 @@ export function ScalePreview() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 px-2.5 cursor-pointer gap-1.5 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                  style={{
-                    borderColor: activePalette.steps[activePalette.primaryStep],
-                    color: activePalette.steps[activePalette.primaryStep]
-                  }}
+                  variant="secondary"
+                  size="icon"
+                  className="h-7 w-7 rounded-full cursor-pointer bg-surface"
                   onClick={() => usePaletteStore.getState().setViewMode("surface-stacking")}
                 >
                   <Layers className="h-3.5 w-3.5" />
-                  <span className="text-xs font-medium">Stacking</span>
+                  <span className="sr-only">Surface Stacking</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">

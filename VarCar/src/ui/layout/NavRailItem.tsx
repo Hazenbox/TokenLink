@@ -1,39 +1,9 @@
 import * as React from "react";
 import { type LucideIcon } from "lucide-react";
-import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@colors/utils";
 
-const navRailItemVariants = cva(
-  [
-    "w-16 h-18 flex flex-col items-center justify-center gap-2",
-    "rounded-2xl transition-all duration-instant ease-snappy",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-    "disabled:pointer-events-none disabled:opacity-50",
-    "active:scale-95",
-  ],
-  {
-    variants: {
-      isActive: {
-        true: [
-          "bg-surface-elevated text-foreground",
-          "glow-primary",
-        ],
-        false: [
-          "text-foreground-tertiary",
-          "hover:text-foreground-secondary hover:glow-subtle",
-          "active:bg-interactive-pressed",
-        ],
-      },
-    },
-    defaultVariants: {
-      isActive: false,
-    },
-  }
-);
-
 export interface NavRailItemProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof navRailItemVariants> {
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   icon: LucideIcon;
   label: string;
   isActive?: boolean;
@@ -49,12 +19,46 @@ export const NavRailItem = React.forwardRef<HTMLButtonElement, NavRailItemProps>
         aria-label={ariaLabel}
         aria-current={isActive ? "page" : undefined}
         data-active={isActive}
-        className={cn(navRailItemVariants({ isActive }), className)}
-        style={{ willChange: "transform, box-shadow" }}
+        className={cn(
+          "group w-16 flex flex-col items-center justify-center gap-2 py-2",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-2xl",
+          "disabled:pointer-events-none disabled:opacity-50",
+          "transition-colors duration-instant ease-snappy",
+          className
+        )}
         {...props}
       >
-        <Icon className="w-6 h-6 shrink-0" aria-hidden="true" />
-        <span className="text-[10px] font-medium leading-none text-center">
+        {/* Icon container with background */}
+        <div
+          className={cn(
+            "w-8 h-8 flex items-center justify-center rounded-full",
+            "transition-all duration-instant ease-snappy",
+            isActive
+              ? "bg-surface-elevated glow-primary"
+              : "group-hover:bg-surface group-hover:glow-subtle"
+          )}
+        >
+          <Icon 
+            className={cn(
+              "w-4 h-4 shrink-0 transition-colors duration-instant ease-snappy",
+              isActive
+                ? "text-foreground"
+                : "text-foreground-tertiary group-hover:text-foreground-secondary"
+            )}
+            aria-hidden="true"
+          />
+        </div>
+        
+        {/* Label */}
+        <span
+          className={cn(
+            "text-[10px] font-medium leading-none text-center",
+            "transition-colors duration-instant ease-snappy",
+            isActive
+              ? "text-foreground"
+              : "text-foreground-tertiary group-hover:text-foreground-secondary"
+          )}
+        >
           {label}
         </span>
       </button>

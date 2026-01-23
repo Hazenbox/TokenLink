@@ -26,7 +26,7 @@ export function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <Button variant="secondary" size="icon" className="h-7 w-7 rounded-full cursor-pointer bg-white dark:bg-white/10" disabled>
+      <Button variant="secondary" size="icon" className="h-7 w-7 rounded-full cursor-pointer bg-surface" disabled>
         <Sun className="h-3.5 w-3.5 opacity-60" />
       </Button>
     );
@@ -39,7 +39,7 @@ export function ThemeToggle() {
           <Button
             variant="secondary"
             size="icon"
-            className="h-7 w-7 rounded-full cursor-pointer bg-white dark:bg-white/10"
+            className="h-7 w-7 rounded-full cursor-pointer bg-surface"
             onClick={handleThemeToggle}
           >
             {theme === "dark" ? (

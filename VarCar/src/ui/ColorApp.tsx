@@ -73,16 +73,9 @@ export function ColorApp() {
         )}>
           <ErrorBoundary>
             {viewMode === "palette" && (
-              <div className="flex-1 grid grid-cols-2 overflow-hidden">
-                <ErrorBoundary fallback={<div className="p-4 text-sm text-destructive">Editor error</div>}>
-                  <div className="border-r overflow-hidden">
-                    <PaletteEditor />
-                  </div>
-                </ErrorBoundary>
+              <div className="flex-1 overflow-hidden">
                 <ErrorBoundary fallback={<div className="p-4 text-sm text-destructive">Preview error</div>}>
-                  <div className="overflow-hidden">
-                    <ScalePreview />
-                  </div>
+                  <ScalePreview />
                 </ErrorBoundary>
               </div>
             )}

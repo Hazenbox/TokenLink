@@ -15,7 +15,7 @@ export function MainLayout() {
         <NavigationRail />
         
         <div className="flex-1 flex flex-col overflow-hidden relative">
-          {mainView === "graph" && <CanvasBackground />}
+          <CanvasBackground />
           
           {mainView === "colors" ? <ColorApp /> : <App />}
         </div>
