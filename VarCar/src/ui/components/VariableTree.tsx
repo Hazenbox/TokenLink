@@ -143,7 +143,7 @@ const ModeNode: React.FC<{ mode: Mode; variables: Variable[] }> = ({ mode, varia
       <span
         style={{
           color: isAlias ? '#18a0fb' : '#333',
-          fontFamily: isAlias ? 'inherit' : 'monospace',
+          fontFamily: isAlias ? 'var(--font-geist-sans)' : 'var(--font-geist-mono)',
         }}
       >
         {formattedValue}

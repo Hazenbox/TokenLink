@@ -130,7 +130,7 @@ export function KeyboardShortcutsPanel({ isOpen, onClose, shortcuts }: KeyboardS
                         border: '1px solid var(--border-color)',
                         borderRadius: '4px',
                         fontSize: '12px',
-                        fontFamily: 'monospace',
+                        fontFamily: 'var(--font-geist-mono)',
                         color: 'var(--text-color)',
                         whiteSpace: 'nowrap',
                       }}

@@ -77,8 +77,8 @@ function generatePaletteSVG(name: string, steps: PaletteSteps): string {
 
   let svgContent = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">\n`;
   svgContent += `  <style>\n`;
-  svgContent += `    .step-label { font-family: system-ui, sans-serif; font-size: 12px; font-weight: 600; }\n`;
-  svgContent += `    .hex-label { font-family: ui-monospace, monospace; font-size: 10px; }\n`;
+  svgContent += `    .step-label { font-family: 'Geist Sans', system-ui, sans-serif; font-size: 12px; font-weight: 600; }\n`;
+  svgContent += `    .hex-label { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 10px; }\n`;
   svgContent += `  </style>\n`;
   svgContent += `  <text x="0" y="14" class="step-label" fill="#666">${name}</text>\n`;
 

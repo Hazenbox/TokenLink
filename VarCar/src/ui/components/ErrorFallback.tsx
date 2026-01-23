@@ -64,7 +64,7 @@ export const ErrorFallback: React.FC<ErrorFallbackProps> = ({ error, resetError 
             maxWidth: '500px',
             textAlign: 'left',
             fontSize: '12px',
-            fontFamily: 'monospace',
+            fontFamily: 'var(--font-geist-mono)',
           }}
         >
           <summary style={{ cursor: 'pointer', marginBottom: '8px' }}>

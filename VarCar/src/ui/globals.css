@@ -134,6 +134,10 @@
     /* Easing Functions */
     --ease-snappy: cubic-bezier(0.4, 0, 0.2, 1);      /* Snappy, responsive */
     --ease-smooth: cubic-bezier(0.25, 0.1, 0.25, 1);  /* Smooth, natural */
+    
+    /* Typography - Geist Fonts */
+    --font-geist-sans: 'Geist Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-geist-mono: 'Geist Mono', ui-monospace, monospace;
   }
 }
 
@@ -143,7 +147,14 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-geist-sans);
     color-scheme: dark;
+  }
+  code, 
+  pre, 
+  .font-mono, 
+  [class*="font-mono"] {
+    font-family: var(--font-geist-mono) !important;
   }
 }
 

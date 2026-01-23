@@ -82,10 +82,10 @@ function generateScalesSVG(
 
   let svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">\n`;
   svg += `  <style>\n`;
-  svg += `    .title { font-family: system-ui, sans-serif; font-size: 14px; font-weight: 600; fill: #333; }\n`;
-  svg += `    .header { font-family: system-ui, sans-serif; font-size: 10px; font-weight: 500; fill: #666; }\n`;
-  svg += `    .step-label { font-family: ui-monospace, monospace; font-size: 11px; font-weight: 500; fill: #666; }\n`;
-  svg += `    .hex-label { font-family: ui-monospace, monospace; font-size: 8px; }\n`;
+  svg += `    .title { font-family: 'Geist Sans', system-ui, sans-serif; font-size: 14px; font-weight: 600; fill: #333; }\n`;
+  svg += `    .header { font-family: 'Geist Sans', system-ui, sans-serif; font-size: 10px; font-weight: 500; fill: #666; }\n`;
+  svg += `    .step-label { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; font-weight: 500; fill: #666; }\n`;
+  svg += `    .hex-label { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 8px; }\n`;
   svg += `  </style>\n`;
 
   // Title
@@ -189,11 +189,11 @@ function generateContrastSVG(
 
   let svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">\n`;
   svg += `  <style>\n`;
-  svg += `    .title { font-family: system-ui, sans-serif; font-size: 16px; font-weight: 600; fill: #111; }\n`;
-  svg += `    .step-header { font-family: system-ui, sans-serif; font-size: 12px; font-weight: 600; fill: #333; }\n`;
-  svg += `    .label { font-family: system-ui, sans-serif; font-size: 11px; fill: #666; }\n`;
-  svg += `    .hex { font-family: ui-monospace, monospace; font-size: 11px; fill: #333; }\n`;
-  svg += `    .contrast { font-family: ui-monospace, monospace; font-size: 11px; font-weight: 500; text-anchor: end; }\n`;
+  svg += `    .title { font-family: 'Geist Sans', system-ui, sans-serif; font-size: 16px; font-weight: 600; fill: #111; }\n`;
+  svg += `    .step-header { font-family: 'Geist Sans', system-ui, sans-serif; font-size: 12px; font-weight: 600; fill: #333; }\n`;
+  svg += `    .label { font-family: 'Geist Sans', system-ui, sans-serif; font-size: 11px; fill: #666; }\n`;
+  svg += `    .hex { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; fill: #333; }\n`;
+  svg += `    .contrast { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; font-weight: 500; text-anchor: end; }\n`;
   svg += `  </style>\n`;
 
   svg += `  <rect width="${width}" height="${height}" fill="#ffffff" rx="8"/>\n`;

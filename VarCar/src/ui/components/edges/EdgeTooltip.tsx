@@ -54,7 +54,7 @@ export function EdgeTooltip({
         zIndex: 50000,
         pointerEvents: 'none',
         minWidth: '240px',
-        fontFamily: 'monospace',
+        fontFamily: 'var(--font-geist-mono)',
       }}
     >
       <div

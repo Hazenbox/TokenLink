@@ -1399,7 +1399,7 @@ const App: React.FC = () => {
   return (
     <div
       style={{
-        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+        fontFamily: 'var(--font-geist-sans)',
         fontSize: '14px',
         color: 'var(--text-color)',
         height: '100vh',

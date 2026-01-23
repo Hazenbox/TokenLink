@@ -104,6 +104,10 @@ export default {
           "thumb-hover": "hsl(var(--scrollbar-thumb-hover))",
         },
       },
+      fontFamily: {
+        sans: ['var(--font-geist-sans)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-geist-mono)', 'ui-monospace', 'monospace'],
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",

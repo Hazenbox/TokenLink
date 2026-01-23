@@ -241,7 +241,7 @@ export const ModeNode = memo(function ModeNode({
         style={{
           fontSize: '11px',
           color: 'var(--text-secondary)',
-          fontFamily: 'monospace',
+          fontFamily: 'var(--font-geist-mono)',
           flex: 1,
           textAlign: 'right',
           display: 'flex',

@@ -88,7 +88,7 @@ export function Toast({ type, message, onClose }: ToastProps) {
         <div style={{
           fontSize: '12px',
           color: 'var(--text-secondary)',
-          fontFamily: hasStructuredData ? 'monospace' : 'inherit',
+          fontFamily: hasStructuredData ? 'var(--font-geist-mono)' : 'var(--font-geist-sans)',
           whiteSpace: 'pre-line',
           lineHeight: '1.5',
         }}>
