@@ -1,0 +1,41 @@
+[
+  {
+    "id": "rule-interaction-hover",
+    "name": "Interaction Hover → Primitive Default",
+    "description": "All hover state variables alias to their base primitive colors",
+    "when": {
+      "collection": "interaction",
+      "group": "hover"
+    },
+    "then": {
+      "aliasTo": "primitive/default"
+    },
+    "enabled": true
+  },
+  {
+    "id": "rule-semantic-brand",
+    "name": "Semantic Brand → Primitive Brand",
+    "description": "Semantic brand tokens alias to primitive brand colors",
+    "when": {
+      "collection": "semantic",
+      "group": "brand"
+    },
+    "then": {
+      "aliasTo": "primitive/brand"
+    },
+    "enabled": true
+  },
+  {
+    "id": "rule-theme-dark",
+    "name": "Theme Dark → Semantic",
+    "description": "Dark theme aliases to semantic tokens for easy theme switching",
+    "when": {
+      "collection": "theme",
+      "group": "dark"
+    },
+    "then": {
+      "aliasTo": "semantic/colors"
+    },
+    "enabled": false
+  }
+]
