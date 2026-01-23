@@ -1,28 +1,28 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ListTree, Network, FileCog, Download, Upload, Keyboard } from 'lucide-react';
-import VariableTree from '../../components/VariableTree';
-import { VariableGraphView } from '../../components/VariableGraphView';
-import { AliasModal } from '../../components/AliasModal';
-import { RuleList } from '../../components/RuleList';
-import { RuleEditor } from '../../components/RuleEditor';
-import { RuleRunner } from '../../components/RuleRunner';
-import { ContextMenu, ContextMenuItem } from '../../components/ContextMenu';
-import { CreateCollectionModal } from '../../components/CreateCollectionModal';
-import { CreateModeModal } from '../../components/CreateModeModal';
-import { CreateVariableModal } from '../../components/CreateVariableModal';
-import { CreateGroupModal } from '../../components/CreateGroupModal';
-import { RenameModal } from '../../components/RenameModal';
-import { Toast } from '../../components/Toast';
-import { BulkAliasPicker } from '../../components/BulkAliasPicker';
-import { KeyboardShortcutsPanel } from '../../components/KeyboardShortcutsPanel';
-import { ResizeHandle } from '../../components/ResizeHandle';
-import { createGraph, addCollection, addGroup, addVariable } from '../../../models/graph';
-import { Collection as InternalCollection, Group as InternalGroup, Variable as InternalVariable } from '../../../models/types';
-import { Rule, createDefaultRule } from '../../../models/rules';
-import { downloadJSON } from '../../../utils/export';
-import { useMultiSelect } from '../../hooks/useMultiSelect';
-import { useKeyboardShortcuts, KeyboardShortcut } from '../../hooks/useKeyboardShortcuts';
-import { useViewStore } from '../../store/view-store';
+import { ListTree, Network, FileCog, Download, Upload, Keyboard, Palette } from 'lucide-react';
+import VariableTree from './components/VariableTree';
+import { VariableGraphView } from './components/VariableGraphView';
+import { AliasModal } from './components/AliasModal';
+import { RuleList } from './components/RuleList';
+import { RuleEditor } from './components/RuleEditor';
+import { RuleRunner } from './components/RuleRunner';
+import { ContextMenu, ContextMenuItem } from './components/ContextMenu';
+import { CreateCollectionModal } from './components/CreateCollectionModal';
+import { CreateModeModal } from './components/CreateModeModal';
+import { CreateVariableModal } from './components/CreateVariableModal';
+import { CreateGroupModal } from './components/CreateGroupModal';
+import { RenameModal } from './components/RenameModal';
+import { Toast } from './components/Toast';
+import { BulkAliasPicker } from './components/BulkAliasPicker';
+import { KeyboardShortcutsPanel } from './components/KeyboardShortcutsPanel';
+import { ResizeHandle } from './components/ResizeHandle';
+import { createGraph, addCollection, addGroup, addVariable } from '../models/graph';
+import { Collection as InternalCollection, Group as InternalGroup, Variable as InternalVariable } from '../models/types';
+import { Rule, createDefaultRule } from '../models/rules';
+import { downloadJSON } from '../utils/export';
+import { useMultiSelect } from './hooks/useMultiSelect';
+import { useKeyboardShortcuts, KeyboardShortcut } from './hooks/useKeyboardShortcuts';
+import { useAppSwitcher } from './AppSwitcher';
 
 // Build timestamp for cache busting
 const BUILD_TIMESTAMP = new Date().toISOString();
@@ -367,8 +367,8 @@ const buttonStyle: React.CSSProperties = {
   justifyContent: 'center',
 };
 
-export function GraphView() {
-  const { graphSubView, setGraphSubView } = useViewStore();
+const App: React.FC = () => {
+  const { switchToApp } = useAppSwitcher();
   
   // State to store the variable graph data
   const [graphData, setGraphData] = useState<GraphData | null>(null);
@@ -378,6 +378,10 @@ export function GraphView() {
   const [error, setError] = useState<string | null>(null);
   // Loading progress state to show dynamic progress
   const [loadingProgress, setLoadingProgress] = useState<LoadingProgress | null>(null);
+  // View mode state (tree or graph)
+  const [viewMode, setViewMode] = useState<'tree' | 'graph'>('graph');
+  // Rules engine side sheet state
+  const [isRulesSideSheetOpen, setIsRulesSideSheetOpen] = useState<boolean>(false);
   // Tooltip state
   const [tooltipState, setTooltipState] = useState<{ show: boolean; text: string; position: { x: number; y: number } }>({
     show: false,
@@ -1403,115 +1407,279 @@ export function GraphView() {
   };
 
   return (
-    <div className="flex h-full w-full flex-col bg-background text-foreground">
-      {/* Compact Toolbar */}
-      {!loading && !error && graphData && (
-        <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-card">
-          <div className="flex items-center gap-2">
-            {/* View Toggle */}
-            <div className="flex border border-border rounded-md overflow-hidden">
+    <div
+      style={{
+        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+        fontSize: '14px',
+        color: 'var(--text-color)',
+        height: '100vh',
+        backgroundColor: 'var(--bg-color)',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          background: 'linear-gradient(180deg, rgba(13, 13, 13, 0.95) 0%, rgba(13, 13, 13, 0.7) 100%)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          padding: '16px 20px',
+          flexShrink: 0,
+        }}
+      >
+        {/* Show header content when not loading and no error */}
+        {!loading && !error && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              {/* Back to Color App Button */}
               <button
-                onClick={() => setGraphSubView('tree')}
-                className={`h-6 px-2 flex items-center justify-center transition-fast ${
-                  graphSubView === 'tree' 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'bg-transparent text-muted-foreground hover:text-foreground'
-                }`}
-                title="Tree View"
+                onClick={() => switchToApp('color')}
+                onMouseEnter={(e) => showTooltip('Color System', e)}
+                onMouseLeave={hideTooltip}
+                style={{
+                  height: '24px',
+                  padding: '4px 12px',
+                  background: 'var(--card-bg)',
+                  color: 'var(--text-color)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  fontSize: '12px',
+                }}
               >
-                <ListTree size={16} />
+                <Palette size={14} />
+                Colors
               </button>
-              <button
-                onClick={() => setGraphSubView('graph')}
-                className={`h-6 px-2 flex items-center justify-center transition-fast border-l border-border ${
-                  graphSubView === 'graph' 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'bg-transparent text-muted-foreground hover:text-foreground'
-                }`}
-                title="Graph View"
-              >
-                <Network size={16} />
-              </button>
-              <button
-                onClick={() => setGraphSubView('rules')}
-                className={`h-6 px-2 flex items-center justify-center transition-fast border-l border-border ${
-                  graphSubView === 'rules' 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'bg-transparent text-muted-foreground hover:text-foreground'
-                }`}
-                title="Rules Engine"
-              >
-                <FileCog size={16} />
-              </button>
-            </div>
-            
-            {/* Actions */}
-            <div className="flex items-center gap-1 ml-2">
-              <button
-                onClick={handleExportGraph}
-                disabled={isExporting}
-                className="h-6 px-2 text-xs bg-card border border-border rounded-md transition-fast disabled:opacity-50 disabled:cursor-not-allowed hover:bg-accent"
-                title="Export JSON"
-              >
-                <Download size={14} />
-              </button>
+              
+              {/* View Toggle and Actions - Only show when graphData exists */}
+              {graphData && (
+                <>
+                  {/* Segmented Control */}
+                  <div style={{ display: 'flex', border: '1px solid var(--border-color)', borderRadius: '6px', overflow: 'hidden' }}>
+                    <button
+                      onClick={() => setViewMode('tree')}
+                      onMouseEnter={(e) => showTooltip('Tree View', e)}
+                      onMouseLeave={hideTooltip}
+                      style={{
+                        height: '24px',
+                        padding: '4px 12px',
+                        background: viewMode === 'tree' ? 'var(--primary-color)' : 'transparent',
+                        color: viewMode === 'tree' ? 'white' : 'var(--text-color)',
+                        border: 'none',
+                        borderRight: '1px solid var(--border-color)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <ListTree size={16} />
+                    </button>
+                    <button
+                      onClick={() => setViewMode('graph')}
+                      onMouseEnter={(e) => showTooltip('Graph View', e)}
+                      onMouseLeave={hideTooltip}
+                      style={{
+                        height: '24px',
+                        padding: '4px 12px',
+                        background: viewMode === 'graph' ? 'var(--primary-color)' : 'transparent',
+                        color: viewMode === 'graph' ? 'white' : 'var(--text-color)',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Network size={16} />
+                    </button>
+                  </div>
+                  
+                  {/* Rules Engine Button */}
+                  <button
+                    onClick={() => setIsRulesSideSheetOpen(true)}
+                    onMouseEnter={(e) => showTooltip('Rules Engine', e)}
+                    onMouseLeave={hideTooltip}
+                    style={{
+                      height: '24px',
+                      padding: '4px 12px',
+                      background: 'var(--card-bg)',
+                      color: 'var(--text-color)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      fontSize: '12px',
+                    }}
+                    >
+                    <FileCog size={14} />
+                    Rules
+                  </button>
+                  
+                  {/* Export JSON Button */}
+                  <button
+                    onClick={handleExportGraph}
+                    onMouseEnter={(e) => showTooltip('Export JSON', e)}
+                    onMouseLeave={hideTooltip}
+                    disabled={isExporting}
+                    style={{
+                      height: '24px',
+                      padding: '4px 12px',
+                      background: isExporting ? 'var(--border-color)' : 'var(--card-bg)',
+                      color: isExporting ? 'var(--text-secondary)' : 'var(--text-color)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '6px',
+                      cursor: isExporting ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      fontSize: '12px',
+                    }}
+                    >
+                    <Download size={14} />
+                    {isExporting ? 'Exporting...' : 'Export'}
+                  </button>
+                  
+                  {/* Keyboard Shortcuts Button */}
+                  <button
+                    onClick={() => setIsShortcutsPanelOpen(true)}
+                    onMouseEnter={(e) => showTooltip('Keyboard Shortcuts (?)', e)}
+                    onMouseLeave={hideTooltip}
+                    style={{
+                      height: '24px',
+                      padding: '4px 12px',
+                      background: 'var(--card-bg)',
+                      color: 'var(--text-color)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      fontSize: '12px',
+                    }}
+                  >
+                    <Keyboard size={14} />
+                  </button>
+                </>
+              )}
+              
+              {/* Import JSON Button - Always visible */}
               <button
                 onClick={handleImportClick}
+                onMouseEnter={(e) => showTooltip('Import JSON', e)}
+                onMouseLeave={hideTooltip}
                 disabled={isImporting}
-                className="h-6 px-2 text-xs bg-card border border-border rounded-md transition-fast disabled:opacity-50 disabled:cursor-not-allowed hover:bg-accent"
-                title="Import JSON"
+                style={{
+                  height: '24px',
+                  padding: '4px 12px',
+                  background: isImporting ? 'var(--border-color)' : 'var(--card-bg)',
+                  color: isImporting ? 'var(--text-secondary)' : 'var(--text-color)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '6px',
+                  cursor: isImporting ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  fontSize: '12px',
+                }}
               >
                 <Upload size={14} />
+                {isImporting ? 'Importing...' : 'Import'}
               </button>
-              <button
-                onClick={() => setIsShortcutsPanelOpen(true)}
-                className="h-6 px-2 text-xs bg-card border border-border rounded-md transition-fast hover:bg-accent"
-                title="Keyboard Shortcuts"
-              >
-                <Keyboard size={14} />
-              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json"
+                onChange={handleImportGraph}
+                disabled={isImporting}
+                style={{ display: 'none' }}
+              />
             </div>
-          </div>
 
-          {/* Sync Status */}
-          <div className="flex items-center gap-2">
-            <div
-              className={`w-2 h-2 rounded-full transition-fast ${
-                syncStatus === 'synced' ? 'bg-green-500' :
-                syncStatus === 'syncing' ? 'bg-yellow-500' : 'bg-red-500'
-              }`}
-              title={syncStatus === 'synced' ? 'Synced with Figma' :
-                     syncStatus === 'syncing' ? 'Syncing...' : 'Sync error'}
-            />
-            <span className="text-xs text-muted-foreground">
-              {syncStatus === 'synced' ? 'Synced' :
-               syncStatus === 'syncing' ? 'Syncing...' : 'Sync error'}
-            </span>
+            {/* Sync Status Indicator - Only show when graphData exists */}
+            {graphData && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div
+                  style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    background: syncStatus === 'synced' ? 'var(--success-color)' : 
+                                syncStatus === 'syncing' ? 'var(--warning-color)' : 'var(--error-color)',
+                    transition: 'background 0.3s ease',
+                  }}
+                  title={syncStatus === 'synced' ? 'Synced with Figma' :
+                         syncStatus === 'syncing' ? 'Syncing...' : 'Sync error'}
+                />
+                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                  {syncStatus === 'synced' ? 'Synced' :
+                   syncStatus === 'syncing' ? 'Syncing...' : 'Sync error'}
+                </span>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Content Area */}
-      <div className="flex-1 overflow-hidden bg-card">
+      <div
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          backgroundColor: 'var(--card-bg)',
+        }}
+      >
         {/* Loading State */}
         {loading && (
-          <div className="flex flex-col items-center justify-center h-full px-5 py-16 text-muted-foreground">
+          <div
+            style={{
+              textAlign: 'center',
+              padding: '60px 20px',
+              color: 'var(--text-secondary)',
+            }}
+          >
+            {/* Progress indicator */}
             {loadingProgress && (
               <>
-                <div className="text-sm mb-3 text-foreground">
+                <div style={{ fontSize: '14px', marginBottom: '12px', color: 'var(--text-color)' }}>
                   {loadingProgress.message}
                 </div>
                 
                 {/* Progress bar */}
-                <div className="w-60 h-1 bg-border rounded-sm mb-2 overflow-hidden">
+                <div
+                  style={{
+                    width: '240px',
+                    height: '4px',
+                    backgroundColor: 'var(--border-color)',
+                    borderRadius: '2px',
+                    margin: '0 auto 8px',
+                    overflow: 'hidden',
+                  }}
+                >
                   <div
-                    className="h-full bg-primary transition-fast"
-                    style={{ width: `${(loadingProgress.step / loadingProgress.total) * 100}%` }}
+                    style={{
+                      width: `${(loadingProgress.step / loadingProgress.total) * 100}%`,
+                      height: '100%',
+                      backgroundColor: 'var(--primary-color)',
+                      transition: 'width 0.3s ease',
+                    }}
                   />
                 </div>
                 
                 {/* Step indicator */}
-                <div className="text-xs text-muted-foreground">
+                <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
                   Step {loadingProgress.step} of {loadingProgress.total}
                 </div>
               </>
@@ -1520,8 +1688,8 @@ export function GraphView() {
             {/* Fallback for initial state */}
             {!loadingProgress && (
               <>
-                <div className="text-sm mb-2">Loading variables...</div>
-                <div className="text-xs text-muted-foreground">Initializing...</div>
+                <div style={{ fontSize: '14px', marginBottom: '8px' }}>Loading variables...</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Initializing...</div>
               </>
             )}
           </div>
@@ -1529,24 +1697,33 @@ export function GraphView() {
 
         {/* Error State */}
         {error && !loading && (
-          <div className="m-5 p-4 bg-destructive/10 border border-destructive rounded-md text-destructive text-xs">
-            <div className="font-semibold mb-1">Error</div>
+          <div
+            style={{
+              margin: '20px',
+              padding: '16px',
+              backgroundColor: '#ffebee',
+              border: '1px solid var(--error-color)',
+              borderRadius: '6px',
+              color: 'var(--error-color)',
+              fontSize: '12px',
+            }}
+          >
+            <div style={{ fontWeight: 600, marginBottom: '4px' }}>Error</div>
             {error}
           </div>
         )}
 
-        {/* Sub-views */}
+        {/* Tree or Graph View */}
         {!loading && !error && graphData && internalGraph && (
           <>
-            {graphSubView === 'tree' && (
+            {viewMode === 'tree' ? (
               <VariableTree 
                 data={graphData}
                 onCollectionContextMenu={handleCollectionContextMenu}
                 onGroupContextMenu={handleGroupContextMenu}
                 onVariableContextMenu={handleVariableContextMenu}
               />
-            )}
-            {graphSubView === 'graph' && (
+            ) : (
               <VariableGraphView 
                 graph={internalGraph}
                 onNodeClick={handleNodeClick}
@@ -1559,28 +1736,6 @@ export function GraphView() {
                 onCanvasContextMenu={handleCanvasContextMenu}
                 multiSelect={multiSelect}
               />
-            )}
-            {graphSubView === 'rules' && (
-              <div className="flex h-full gap-4 p-4">
-                <div className="w-80 border-r border-border pr-4 overflow-y-auto">
-                  <RuleList
-                    rules={rules}
-                    onAddRule={handleAddRule}
-                    onEditRule={handleEditRule}
-                    onDeleteRule={handleDeleteRule}
-                    onToggleRule={handleToggleRule}
-                  />
-                </div>
-                <div className="flex-1 overflow-y-auto">
-                  <RuleRunnerWrapper
-                    rules={rules}
-                    onDryRun={handleDryRun}
-                    onApply={handleApply}
-                    result={ruleResult}
-                    isRunning={isEvaluating}
-                  />
-                </div>
-              </div>
             )}
           </>
         )}
@@ -1664,6 +1819,113 @@ export function GraphView() {
           </div>
         )}
 
+        {/* Rules Engine Side Sheet */}
+        {isRulesSideSheetOpen && (
+          <>
+            {/* Backdrop */}
+            <div
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                zIndex: 9000,
+              }}
+              onClick={() => setIsRulesSideSheetOpen(false)}
+            />
+            
+            {/* Side Sheet */}
+            <div
+              style={{
+                position: 'fixed',
+                top: 0,
+                right: 0,
+                bottom: 0,
+                minWidth: '40%',
+                maxWidth: '50%',
+                backgroundColor: 'var(--card-bg)',
+                boxShadow: '-2px 0 8px rgba(0, 0, 0, 0.1)',
+                zIndex: 9001,
+                display: 'flex',
+                flexDirection: 'column',
+                animation: 'slideInFromRight 0.3s ease-out',
+              }}
+            >
+              {/* Side Sheet Header */}
+              <div
+                style={{
+                  padding: '16px 20px',
+                  borderBottom: '1px solid var(--border-color)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  backgroundColor: 'var(--header-bg)',
+                }}
+              >
+                <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>Rules Engine</h2>
+                <button
+                  onClick={() => setIsRulesSideSheetOpen(false)}
+                  style={{
+                    height: '24px',
+                    width: '24px',
+                    background: 'transparent',
+                    border: 'none',
+                    fontSize: '18px',
+                    cursor: 'pointer',
+                    color: 'var(--text-color)',
+                    padding: '0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* Side Sheet Content */}
+              <div style={{ 
+                flex: 1,
+                padding: '20px', 
+                display: 'flex', 
+                gap: '20px',
+                overflow: 'hidden',
+              }}>
+                {/* Left Panel: Rule List */}
+                <div style={{ 
+                  flex: '0 0 350px',
+                  borderRight: '1px solid var(--border-color)',
+                  paddingRight: '20px',
+                  overflowY: 'auto',
+                }}>
+                  <RuleList
+                    rules={rules}
+                    onAddRule={handleAddRule}
+                    onEditRule={handleEditRule}
+                    onDeleteRule={handleDeleteRule}
+                    onToggleRule={handleToggleRule}
+                  />
+                </div>
+                
+                {/* Right Panel: Rule Runner */}
+                <div style={{ 
+                  flex: 1,
+                  overflowY: 'auto',
+                }}>
+                  <RuleRunnerWrapper
+                    rules={rules}
+                    onDryRun={handleDryRun}
+                    onApply={handleApply}
+                    result={ruleResult}
+                    isRunning={isEvaluating}
+                  />
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
       
       {/* Context Menu */}
@@ -1768,14 +2030,19 @@ export function GraphView() {
         maxHeight={1600}
       />
       
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".json"
-        onChange={handleImportGraph}
-        disabled={isImporting}
-        className="hidden"
-      />
+      <style>{`
+        @keyframes slideInFromRight {
+          from {
+            transform: translateX(100%);
+          }
+          to {
+            transform: translateX(0);
+          }
+        }
+      `}</style>
     </div>
   );
-}
+};
+
+export { App };
+export default App;

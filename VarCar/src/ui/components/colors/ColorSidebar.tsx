@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Plus, MoreHorizontal, ChevronRight, HelpCircle, Search, GripVertical, X, Layers } from "lucide-react";
+import { Plus, MoreHorizontal, ChevronRight, HelpCircle, Search, GripVertical, X, Network } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "../theme/ThemeToggle";
-import { useViewStore } from "../../store/view-store";
+import { useViewStore } from "@/store/view-store";
 import { usePaletteStore } from "@/store/palette-store";
 import { STEPS, Step, PaletteSteps, getReadableTextColor, isValidHex } from "@colors/color-utils";
 import { cn } from "@colors/utils";
@@ -362,9 +362,11 @@ export function ColorSidebar() {
     renamePalette,
     reorderPalettes,
     duplicatePalette,
+    viewMode,
+    setViewMode,
   } = usePaletteStore();
   
-  const { colorSubView, setColorSubView } = useViewStore();
+  const { setMainView } = useViewStore();
 
   const [newPaletteName, setNewPaletteName] = React.useState("");
   const [dialogOpen, setDialogOpen] = React.useState(false);
@@ -409,7 +411,7 @@ export function ColorSidebar() {
           aria-label="VarCar Color"
           role="button"
           className="text-foreground cursor-pointer transition-opacity hover:opacity-80"
-          onClick={() => setColorSubView("palette")}
+          onClick={() => setViewMode("palette")}
         >
           <path d="M25.2533 18.9333L26.1066 20.24C25.2355 23.2978 23.431 24.8267 20.6933 24.8267C20.071 24.8267 19.5288 24.7111 19.0666 24.48C18.6221 24.2489 18.2844 23.9733 18.0533 23.6533C17.8221 23.3333 17.6355 22.9244 17.4933 22.4267C17.2977 21.68 17.191 20.6933 17.1733 19.4667C17.1733 18.24 17.0221 17.3956 16.7199 16.9333C16.4355 16.4711 15.8844 16.2133 15.0666 16.16L15.3599 13.8933C15.3955 13.8933 15.4221 13.8933 15.4399 13.8933C16.471 13.8933 17.3244 13.6 17.9999 13.0133C18.7288 12.3556 19.0933 11.5111 19.0933 10.48C19.0933 9.44888 18.6044 8.57777 17.6266 7.86666C16.6666 7.15555 15.4221 6.8 13.8933 6.8C11.9199 6.8 10.3999 7.28889 9.33325 8.26666C8.76436 8.8 8.47992 9.44 8.47992 10.1867C8.47992 11.1289 9.19992 11.6978 10.6399 11.8933L10.2666 13.8933C9.18214 13.84 8.22214 13.4756 7.38659 12.8C6.55103 12.1244 6.13325 11.2533 6.13325 10.1867C6.13325 8.32 6.91547 6.88888 8.47992 5.89333C10.0444 4.88 12.0266 4.37333 14.4266 4.37333C15.9733 4.37333 17.3333 4.56 18.5066 4.93333C20.5155 5.60888 21.8488 6.78222 22.5066 8.45333C22.7199 9.04 22.8266 9.52 22.8266 9.89333C22.8266 10.2489 22.8266 10.4889 22.8266 10.6133C22.7555 11.5911 22.391 12.5511 21.7333 13.4933C21.0933 14.4356 20.1244 15.0844 18.8266 15.44C19.6088 15.6 20.1421 15.9378 20.4266 16.4533C20.711 16.9689 20.8621 17.7511 20.8799 18.8C20.8977 20.5956 20.9777 21.6889 21.1199 22.08C21.2799 22.4533 21.5999 22.64 22.0799 22.64C23.3777 22.64 24.4355 21.4044 25.2533 18.9333Z" fill="currentColor" />
         </svg>
@@ -497,12 +499,12 @@ export function ColorSidebar() {
                 <PaletteItem
                   key={palette.id}
                   palette={palette}
-                  isActive={activePaletteId === palette.id && colorSubView === "palette"}
+                  isActive={activePaletteId === palette.id && (viewMode === "palette" || viewMode === "surface-stacking")}
                   isEditing={editingId === palette.id}
                   editingName={editingName}
                   onSelect={() => {
                     setActivePalette(palette.id);
-                    setColorSubView("palette");
+                    setViewMode("palette");
                   }}
                   onStartEdit={() => startEditing(palette.id, palette.name)}
                   onEditChange={setEditingName}
@@ -522,29 +524,24 @@ export function ColorSidebar() {
 
       <div className="p-3 space-y-2">
         <button
-          onClick={() => setColorSubView("scale")}
+          onClick={() => setViewMode("how-it-works")}
           className={cn(
-            "flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-fast cursor-pointer",
-            colorSubView === "scale"
-              ? "bg-sidebar-accent text-sidebar-accent-foreground"
-              : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
-          )}
-        >
-          <Layers className="h-3.5 w-3.5" />
-          <span>Scale</span>
-        </button>
-        
-        <button
-          onClick={() => setColorSubView("how-it-works")}
-          className={cn(
-            "flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-fast cursor-pointer",
-            colorSubView === "how-it-works"
+            "flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors cursor-pointer",
+            viewMode === "how-it-works"
               ? "bg-sidebar-accent text-sidebar-accent-foreground"
               : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
           )}
         >
           <HelpCircle className="h-3.5 w-3.5" />
           <span>How it works</span>
+        </button>
+        
+        <button
+          onClick={() => setMainView("graph")}
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors cursor-pointer text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
+        >
+          <Network className="h-3.5 w-3.5" />
+          <span>FigZig Variables</span>
         </button>
         
         <ThemeToggle />

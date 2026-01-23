@@ -1,5 +1,4 @@
 import * as React from "react";
-import { ThemeProvider } from "./components/theme/ThemeProvider";
 import { ThemeRipple } from "./components/theme/ThemeRipple";
 import { ColorSidebar } from "./components/colors/ColorSidebar";
 import { ScalePreview } from "./components/colors/ScalePreview";
@@ -59,51 +58,49 @@ export function ColorApp() {
 
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="system" storageKey="varcar-color-theme">
-        <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground">
-          <ThemeRipple />
-          
-          {!isFullscreen && (
-            <ErrorBoundary fallback={<div className="w-56 border-r p-4 text-sm text-destructive">Sidebar error</div>}>
-              <ColorSidebar />
-            </ErrorBoundary>
-          )}
-          
-          <div className={cn(
-            "flex-1 flex flex-col overflow-hidden",
-            isFullscreen && "w-full"
-          )}>
-            <ErrorBoundary>
-              {viewMode === "palette" && (
-                <div className="flex-1 grid grid-cols-2 overflow-hidden">
-                  <ErrorBoundary fallback={<div className="p-4 text-sm text-destructive">Editor error</div>}>
-                    <div className="border-r overflow-hidden">
-                      <PaletteEditor />
-                    </div>
-                  </ErrorBoundary>
-                  <ErrorBoundary fallback={<div className="p-4 text-sm text-destructive">Preview error</div>}>
-                    <div className="overflow-hidden">
-                      <ScalePreview />
-                    </div>
-                  </ErrorBoundary>
-                </div>
-              )}
-              
-              {viewMode === "surface-stacking" && (
-                <div className="flex-1 overflow-hidden">
-                  <SurfaceStacking />
-                </div>
-              )}
-              
-              {viewMode === "how-it-works" && (
-                <div className="flex-1 overflow-hidden">
-                  <HowItWorks />
-                </div>
-              )}
-            </ErrorBoundary>
-          </div>
+      <div className="flex h-full w-full overflow-hidden bg-background text-foreground">
+        <ThemeRipple />
+        
+        {!isFullscreen && (
+          <ErrorBoundary fallback={<div className="w-56 border-r p-4 text-sm text-destructive">Sidebar error</div>}>
+            <ColorSidebar />
+          </ErrorBoundary>
+        )}
+        
+        <div className={cn(
+          "flex-1 flex flex-col overflow-hidden",
+          isFullscreen && "w-full"
+        )}>
+          <ErrorBoundary>
+            {viewMode === "palette" && (
+              <div className="flex-1 grid grid-cols-2 overflow-hidden">
+                <ErrorBoundary fallback={<div className="p-4 text-sm text-destructive">Editor error</div>}>
+                  <div className="border-r overflow-hidden">
+                    <PaletteEditor />
+                  </div>
+                </ErrorBoundary>
+                <ErrorBoundary fallback={<div className="p-4 text-sm text-destructive">Preview error</div>}>
+                  <div className="overflow-hidden">
+                    <ScalePreview />
+                  </div>
+                </ErrorBoundary>
+              </div>
+            )}
+            
+            {viewMode === "surface-stacking" && (
+              <div className="flex-1 overflow-hidden">
+                <SurfaceStacking />
+              </div>
+            )}
+            
+            {viewMode === "how-it-works" && (
+              <div className="flex-1 overflow-hidden">
+                <HowItWorks />
+              </div>
+            )}
+          </ErrorBoundary>
         </div>
-      </ThemeProvider>
+      </div>
     </ErrorBoundary>
   );
 }

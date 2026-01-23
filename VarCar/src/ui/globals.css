@@ -4,56 +4,136 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
-  }
-
-  .dark {
-    /* Figma-inspired dark mode colors */
-    --background: 18 18 18;        /* #121212 - Figma's main dark bg */
-    --foreground: 255 255 255;     /* #FFFFFF - Primary text */
-    --card: 24 24 24;              /* #181818 - Card/surface bg */
-    --card-foreground: 255 255 255;
-    --popover: 24 24 24;
-    --popover-foreground: 255 255 255;
-    --primary: 0 122 255;           /* #007AFF - Figma blue */
-    --primary-foreground: 255 255 255;
-    --secondary: 32 32 32;         /* #202020 - Secondary bg */
-    --secondary-foreground: 255 255 255;
-    --muted: 32 32 32;             /* #202020 - Muted backgrounds */
-    --muted-foreground: 180 180 180; /* #B4B4B4 - Muted text */
-    --accent: 45 45 45;            /* #2D2D2D - Accent/hover states */
-    --accent-foreground: 255 255 255;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 255 255 255;
-    --border: 40 40 40;            /* #282828 - Subtle borders */
-    --input: 32 32 32;
-    --ring: 0 122 255;             /* Primary for focus rings */
+    /* Base Surfaces - Inspired by modern workflow tools */
+    --background: 30 30 30;           /* #1E1E1E - Main background (darker, richer) */
+    --background-canvas: 34 34 34;   /* #222222 - Canvas/workspace background */
+    --surface: 45 45 45;             /* #2D2D2D - Elevated surfaces (cards, panels) */
+    --surface-elevated: 60 60 60;    /* #3C3C3C - Higher elevation (nodes, active items) */
     
-    /* Micro-detail colors */
-    --handle-color: 40 40 40;      /* Border color for handles */
-    --edge-color: 180 180 180;     /* Muted foreground for edges */
-    --edge-active: 0 122 255;      /* Active edges (primary) */
-    --divider-color: 40 40 40;     /* Dividers/separators */
-    --focus-ring: 0 122 255;       /* Primary color for focus */
+    /* Grid Pattern - Subtle dot/grid for canvas */
+    --grid-color: 50 50 50;           /* #323232 - Grid dots/lines (very subtle) */
+    --grid-opacity: 0.15;             /* 15% opacity for grid */
+    
+    /* Text Hierarchy */
+    --foreground: 255 255 255;       /* #FFFFFF - Primary text (100% opacity) */
+    --foreground-secondary: 200 200 200; /* #C8C8C8 - Secondary text (78% opacity) */
+    --foreground-tertiary: 150 150 150;  /* #969696 - Tertiary text (59% opacity) */
+    --foreground-disabled: 100 100 100;  /* #646464 - Disabled text (39% opacity) */
+    
+    /* Borders & Dividers */
+    --border: 40 40 40;              /* #282828 - Standard borders (16% opacity) */
+    --border-subtle: 32 32 32;        /* #202020 - Subtle dividers (13% opacity) */
+    --border-strong: 55 55 55;       /* #373737 - Strong borders (22% opacity) */
+    
+    /* Interactive States */
+    --interactive: 45 45 45;          /* #2D2D2D - Hover backgrounds */
+    --interactive-hover: 50 50 50;    /* #323232 - Active hover */
+    --interactive-pressed: 38 38 38;  /* #262626 - Pressed state */
+    
+    /* Primary Actions - Muted, sophisticated blues */
+    --primary: 100 150 255;           /* #6496FF - Softer blue (primary actions) */
+    --primary-hover: 120 170 255;     /* #78AAFF - Lighter blue on hover */
+    --primary-pressed: 80 130 245;    /* #5082F5 - Darker blue when pressed */
+    --primary-foreground: 255 255 255; /* White text on primary */
+    --primary-glow: 100 150 255 / 0.3; /* Glow effect for active states */
+    
+    /* Semantic Colors - Muted, sophisticated */
+    --success: 80 200 120;            /* #50C878 - Muted green (success) */
+    --warning: 255 180 80;           /* #FFB450 - Muted orange (warning) */
+    --error: 255 100 100;             /* #FF6464 - Muted red (error) */
+    --info: 100 150 255;              /* #6496FF - Info (matches primary) */
+    
+    /* Glow Effects - For edges, active states, connections */
+    --glow-subtle: 255 255 255 / 0.1;  /* Subtle white glow */
+    --glow-primary: 100 150 255 / 0.3; /* Primary blue glow */
+    --glow-success: 80 200 120 / 0.3;   /* Success green glow */
+    
+    /* Muted Backgrounds */
+    --muted: 32 32 32;                /* #202020 - Muted backgrounds */
+    --muted-foreground: 150 150 150;  /* #969696 - Muted text */
+    
+    /* Inputs */
+    --input: 28 28 28;                /* #1C1C1C - Input backgrounds */
+    --input-border: 40 40 40;         /* #282828 - Input borders */
+    --input-focus: 100 150 255;       /* #6496FF - Input focus ring */
+    
+    /* Overlays */
+    --overlay: 0 0 0 / 0.4;           /* 40% black overlay for modals */
+    --backdrop: 0 0 0 / 0.6;          /* 60% black backdrop blur */
+    
+    /* Connection Handles - Circular + icons */
+    --handle-bg: 45 45 45;            /* #2D2D2D - Handle background (subtle) */
+    --handle-border: 70 70 70;        /* #464646 - Handle border (visible but subtle) */
+    --handle-hover: 60 60 60;         /* #3C3C3C - Handle hover (lighter) */
+    --handle-active: 100 150 255;     /* #6496FF - Handle active (soft blue) */
+    --handle-glow: 100 150 255 / 0.4; /* Glow when active/hovered */
+    --handle-icon: 180 180 180;      /* #B4B4B4 - Plus icon color */
+    
+    /* Graph Edges/Connections - Curved, glowing lines */
+    --edge-default: 80 80 80;         /* #505050 - Default edge (subtle gray) */
+    --edge-opacity-default: 0.4;      /* 40% opacity for subtlety */
+    --edge-hover: 150 150 150;         /* #969696 - Edge hover (lighter) */
+    --edge-selected: 100 150 255;     /* #6496FF - Selected edge (soft blue) */
+    --edge-alias: 80 200 120;         /* #50C878 - Alias edge (muted green) */
+    --edge-error: 255 100 100;         /* #FF6464 - Error edge (muted red) */
+    --edge-glow: 255 255 255 / 0.2;   /* Subtle glow along edge */
+    
+    /* Node Borders - Subtle glows instead of harsh borders */
+    --node-bg: 45 45 45;              /* #2D2D2D - Node background */
+    --node-border: 60 60 60;          /* #3C3C3C - Subtle border (or use glow) */
+    --node-border-selected: 100 150 255; /* #6496FF - Selected (soft blue glow) */
+    --node-border-hover: 80 80 80;    /* #505050 - Hover (subtle glow) */
+    --node-glow: 255 255 255 / 0.05;  /* Very subtle white glow */
+    --node-glow-selected: 100 150 255 / 0.2; /* Blue glow when selected */
+    --node-radius: 12px;              /* Rounded corners (pill-shaped) */
+    
+    /* Scrollbars */
+    --scrollbar-track: 24 24 24;      /* #181818 - Scrollbar track */
+    --scrollbar-thumb: 50 50 50;       /* #323232 - Scrollbar thumb */
+    --scrollbar-thumb-hover: 65 65 65; /* #414141 - Scrollbar thumb hover */
+    
+    /* Tooltips */
+    --tooltip-bg: 45 45 45;           /* #2D2D2D - Tooltip background */
+    --tooltip-border: 60 60 60;        /* #3C3C3C - Tooltip border */
+    --tooltip-text: 255 255 255;      /* #FFFFFF - Tooltip text */
+    
+    /* Context Menus */
+    --menu-bg: 28 28 28;              /* #1C1C1C - Menu background */
+    --menu-border: 40 40 40;          /* #282828 - Menu border */
+    --menu-item-hover: 38 38 38;      /* #262626 - Menu item hover */
+    --menu-divider: 32 32 32;         /* #202020 - Menu divider */
+    
+    /* Card & Popover (using surface colors) */
+    --card: 45 45 45;                 /* #2D2D2D - Card background */
+    --card-foreground: 255 255 255;   /* #FFFFFF - Card text */
+    --popover: 45 45 45;              /* #2D2D2D - Popover background */
+    --popover-foreground: 255 255 255; /* #FFFFFF - Popover text */
+    
+    /* Secondary & Accent */
+    --secondary: 45 45 45;            /* #2D2D2D - Secondary background */
+    --secondary-foreground: 255 255 255; /* #FFFFFF - Secondary text */
+    --accent: 45 45 45;               /* #2D2D2D - Accent background */
+    --accent-foreground: 255 255 255; /* #FFFFFF - Accent text */
+    
+    /* Destructive */
+    --destructive: 255 100 100;       /* #FF6464 - Destructive (muted red) */
+    --destructive-foreground: 255 255 255; /* #FFFFFF - Destructive text */
+    
+    /* Ring (focus ring) */
+    --ring: 100 150 255;              /* #6496FF - Focus ring */
+    
+    /* Radius */
+    --radius: 0.5rem;                 /* 8px - Base border radius */
+    
+    /* Animation Timings */
+    --duration-instant: 80ms;         /* Instant feedback (hover, focus) */
+    --duration-fast: 120ms;            /* Quick transitions (button clicks) */
+    --duration-base: 150ms;           /* Standard transitions (default) */
+    --duration-slow: 200ms;           /* Smooth transitions (modals, panels) */
+    
+    /* Easing Functions */
+    --ease-snappy: cubic-bezier(0.4, 0, 0.2, 1);      /* Snappy, responsive */
+    --ease-smooth: cubic-bezier(0.25, 0.1, 0.25, 1);  /* Smooth, natural */
   }
 }
 
@@ -63,68 +143,30 @@
   }
   body {
     @apply bg-background text-foreground;
+    color-scheme: dark;
   }
 }
 
 @layer utilities {
-  /* Fast transitions for sleek interactions */
-  .transition-fast {
-    transition-duration: 100ms;
-    transition-timing-function: ease-out;
-  }
-  
-  .transition-fast-in {
-    transition-duration: 100ms;
-    transition-timing-function: ease-in;
-  }
-  
-  /* Compact spacing utilities */
-  .compact-px {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
-  }
-  
-  .compact-py {
-    padding-top: 0.25rem;
-    padding-bottom: 0.25rem;
-  }
-  
-  /* No shadows - use borders instead */
   .no-shadow {
-    box-shadow: none;
+    box-shadow: none !important;
   }
   
-  /* Micro-detail utilities */
-  .handle-default {
-    color: hsl(var(--handle-color) / 0.6);
+  .glow-subtle {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
   }
   
-  .handle-hover {
-    color: hsl(var(--handle-color) / 0.8);
+  .glow-primary {
+    box-shadow: 0 0 0 1px rgba(100, 150, 255, 0.2), 
+                0 0 12px rgba(100, 150, 255, 0.15);
   }
   
-  .handle-active {
-    color: hsl(var(--primary) / 0.5);
+  .glow-node {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
   }
   
-  .edge-default {
-    stroke: hsl(var(--edge-color) / 0.4);
-  }
-  
-  .edge-hover {
-    stroke: hsl(var(--edge-color) / 0.6);
-  }
-  
-  .edge-active {
-    stroke: hsl(var(--edge-active) / 0.7);
-  }
-  
-  .divider {
-    border-color: hsl(var(--divider-color) / 0.5);
-  }
-  
-  .focus-ring {
-    outline: 1px solid hsl(var(--focus-ring) / 0.3);
-    outline-offset: 2px;
+  .glow-node-selected {
+    box-shadow: 0 0 0 1px rgba(100, 150, 255, 0.2), 
+                0 0 12px rgba(100, 150, 255, 0.15);
   }
 }

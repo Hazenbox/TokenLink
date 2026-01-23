@@ -22,7 +22,7 @@ import { Rule, createDefaultRule } from '../models/rules';
 import { downloadJSON } from '../utils/export';
 import { useMultiSelect } from './hooks/useMultiSelect';
 import { useKeyboardShortcuts, KeyboardShortcut } from './hooks/useKeyboardShortcuts';
-import { useAppSwitcher } from './AppSwitcher';
+import { useViewStore } from '@/store/view-store';
 
 // Build timestamp for cache busting
 const BUILD_TIMESTAMP = new Date().toISOString();
@@ -368,7 +368,7 @@ const buttonStyle: React.CSSProperties = {
 };
 
 const App: React.FC = () => {
-  const { switchToApp } = useAppSwitcher();
+  const { setMainView } = useViewStore();
   
   // State to store the variable graph data
   const [graphData, setGraphData] = useState<GraphData | null>(null);
@@ -1434,7 +1434,7 @@ const App: React.FC = () => {
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
               {/* Back to Color App Button */}
               <button
-                onClick={() => switchToApp('color')}
+                onClick={() => setMainView('colors')}
                 onMouseEnter={(e) => showTooltip('Color System', e)}
                 onMouseLeave={hideTooltip}
                 style={{
