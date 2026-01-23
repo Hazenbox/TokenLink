@@ -4,132 +4,132 @@
 
 @layer base {
   :root {
-    /* Base Surfaces - Inspired by modern workflow tools */
-    --background: 30 30 30;           /* #1E1E1E - Main background (darker, richer) */
-    --background-canvas: 34 34 34;   /* #222222 - Canvas/workspace background */
-    --surface: 45 45 45;             /* #2D2D2D - Elevated surfaces (cards, panels) */
-    --surface-elevated: 60 60 60;    /* #3C3C3C - Higher elevation (nodes, active items) */
+    /* Base Surfaces - Tailwind Gray Scale */
+    --background: 0 0% 3.9%;           /* gray-950 - Pure black background */
+    --background-canvas: 0 0% 9%;      /* gray-900 - Canvas/workspace background */
+    --surface: 0 0% 14.9%;             /* gray-800 - Elevated surfaces (cards, panels) */
+    --surface-elevated: 0 0% 23.1%;    /* gray-700 - Higher elevation (nodes, active items) */
     
     /* Grid Pattern - Subtle dot/grid for canvas */
-    --grid-color: 50 50 50;           /* #323232 - Grid dots/lines (very subtle) */
-    --grid-opacity: 0.15;             /* 15% opacity for grid */
+    --grid-color: 0 0% 23.1%;          /* gray-700 - Grid dots/lines */
+    --grid-opacity: 0.15%;              /* 15% opacity for grid */
     
-    /* Text Hierarchy */
-    --foreground: 255 255 255;       /* #FFFFFF - Primary text (100% opacity) */
-    --foreground-secondary: 200 200 200; /* #C8C8C8 - Secondary text (78% opacity) */
-    --foreground-tertiary: 150 150 150;  /* #969696 - Tertiary text (59% opacity) */
-    --foreground-disabled: 100 100 100;  /* #646464 - Disabled text (39% opacity) */
+    /* Text Hierarchy - Tailwind Gray Scale */
+    --foreground: 0 0% 98%;            /* gray-50 - Primary text (white) */
+    --foreground-secondary: 0 0% 63.1%; /* gray-400 - Secondary text */
+    --foreground-tertiary: 0 0% 45.1%;  /* gray-500 - Tertiary text */
+    --foreground-disabled: 0 0% 32.2%;  /* gray-600 - Disabled text */
     
-    /* Borders & Dividers */
-    --border: 40 40 40;              /* #282828 - Standard borders (16% opacity) */
-    --border-subtle: 32 32 32;        /* #202020 - Subtle dividers (13% opacity) */
-    --border-strong: 55 55 55;       /* #373737 - Strong borders (22% opacity) */
+    /* Borders & Dividers - Tailwind Gray Scale */
+    --border: 0 0% 14.9%;              /* gray-800 - Standard borders */
+    --border-subtle: 0 0% 9%;          /* gray-900 - Subtle dividers */
+    --border-strong: 0 0% 23.1%;       /* gray-700 - Strong borders */
     
-    /* Interactive States */
-    --interactive: 45 45 45;          /* #2D2D2D - Hover backgrounds */
-    --interactive-hover: 50 50 50;    /* #323232 - Active hover */
-    --interactive-pressed: 38 38 38;  /* #262626 - Pressed state */
+    /* Interactive States - Tailwind Gray Scale */
+    --interactive: 0 0% 14.9%;         /* gray-800 - Hover backgrounds */
+    --interactive-hover: 0 0% 23.1%;   /* gray-700 - Active hover */
+    --interactive-pressed: 0 0% 9%;    /* gray-900 - Pressed state */
     
-    /* Primary Actions - Muted, sophisticated blues */
-    --primary: 100 150 255;           /* #6496FF - Softer blue (primary actions) */
-    --primary-hover: 120 170 255;     /* #78AAFF - Lighter blue on hover */
-    --primary-pressed: 80 130 245;    /* #5082F5 - Darker blue when pressed */
-    --primary-foreground: 255 255 255; /* White text on primary */
-    --primary-glow: 100 150 255 / 0.3; /* Glow effect for active states */
+    /* Primary Actions - Gray Only (No Blue) */
+    --primary: 0 0% 32.2%;             /* gray-600 - Primary actions */
+    --primary-hover: 0 0% 45.1%;       /* gray-500 - Hover state */
+    --primary-pressed: 0 0% 23.1%;     /* gray-700 - Pressed state */
+    --primary-foreground: 0 0% 98%;    /* gray-50 - White text on primary */
+    --primary-glow: 255 255 255 / 0.15; /* White glow only */
     
-    /* Semantic Colors - Muted, sophisticated */
-    --success: 80 200 120;            /* #50C878 - Muted green (success) */
-    --warning: 255 180 80;           /* #FFB450 - Muted orange (warning) */
-    --error: 255 100 100;             /* #FF6464 - Muted red (error) */
-    --info: 100 150 255;              /* #6496FF - Info (matches primary) */
+    /* Semantic Colors - Gray Variants (No Colors) */
+    --success: 0 0% 45.1%;             /* gray-500 - Gray instead of green */
+    --warning: 0 0% 45.1%;             /* gray-500 - Gray instead of orange */
+    --error: 0 0% 45.1%;               /* gray-500 - Gray instead of red */
+    --info: 0 0% 45.1%;                /* gray-500 - Gray */
     
-    /* Glow Effects - For edges, active states, connections */
+    /* Glow Effects - White Only (No Colored Glows) */
     --glow-subtle: 255 255 255 / 0.1;  /* Subtle white glow */
-    --glow-primary: 100 150 255 / 0.3; /* Primary blue glow */
-    --glow-success: 80 200 120 / 0.3;   /* Success green glow */
+    --glow-primary: 255 255 255 / 0.15; /* White glow (no blue) */
+    --glow-success: 255 255 255 / 0.15; /* White glow (no green) */
     
-    /* Muted Backgrounds */
-    --muted: 32 32 32;                /* #202020 - Muted backgrounds */
-    --muted-foreground: 150 150 150;  /* #969696 - Muted text */
+    /* Muted Backgrounds - Tailwind Gray Scale */
+    --muted: 0 0% 9%;                  /* gray-900 - Muted backgrounds */
+    --muted-foreground: 0 0% 45.1%;    /* gray-500 - Muted text */
     
-    /* Inputs */
-    --input: 28 28 28;                /* #1C1C1C - Input backgrounds */
-    --input-border: 40 40 40;         /* #282828 - Input borders */
-    --input-focus: 100 150 255;       /* #6496FF - Input focus ring */
+    /* Inputs - Tailwind Gray Scale */
+    --input: 0 0% 9%;                  /* gray-900 - Input backgrounds */
+    --input-border: 0 0% 14.9%;        /* gray-800 - Input borders */
+    --input-focus: 0 0% 32.2%;         /* gray-600 - Gray focus ring (no blue) */
     
-    /* Overlays */
-    --overlay: 0 0 0 / 0.4;           /* 40% black overlay for modals */
-    --backdrop: 0 0 0 / 0.6;          /* 60% black backdrop blur */
+    /* Overlays - Black Only */
+    --overlay: 0 0 0 / 0.4;            /* 40% black overlay for modals */
+    --backdrop: 0 0 0 / 0.6;           /* 60% black backdrop blur */
     
-    /* Connection Handles - Circular + icons */
-    --handle-bg: 45 45 45;            /* #2D2D2D - Handle background (subtle) */
-    --handle-border: 70 70 70;        /* #464646 - Handle border (visible but subtle) */
-    --handle-hover: 60 60 60;         /* #3C3C3C - Handle hover (lighter) */
-    --handle-active: 100 150 255;     /* #6496FF - Handle active (soft blue) */
-    --handle-glow: 100 150 255 / 0.4; /* Glow when active/hovered */
-    --handle-icon: 180 180 180;      /* #B4B4B4 - Plus icon color */
+    /* Connection Handles - Tailwind Gray Scale Only */
+    --handle-bg: 0 0% 14.9%;           /* gray-800 - Handle background */
+    --handle-border: 0 0% 23.1%;       /* gray-700 - Handle border */
+    --handle-hover: 0 0% 23.1%;        /* gray-700 - Handle hover */
+    --handle-active: 0 0% 32.2%;       /* gray-600 - Handle active (gray, not blue) */
+    --handle-glow: 255 255 255 / 0.2;  /* White glow only */
+    --handle-icon: 0 0% 63.1%;         /* gray-400 - Plus icon color */
     
-    /* Graph Edges/Connections - Curved, glowing lines */
-    --edge-default: 80 80 80;         /* #505050 - Default edge (subtle gray) */
-    --edge-opacity-default: 0.4;      /* 40% opacity for subtlety */
-    --edge-hover: 150 150 150;         /* #969696 - Edge hover (lighter) */
-    --edge-selected: 100 150 255;     /* #6496FF - Selected edge (soft blue) */
-    --edge-alias: 80 200 120;         /* #50C878 - Alias edge (muted green) */
-    --edge-error: 255 100 100;         /* #FF6464 - Error edge (muted red) */
-    --edge-glow: 255 255 255 / 0.2;   /* Subtle glow along edge */
+    /* Graph Edges/Connections - Tailwind Gray Scale Only */
+    --edge-default: 0 0% 23.1%;        /* gray-700 - Default edge */
+    --edge-opacity-default: 0.4;       /* 40% opacity for subtlety */
+    --edge-hover: 0 0% 32.2%;          /* gray-600 - Edge hover */
+    --edge-selected: 0 0% 45.1%;       /* gray-500 - Selected edge (gray, not blue) */
+    --edge-alias: 0 0% 32.2%;          /* gray-600 - Alias edge (gray, not green) */
+    --edge-error: 0 0% 32.2%;          /* gray-600 - Error edge (gray, not red) */
+    --edge-glow: 255 255 255 / 0.2;    /* White glow only */
     
-    /* Node Borders - Subtle glows instead of harsh borders */
-    --node-bg: 45 45 45;              /* #2D2D2D - Node background */
-    --node-border: 60 60 60;          /* #3C3C3C - Subtle border (or use glow) */
-    --node-border-selected: 100 150 255; /* #6496FF - Selected (soft blue glow) */
-    --node-border-hover: 80 80 80;    /* #505050 - Hover (subtle glow) */
-    --node-glow: 255 255 255 / 0.05;  /* Very subtle white glow */
-    --node-glow-selected: 100 150 255 / 0.2; /* Blue glow when selected */
-    --node-radius: 12px;              /* Rounded corners (pill-shaped) */
+    /* Node Borders - Tailwind Gray Scale, White Glows Only */
+    --node-bg: 0 0% 14.9%;             /* gray-800 - Node background */
+    --node-border: 0 0% 23.1%;         /* gray-700 - Subtle border */
+    --node-border-selected: 0 0% 32.2%; /* gray-600 - Selected (gray, not blue) */
+    --node-border-hover: 0 0% 23.1%;   /* gray-700 - Hover */
+    --node-glow: 255 255 255 / 0.05;   /* White glow only */
+    --node-glow-selected: 255 255 255 / 0.1; /* White glow (not blue) */
+    --node-radius: 12px;               /* Rounded corners (pill-shaped) */
     
-    /* Scrollbars */
-    --scrollbar-track: 24 24 24;      /* #181818 - Scrollbar track */
-    --scrollbar-thumb: 50 50 50;       /* #323232 - Scrollbar thumb */
-    --scrollbar-thumb-hover: 65 65 65; /* #414141 - Scrollbar thumb hover */
+    /* Scrollbars - Tailwind Gray Scale */
+    --scrollbar-track: 0 0% 9%;        /* gray-900 - Scrollbar track */
+    --scrollbar-thumb: 0 0% 23.1%;     /* gray-700 - Scrollbar thumb */
+    --scrollbar-thumb-hover: 0 0% 32.2%; /* gray-600 - Scrollbar thumb hover */
     
-    /* Tooltips */
-    --tooltip-bg: 45 45 45;           /* #2D2D2D - Tooltip background */
-    --tooltip-border: 60 60 60;        /* #3C3C3C - Tooltip border */
-    --tooltip-text: 255 255 255;      /* #FFFFFF - Tooltip text */
+    /* Tooltips - Tailwind Gray Scale */
+    --tooltip-bg: 0 0% 14.9%;          /* gray-800 - Tooltip background */
+    --tooltip-border: 0 0% 23.1%;      /* gray-700 - Tooltip border */
+    --tooltip-text: 0 0% 98%;          /* gray-50 - Tooltip text */
     
-    /* Context Menus */
-    --menu-bg: 28 28 28;              /* #1C1C1C - Menu background */
-    --menu-border: 40 40 40;          /* #282828 - Menu border */
-    --menu-item-hover: 38 38 38;      /* #262626 - Menu item hover */
-    --menu-divider: 32 32 32;         /* #202020 - Menu divider */
+    /* Context Menus - Tailwind Gray Scale */
+    --menu-bg: 0 0% 9%;                /* gray-900 - Menu background */
+    --menu-border: 0 0% 14.9%;         /* gray-800 - Menu border */
+    --menu-item-hover: 0 0% 14.9%;     /* gray-800 - Menu item hover */
+    --menu-divider: 0 0% 9%;           /* gray-900 - Menu divider */
     
-    /* Card & Popover (using surface colors) */
-    --card: 45 45 45;                 /* #2D2D2D - Card background */
-    --card-foreground: 255 255 255;   /* #FFFFFF - Card text */
-    --popover: 45 45 45;              /* #2D2D2D - Popover background */
-    --popover-foreground: 255 255 255; /* #FFFFFF - Popover text */
+    /* Card & Popover - Tailwind Gray Scale */
+    --card: 0 0% 14.9%;                /* gray-800 - Card background */
+    --card-foreground: 0 0% 98%;       /* gray-50 - Card text */
+    --popover: 0 0% 14.9%;             /* gray-800 - Popover background */
+    --popover-foreground: 0 0% 98%;    /* gray-50 - Popover text */
     
-    /* Secondary & Accent */
-    --secondary: 45 45 45;            /* #2D2D2D - Secondary background */
-    --secondary-foreground: 255 255 255; /* #FFFFFF - Secondary text */
-    --accent: 45 45 45;               /* #2D2D2D - Accent background */
-    --accent-foreground: 255 255 255; /* #FFFFFF - Accent text */
+    /* Secondary & Accent - Tailwind Gray Scale */
+    --secondary: 0 0% 14.9%;           /* gray-800 - Secondary background */
+    --secondary-foreground: 0 0% 98%;  /* gray-50 - Secondary text */
+    --accent: 0 0% 14.9%;              /* gray-800 - Accent background */
+    --accent-foreground: 0 0% 98%;     /* gray-50 - Accent text */
     
-    /* Destructive */
-    --destructive: 255 100 100;       /* #FF6464 - Destructive (muted red) */
-    --destructive-foreground: 255 255 255; /* #FFFFFF - Destructive text */
+    /* Destructive - Tailwind Gray Scale (No Red) */
+    --destructive: 0 0% 45.1%;         /* gray-500 - Destructive (gray, not red) */
+    --destructive-foreground: 0 0% 98%; /* gray-50 - Destructive text */
     
-    /* Ring (focus ring) */
-    --ring: 100 150 255;              /* #6496FF - Focus ring */
+    /* Ring (focus ring) - Tailwind Gray Scale */
+    --ring: 0 0% 32.2%;                /* gray-600 - Focus ring (gray, not blue) */
     
     /* Radius */
-    --radius: 0.5rem;                 /* 8px - Base border radius */
+    --radius: 0.5rem;                  /* 8px - Base border radius */
     
     /* Animation Timings */
-    --duration-instant: 80ms;         /* Instant feedback (hover, focus) */
+    --duration-instant: 80ms;          /* Instant feedback (hover, focus) */
     --duration-fast: 120ms;            /* Quick transitions (button clicks) */
-    --duration-base: 150ms;           /* Standard transitions (default) */
-    --duration-slow: 200ms;           /* Smooth transitions (modals, panels) */
+    --duration-base: 150ms;            /* Standard transitions (default) */
+    --duration-slow: 200ms;            /* Smooth transitions (modals, panels) */
     
     /* Easing Functions */
     --ease-snappy: cubic-bezier(0.4, 0, 0.2, 1);      /* Snappy, responsive */
@@ -157,8 +157,8 @@
   }
   
   .glow-primary {
-    box-shadow: 0 0 0 1px rgba(100, 150, 255, 0.2), 
-                0 0 12px rgba(100, 150, 255, 0.15);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 
+                0 0 12px rgba(255, 255, 255, 0.08);
   }
   
   .glow-node {
@@ -166,7 +166,7 @@
   }
   
   .glow-node-selected {
-    box-shadow: 0 0 0 1px rgba(100, 150, 255, 0.2), 
-                0 0 12px rgba(100, 150, 255, 0.15);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 
+                0 0 12px rgba(255, 255, 255, 0.08);
   }
 }
