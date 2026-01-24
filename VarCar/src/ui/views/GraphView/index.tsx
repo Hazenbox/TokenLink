@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ListTree, Network, FileCog, Download, Upload, Keyboard, Palette } from 'lucide-react';
+import { ListTree, Network, FileCog, Download, Upload, Keyboard, Palette, Sparkles } from 'lucide-react';
 import VariableTree from './components/VariableTree';
 import { VariableGraphView } from './components/VariableGraphView';
 import { AliasModal } from './components/AliasModal';
@@ -1432,7 +1432,7 @@ const App: React.FC = () => {
         {!loading && !error && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-              {/* Back to Color App Button */}
+              {/* App Navigation Buttons */}
               <button
                 onClick={() => switchToApp('color')}
                 onMouseEnter={(e) => showTooltip('Color System', e)}
@@ -1454,6 +1454,28 @@ const App: React.FC = () => {
               >
                 <Palette size={14} />
                 Colors
+              </button>
+              <button
+                onClick={() => switchToApp('automate')}
+                onMouseEnter={(e) => showTooltip('Brand Automation', e)}
+                onMouseLeave={hideTooltip}
+                style={{
+                  height: '24px',
+                  padding: '4px 12px',
+                  background: 'var(--card-bg)',
+                  color: 'var(--text-color)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  fontSize: '12px',
+                }}
+              >
+                <Sparkles size={14} />
+                Automate
               </button>
               
               {/* View Toggle and Actions - Only show when graphData exists */}

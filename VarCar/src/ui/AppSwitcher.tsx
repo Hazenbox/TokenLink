@@ -1,9 +1,10 @@
 import * as React from "react";
 import { ColorApp } from "./ColorApp";
 import { App } from "./App";
+import { AutomateApp } from "./AutomateApp";
 import { safeStorage } from "@/lib/storage";
 
-type ActiveApp = "color" | "figzig";
+type ActiveApp = "color" | "figzig" | "automate";
 
 // Global app switcher context
 interface AppSwitcherContextValue {
@@ -42,7 +43,13 @@ export function AppSwitcher() {
 
   return (
     <AppSwitcherContext.Provider value={value}>
-      {activeApp === "color" ? <ColorApp /> : <App />}
+      {activeApp === "color" ? (
+        <ColorApp />
+      ) : activeApp === "automate" ? (
+        <AutomateApp />
+      ) : (
+        <App />
+      )}
     </AppSwitcherContext.Provider>
   );
 }
