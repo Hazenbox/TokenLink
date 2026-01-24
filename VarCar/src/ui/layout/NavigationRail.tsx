@@ -1,23 +1,29 @@
 import * as React from "react";
-import { Palette, Network } from "lucide-react";
-import { useViewStore } from "@/store/view-store";
+import { Palette, Network, Sparkles } from "lucide-react";
+import { useAppSwitcher } from "@/ui/AppSwitcher";
 import { NavRailItem } from "./NavRailItem";
 
 export function NavigationRail() {
-  const { mainView, setMainView } = useViewStore();
+  const { activeApp, switchToApp } = useAppSwitcher();
 
   const navItems = [
     {
-      id: "colors" as const,
+      id: "color" as const,
       icon: Palette,
       label: "Colors",
       ariaLabel: "Colors view",
     },
     {
-      id: "graph" as const,
+      id: "figzig" as const,
       icon: Network,
       label: "Graph",
       ariaLabel: "Graph view",
+    },
+    {
+      id: "automate" as const,
+      icon: Sparkles,
+      label: "Automate",
+      ariaLabel: "Automate view",
     },
   ];
 
@@ -28,7 +34,7 @@ export function NavigationRail() {
       aria-label="Main navigation"
     >
       {navItems.map((item) => {
-        const isActive = mainView === item.id;
+        const isActive = activeApp === item.id;
         
         return (
           <NavRailItem
@@ -37,7 +43,7 @@ export function NavigationRail() {
             label={item.label}
             isActive={isActive}
             ariaLabel={item.ariaLabel}
-            onClick={() => setMainView(item.id)}
+            onClick={() => switchToApp(item.id)}
           />
         );
       })}

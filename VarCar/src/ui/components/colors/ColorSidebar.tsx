@@ -1,6 +1,5 @@
 import * as React from "react";
-import { Plus, MoreHorizontal, ChevronRight, HelpCircle, Search, X, Network, Sparkles } from "lucide-react";
-import { useAppSwitcher } from "@/ui/AppSwitcher";
+import { Plus, MoreHorizontal, ChevronRight, HelpCircle, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CompactButton } from "../common/CompactButton";
 import { IconButton } from "../common/IconButton";
@@ -339,7 +338,6 @@ function PaletteItem({
 }
 
 export function ColorSidebar() {
-  const { switchToApp } = useAppSwitcher();
   const {
     palettes,
     activePaletteId,
@@ -508,27 +506,6 @@ export function ColorSidebar() {
         >
           <HelpCircle className="h-3.5 w-3.5" />
           <span>How it works</span>
-        </button>
-      </div>
-
-      {/* App Navigation */}
-      <div className="border-t border-border-subtle p-2 space-y-1">
-        <div className="text-xs font-medium text-muted-foreground px-3 py-1">
-          Switch App
-        </div>
-        <button
-          onClick={() => switchToApp('figzig')}
-          className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors cursor-pointer text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
-        >
-          <Network className="h-3.5 w-3.5" />
-          <span>Variables</span>
-        </button>
-        <button
-          onClick={() => switchToApp('automate')}
-          className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors cursor-pointer text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
-        >
-          <Sparkles className="h-3.5 w-3.5" />
-          <span>Automate</span>
         </button>
       </div>
     </div>
