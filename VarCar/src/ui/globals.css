@@ -72,10 +72,15 @@
     /* Connection Handles - Tailwind Gray Scale Only */
     --handle-bg: 0 0% 14.9%;           /* gray-800 - Handle background */
     --handle-border: 0 0% 23.1%;       /* gray-700 - Handle border */
+    --handle-stroke: 0 0% 23.1%;       /* gray-700 - Handle stroke (same as border) */
     --handle-hover: 0 0% 23.1%;        /* gray-700 - Handle hover */
+    --handle-hover-bg: 0 0% 32.2%;     /* gray-600 - Handle hover background */
+    --handle-hover-fill: 0 0% 45.1%;   /* gray-500 - Handle hover fill */
     --handle-active: 0 0% 32.2%;       /* gray-600 - Handle active (gray, not blue) */
     --handle-glow: 255 255 255 / 0.2;  /* White glow only */
     --handle-icon: 0 0% 63.1%;         /* gray-400 - Plus icon color */
+    --handle-valid: 77 184 168;        /* Teal color for valid connections */
+    --handle-invalid: 255 107 107;     /* Red color for invalid connections */
     
     /* Graph Edges/Connections - Tailwind Gray Scale Only */
     --edge-default: 0 0% 23.1%;        /* gray-700 - Default edge */
@@ -187,5 +192,26 @@
   .glow-node-selected {
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 
                 0 0 12px rgba(255, 255, 255, 0.08);
+  }
+}
+
+/* Handle Glow Animations */
+@keyframes handleGlowValid {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(77, 184, 168, 0.8);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(77, 184, 168, 1), 
+                0 0 30px rgba(77, 184, 168, 0.6);
+  }
+}
+
+@keyframes handleGlowInvalid {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(255, 107, 107, 0.8);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(255, 107, 107, 1), 
+                0 0 30px rgba(255, 107, 107, 0.6);
   }
 }
