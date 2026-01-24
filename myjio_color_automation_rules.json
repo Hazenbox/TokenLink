@@ -1,0 +1,883 @@
+{
+  "metadata": {
+    "source_file": "OneUI Foundations [POC]-variables-full.json",
+    "analysis_date": "2026-01-24",
+    "tool": "VarCar Color Mapping Analysis",
+    "version": "1.0.0"
+  },
+  "statistics": {
+    "total_variables": 11417,
+    "total_collections": 16,
+    "variables_by_collection": {
+      "X01_PlaceHolder (9.5)": 1,
+      "00_Semi semantics": 2688,
+      "9 Theme": 224,
+      "8 Language": 37,
+      "7 Platform": 87,
+      "6 Density": 222,
+      "02 Colour Mode": 4614,
+      "4 Interaction state": 2280,
+      "3 Background Level": 442,
+      "2 Fill emphasis": 120,
+      "1 Appearance": 41,
+      "10 Brand": 618,
+      "X03_PlaceHolder (first collection)": 1,
+      "00_Primitives": 25,
+      "11 Motion": 16,
+      "4.5 Disabled": 1
+    },
+    "variables_by_type": {
+      "COLOR": 10480,
+      "FLOAT": 910,
+      "STRING": 23,
+      "BOOLEAN": 4
+    },
+    "alias_statistics": {
+      "total_aliases": 24822,
+      "direct_values": 1549,
+      "alias_percentage": 94.1
+    }
+  },
+  "collection_hierarchy": [
+    {
+      "id": "VariableCollectionId:817:1778",
+      "name": "00_Primitives",
+      "level": 0,
+      "variable_count": 25,
+      "modes": [
+        {
+          "name": "Mode 1",
+          "id": "817:0"
+        }
+      ],
+      "default_mode_id": "817:0",
+      "remote": false
+    },
+    {
+      "id": "VariableCollectionId:23:24056",
+      "name": "00_Semi semantics",
+      "level": 1,
+      "variable_count": 2688,
+      "modes": [
+        {
+          "name": "Mode 1",
+          "id": "23:2"
+        }
+      ],
+      "default_mode_id": "23:2",
+      "remote": false
+    },
+    {
+      "id": "VariableCollectionId:23:24064",
+      "name": "02 Colour Mode",
+      "level": 2,
+      "variable_count": 4614,
+      "modes": [
+        {
+          "name": "Light",
+          "id": "23:9"
+        },
+        {
+          "name": "Dark",
+          "id": "72:0"
+        }
+      ],
+      "default_mode_id": "23:9",
+      "remote": false
+    },
+    {
+      "id": "VariableCollectionId:23:24069",
+      "name": "1 Appearance",
+      "level": 3,
+      "variable_count": 41,
+      "modes": [
+        {
+          "name": "Neutral",
+          "id": "23:13"
+        },
+        {
+          "name": "Primary",
+          "id": "91:0"
+        },
+        {
+          "name": "Secondary",
+          "id": "128:0"
+        },
+        {
+          "name": "Sparkle",
+          "id": "128:1"
+        },
+        {
+          "name": "Informative",
+          "id": "389:0"
+        },
+        {
+          "name": "Negative",
+          "id": "476:0"
+        },
+        {
+          "name": "Positive",
+          "id": "563:0"
+        },
+        {
+          "name": "Warning",
+          "id": "571:0"
+        },
+        {
+          "name": "Brand BG",
+          "id": "738:0"
+        }
+      ],
+      "default_mode_id": "23:13",
+      "remote": false
+    },
+    {
+      "id": "VariableCollectionId:23:24068",
+      "name": "2 Fill emphasis",
+      "level": 3,
+      "variable_count": 120,
+      "modes": [
+        {
+          "name": "Ghost",
+          "id": "23:12"
+        },
+        {
+          "name": "Minimal",
+          "id": "79:3"
+        },
+        {
+          "name": "Subtle",
+          "id": "79:4"
+        },
+        {
+          "name": "Bold",
+          "id": "79:5"
+        }
+      ],
+      "default_mode_id": "23:12",
+      "remote": false
+    },
+    {
+      "id": "VariableCollectionId:23:24067",
+      "name": "3 Background Level",
+      "level": 3,
+      "variable_count": 442,
+      "modes": [
+        {
+          "name": "Level 0",
+          "id": "23:11"
+        },
+        {
+          "name": "Level 1",
+          "id": "79:0"
+        },
+        {
+          "name": "Level 2",
+          "id": "79:1"
+        },
+        {
+          "name": "Bold",
+          "id": "79:2"
+        },
+        {
+          "name": "Elevated",
+          "id": "196:0"
+        }
+      ],
+      "default_mode_id": "23:11",
+      "remote": false
+    },
+    {
+      "id": "VariableCollectionId:23:24066",
+      "name": "4 Interaction state",
+      "level": 3,
+      "variable_count": 2280,
+      "modes": [
+        {
+          "name": "Idle",
+          "id": "23:10"
+        },
+        {
+          "name": "Hover",
+          "id": "75:0"
+        },
+        {
+          "name": "Pressed",
+          "id": "75:1"
+        },
+        {
+          "name": "Focus",
+          "id": "75:2"
+        }
+      ],
+      "default_mode_id": "23:10",
+      "remote": false
+    },
+    {
+      "id": "VariableCollectionId:23:24058",
+      "name": "9 Theme",
+      "level": 4,
+      "variable_count": 224,
+      "modes": [
+        {
+          "name": "MyJio",
+          "id": "23:4"
+        },
+        {
+          "name": "JioFinance",
+          "id": "633:0"
+        },
+        {
+          "name": "JioHome",
+          "id": "1292:0"
+        }
+      ],
+      "default_mode_id": "23:4",
+      "remote": false
+    },
+    {
+      "id": "VariableCollectionId:222:19978",
+      "name": "10 Brand",
+      "level": 5,
+      "variable_count": 618,
+      "modes": [
+        {
+          "name": "Jio",
+          "id": "222:0"
+        },
+        {
+          "name": "JS",
+          "id": "1294:3"
+        }
+      ],
+      "default_mode_id": "222:0",
+      "remote": false
+    },
+    {
+      "id": "VariableCollectionId:1208:129074",
+      "name": "11 Motion",
+      "level": 99,
+      "variable_count": 16,
+      "modes": [
+        {
+          "name": "Subtle",
+          "id": "1208:2"
+        },
+        {
+          "name": "Moderate",
+          "id": "1209:3"
+        }
+      ],
+      "default_mode_id": "1208:2",
+      "remote": false
+    },
+    {
+      "id": "VariableCollectionId:1229:12243",
+      "name": "4.5 Disabled",
+      "level": 99,
+      "variable_count": 1,
+      "modes": [
+        {
+          "name": "false",
+          "id": "1229:0"
+        },
+        {
+          "name": "true",
+          "id": "1229:1"
+        }
+      ],
+      "default_mode_id": "1229:0",
+      "remote": false
+    },
+    {
+      "id": "VariableCollectionId:23:24061",
+      "name": "6 Density",
+      "level": 99,
+      "variable_count": 222,
+      "modes": [
+        {
+          "name": "Default",
+          "id": "23:7"
+        },
+        {
+          "name": "Compact",
+          "id": "49:0"
+        },
+        {
+          "name": "Open",
+          "id": "49:1"
+        }
+      ],
+      "default_mode_id": "23:7",
+      "remote": false
+    },
+    {
+      "id": "VariableCollectionId:23:24060",
+      "name": "7 Platform",
+      "level": 99,
+      "variable_count": 87,
+      "modes": [
+        {
+          "name": "S [Mobile 360]",
+          "id": "23:6"
+        },
+        {
+          "name": "M [Tablet portrait 768]",
+          "id": "49:2"
+        },
+        {
+          "name": "M [Tablet landscape 1024]",
+          "id": "49:3"
+        },
+        {
+          "name": "L [Laptop 1440]",
+          "id": "49:4"
+        },
+        {
+          "name": "L [Desktop 1920]",
+          "id": "49:5"
+        }
+      ],
+      "default_mode_id": "23:6",
+      "remote": false
+    },
+    {
+      "id": "VariableCollectionId:23:24059",
+      "name": "8 Language",
+      "level": 99,
+      "variable_count": 37,
+      "modes": [
+        {
+          "name": "Arabic",
+          "id": "23:5"
+        },
+        {
+          "name": "XXX",
+          "id": "144:2"
+        }
+      ],
+      "default_mode_id": "23:5",
+      "remote": false
+    },
+    {
+      "id": "VariableCollectionId:23:24054",
+      "name": "X01_PlaceHolder (9.5)",
+      "level": 99,
+      "variable_count": 1,
+      "modes": [
+        {
+          "name": "Mode 1",
+          "id": "23:0"
+        },
+        {
+          "name": "Mode 2",
+          "id": "810:1"
+        }
+      ],
+      "default_mode_id": "23:0",
+      "remote": false
+    },
+    {
+      "id": "VariableCollectionId:810:1781",
+      "name": "X03_PlaceHolder (first collection)",
+      "level": 99,
+      "variable_count": 1,
+      "modes": [
+        {
+          "name": "Mode 1",
+          "id": "810:2"
+        },
+        {
+          "name": "Mode 2",
+          "id": "810:3"
+        }
+      ],
+      "default_mode_id": "810:2",
+      "remote": false
+    }
+  ],
+  "naming_patterns": {
+    "variable_format": "{ColorFamily}/{Scale}/{Property}",
+    "contextual_format": "{Category}/{Subcategory}/[Context] {Property}",
+    "examples": [
+      {
+        "pattern": "Semi-semantic",
+        "example": "Grey/2500/Surface"
+      },
+      {
+        "pattern": "Contextual",
+        "example": "Grey/Semi semantics/Root/[Colour Mode] Surface"
+      },
+      {
+        "pattern": "Theme",
+        "example": "Jio/Surfaces/[Theme] Surface"
+      },
+      {
+        "pattern": "Appearance",
+        "example": "Jio/MyJio/[appearance] Surface"
+      },
+      {
+        "pattern": "DataVis",
+        "example": "DataVis/MyJio/categorical/bold/1"
+      }
+    ],
+    "scale_numbers": [
+      2500,
+      2400,
+      2300,
+      2200,
+      2100,
+      2000,
+      1900,
+      1800,
+      1700,
+      1600,
+      1500,
+      1400,
+      1300
+    ],
+    "context_markers": [
+      "Default",
+      "Theme",
+      "code"
+    ],
+    "property_types": [
+      "Bold",
+      "Bold A11Y",
+      "Heavy",
+      "High",
+      "Low",
+      "Medium",
+      "Minimal",
+      "Surface"
+    ],
+    "color_families": [
+      "Grey"
+    ]
+  },
+  "mode_mappings": {
+    "theme": {
+      "MyJio": {
+        "mode_id": "23:4",
+        "primary_color": "Indigo",
+        "secondary_color": "Saffron",
+        "sparkle_color": "Green"
+      },
+      "JioFinance": {
+        "mode_id": "633:0",
+        "primary_color": "Unknown",
+        "secondary_color": "Unknown",
+        "sparkle_color": "Unknown"
+      },
+      "JioHome": {
+        "mode_id": "1292:0",
+        "primary_color": "Unknown",
+        "secondary_color": "Unknown",
+        "sparkle_color": "Unknown"
+      }
+    },
+    "color_mode": {
+      "Light": {
+        "mode_id": "23:9",
+        "description": "Light theme colors"
+      },
+      "Dark": {
+        "mode_id": "72:0",
+        "description": "Dark theme colors"
+      }
+    },
+    "interaction_state": {
+      "Idle": {
+        "mode_id": "23:10",
+        "description": "Idle state"
+      },
+      "Hover": {
+        "mode_id": "75:0",
+        "description": "Hover state"
+      },
+      "Pressed": {
+        "mode_id": "75:1",
+        "description": "Pressed state"
+      },
+      "Focus": {
+        "mode_id": "75:2",
+        "description": "Focus state"
+      }
+    },
+    "fill_emphasis": {
+      "Ghost": {
+        "mode_id": "23:12",
+        "description": "Ghost emphasis style"
+      },
+      "Minimal": {
+        "mode_id": "79:3",
+        "description": "Minimal emphasis style"
+      },
+      "Subtle": {
+        "mode_id": "79:4",
+        "description": "Subtle emphasis style"
+      },
+      "Bold": {
+        "mode_id": "79:5",
+        "description": "Bold emphasis style"
+      }
+    },
+    "background_level": {
+      "Level 0": {
+        "mode_id": "23:11",
+        "description": "Background Level 0"
+      },
+      "Level 1": {
+        "mode_id": "79:0",
+        "description": "Background Level 1"
+      },
+      "Level 2": {
+        "mode_id": "79:1",
+        "description": "Background Level 2"
+      },
+      "Bold": {
+        "mode_id": "79:2",
+        "description": "Background Bold"
+      },
+      "Elevated": {
+        "mode_id": "196:0",
+        "description": "Background Elevated"
+      }
+    },
+    "appearance": {
+      "Neutral": {
+        "mode_id": "23:13",
+        "description": "Neutral appearance"
+      },
+      "Primary": {
+        "mode_id": "91:0",
+        "description": "Primary appearance"
+      },
+      "Secondary": {
+        "mode_id": "128:0",
+        "description": "Secondary appearance"
+      },
+      "Sparkle": {
+        "mode_id": "128:1",
+        "description": "Sparkle appearance"
+      },
+      "Informative": {
+        "mode_id": "389:0",
+        "description": "Informative appearance"
+      },
+      "Negative": {
+        "mode_id": "476:0",
+        "description": "Negative appearance"
+      },
+      "Positive": {
+        "mode_id": "563:0",
+        "description": "Positive appearance"
+      },
+      "Warning": {
+        "mode_id": "571:0",
+        "description": "Warning appearance"
+      },
+      "Brand BG": {
+        "mode_id": "738:0",
+        "description": "Brand BG appearance"
+      }
+    }
+  },
+  "automation_rules": {
+    "rule_001_scale_pattern": {
+      "id": "SCALE_PATTERN",
+      "name": "Color Scale Numbering Pattern",
+      "category": "scale",
+      "description": "Defines valid color scale numbers and their progression",
+      "pattern": {
+        "light_mode_progression": [
+          2500,
+          2400,
+          2300,
+          2200,
+          2100,
+          2000,
+          1900,
+          1800,
+          1700,
+          1600,
+          1500,
+          1400,
+          1300,
+          1200,
+          1100,
+          1000,
+          900,
+          800,
+          700,
+          600,
+          500,
+          400,
+          300,
+          200,
+          100
+        ],
+        "dark_mode_progression": [
+          100,
+          200,
+          300,
+          400,
+          500,
+          600,
+          700,
+          800,
+          900,
+          1000,
+          1100,
+          1200,
+          1300,
+          1400,
+          1500,
+          1600,
+          1700,
+          1800,
+          1900,
+          2000,
+          2100,
+          2200,
+          2300,
+          2400,
+          2500
+        ],
+        "rule": "Light mode: higher numbers = lighter colors. Dark mode: lower numbers = lighter colors."
+      },
+      "validation": {
+        "check": "Variable name contains valid scale number",
+        "fix": "Use closest valid scale number"
+      }
+    },
+    "rule_002_interaction_states": {
+      "id": "INTERACTION_STATES",
+      "name": "Interaction State Mapping",
+      "category": "mode_consistency",
+      "description": "Defines how interaction states map to color scale progression",
+      "pattern": {
+        "idle": "Root scale (e.g., Grey/2500)",
+        "hover": "Root +1 (e.g., Grey/2400)",
+        "pressed": "Root +2 (e.g., Grey/2300)",
+        "focus": "Root (same as idle)"
+      },
+      "validation": {
+        "check": "All interaction state modes have appropriate scale references",
+        "fix": "Map to correct scale based on state"
+      }
+    },
+    "rule_003_mode_branching": {
+      "id": "MODE_BRANCHING",
+      "name": "Multi-Mode Variable Consistency",
+      "category": "mode_consistency",
+      "description": "All variables in a collection must define values for all modes",
+      "pattern": {
+        "requirement": "valuesByMode must have entry for each mode in collection.modes",
+        "exception": "None - all modes must be defined"
+      },
+      "validation": {
+        "check": "Variable has value defined for every mode in its collection",
+        "fix": "Add missing mode entries with appropriate aliases or values"
+      }
+    },
+    "rule_004_alias_depth": {
+      "id": "ALIAS_DEPTH",
+      "name": "Maximum Alias Chain Depth",
+      "category": "alias",
+      "description": "Prevents infinite loops and excessive indirection",
+      "pattern": {
+        "max_depth": 50,
+        "typical_depth": "7-15 levels",
+        "chain_structure": "Theme \u2192 Appearance \u2192 Fill \u2192 Background \u2192 Interaction \u2192 Color Mode \u2192 Semi-semantic \u2192 Primitive"
+      },
+      "validation": {
+        "check": "Alias chain resolves within max_depth",
+        "fix": "Identify circular reference or excessive indirection"
+      }
+    },
+    "rule_005_context_markers": {
+      "id": "CONTEXT_MARKERS",
+      "name": "Context Marker Convention",
+      "category": "naming",
+      "description": "Variables use [Context] markers to indicate collection layer",
+      "pattern": {
+        "markers": [
+          "[Theme]",
+          "[Colour Mode]",
+          "[Interaction state]",
+          "[appearance]",
+          "[Parent]",
+          "[Child]"
+        ],
+        "format": "Category/Subcategory/[Context] Property",
+        "case": "Context names may be lowercase or Title Case"
+      },
+      "validation": {
+        "check": "Variables in contextual collections use appropriate [Context] marker",
+        "fix": "Add correct context marker based on collection"
+      }
+    },
+    "rule_006_collection_dependencies": {
+      "id": "COLLECTION_DEPENDENCIES",
+      "name": "Valid Cross-Collection References",
+      "category": "collection_dependency",
+      "description": "Defines which collections can reference variables from which other collections",
+      "pattern": {
+        "hierarchy": {
+          "Primitives": {
+            "can_reference": []
+          },
+          "Semi-semantics": {
+            "can_reference": [
+              "Primitives"
+            ]
+          },
+          "Color Mode": {
+            "can_reference": [
+              "Semi-semantics",
+              "Primitives"
+            ]
+          },
+          "Contextual": {
+            "can_reference": [
+              "Color Mode",
+              "Semi-semantics",
+              "Primitives"
+            ]
+          },
+          "Theme": {
+            "can_reference": [
+              "Contextual",
+              "Color Mode",
+              "Semi-semantics",
+              "Primitives"
+            ]
+          },
+          "Brand": {
+            "can_reference": [
+              "Theme",
+              "Contextual",
+              "Color Mode",
+              "Semi-semantics",
+              "Primitives"
+            ]
+          }
+        }
+      },
+      "validation": {
+        "check": "Alias references only target variables from allowed collections",
+        "fix": "Update alias to reference appropriate collection layer"
+      }
+    },
+    "rule_007_color_family": {
+      "id": "COLOR_FAMILY",
+      "name": "Color Family Naming Consistency",
+      "category": "naming",
+      "description": "Color families follow consistent naming across all collections",
+      "pattern": {
+        "families": [
+          "Grey",
+          "Indigo",
+          "Saffron",
+          "Green",
+          "Orange",
+          "Purple",
+          "Sky",
+          "Cabbage",
+          "Gold",
+          "Positive",
+          "Negative",
+          "Warning",
+          "Informative"
+        ],
+        "format": "{Family}/{Scale or Context}/{Property}",
+        "properties": [
+          "Surface",
+          "High",
+          "Medium",
+          "Low",
+          "Heavy",
+          "Bold",
+          "Bold A11Y",
+          "Minimal"
+        ]
+      },
+      "validation": {
+        "check": "Variable name starts with valid color family",
+        "fix": "Use standard color family name"
+      }
+    },
+    "rule_008_datavis_palette": {
+      "id": "DATAVIS_PALETTE",
+      "name": "Data Visualization Palette Structure",
+      "category": "naming",
+      "description": "DataVis variables follow specific categorical/monochromatic/diverging patterns",
+      "pattern": {
+        "format": "DataVis/{Brand}/{Type}/{Variant}/{Number}",
+        "types": [
+          "categorical",
+          "monochromatic",
+          "divergingSemantic",
+          "divergingBrand",
+          "core"
+        ],
+        "categorical_variants": [
+          "bold",
+          "subtle"
+        ],
+        "categorical_count": 6,
+        "monochromatic_categories": 6,
+        "monochromatic_steps": 5,
+        "diverging_steps": 11
+      },
+      "validation": {
+        "check": "DataVis variables follow structure with valid type and count",
+        "fix": "Rename to match DataVis naming convention"
+      }
+    }
+  },
+  "brand_specifics": {
+    "MyJio": {
+      "theme_mode_id": "23:4",
+      "primary_color": {
+        "family": "Indigo",
+        "description": "Primary brand color used for key actions and emphasis"
+      },
+      "secondary_color": {
+        "family": "Saffron",
+        "description": "Secondary brand color for accents and variety"
+      },
+      "sparkle_color": {
+        "family": "Green",
+        "description": "Special highlight color for positive actions"
+      },
+      "neutral_color": {
+        "family": "Grey",
+        "description": "Neutral colors for surfaces and text"
+      },
+      "semantic_colors": {
+        "informative": "Informative family (blue tones)",
+        "positive": "Positive family (green tones)",
+        "negative": "Negative family (red tones)",
+        "warning": "Warning family (yellow/orange tones)"
+      },
+      "datavis_palette": {
+        "categorical_bold": [
+          "Orange",
+          "Purple",
+          "Blue",
+          "Cyan",
+          "Teal",
+          "Yellow"
+        ],
+        "categorical_subtle": [
+          "Light variants of categorical bold"
+        ],
+        "monochromatic": "6 categories with 5 steps each",
+        "diverging_semantic": "11-step scale from negative to positive",
+        "diverging_brand": "11-step scale from secondary to primary"
+      }
+    }
+  }
+}
