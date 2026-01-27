@@ -20,6 +20,16 @@ export function BrandConfigPanel() {
   
   const [showInfo, setShowInfo] = useState(false);
 
+  // Move useMemo BEFORE any early returns to comply with Rules of Hooks
+  const validation = useMemo(
+    () => {
+      if (!activeBrand) return { valid: false, errors: [], warnings: [] };
+      return BrandGenerator.validate(activeBrand);
+    },
+    [activeBrand]
+  );
+
+  // Handle null activeBrand case
   if (!activeBrand) {
     return (
       <div className="h-full flex items-center justify-center text-foreground-secondary text-sm">
@@ -50,11 +60,6 @@ export function BrandConfigPanel() {
     };
     useBrandStore.getState().updateBrand(activeBrand.id, { colors: newColors });
   };
-
-  const validation = useMemo(
-    () => BrandGenerator.validate(activeBrand),
-    [activeBrand]
-  );
 
   const handleSync = async () => {
     if (!validation.valid) {

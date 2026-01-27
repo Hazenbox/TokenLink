@@ -16,70 +16,26 @@ export function BrandVariableTable() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterBy, setFilterBy] = useState<'all' | 'palette' | 'scale'>('all');
 
-  if (!activeBrand) {
-    return (
-      <div className="h-full flex items-center justify-center text-foreground-secondary text-sm p-4">
-        Select a brand to view variables
-      </div>
-    );
-  }
-
+  // Move ALL useMemo hooks BEFORE any early returns to comply with Rules of Hooks
+  
   // Validate brand before generation
-  const validation = useMemo(() => BrandGenerator.validate(activeBrand), [activeBrand]);
-
-  // Show validation errors if brand is not configured
-  if (!validation.valid) {
-    return (
-      <div className="h-full flex items-center justify-center p-4">
-        <div className="text-center max-w-md">
-          <h3 className="text-sm font-semibold text-foreground mb-2">
-            Configuration Required
-          </h3>
-          <p className="text-xs text-foreground-secondary mb-4">
-            Assign palettes in the configuration panel to generate variables
-          </p>
-          {validation.errors.length > 0 && (
-            <div className="text-left bg-surface-elevated border-l-2 border-l-red-500 rounded p-3">
-              <p className="text-xs font-medium text-red-500 mb-2">Required:</p>
-              <ul className="text-xs text-foreground-secondary space-y-1">
-                {validation.errors.map((error, idx) => (
-                  <li key={idx}>• {error}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
+  const validation = useMemo(() => {
+    if (!activeBrand) return { valid: false, errors: [], warnings: [] };
+    return BrandGenerator.validate(activeBrand);
+  }, [activeBrand]);
 
   // Generate brand variables with error handling
   const generatedBrand = useMemo(() => {
+    if (!activeBrand || !validation.valid) return null;
     try {
       return BrandGenerator.generateBrand(activeBrand);
     } catch (error) {
       console.error('Failed to generate brand variables:', error);
       return null;
     }
-  }, [activeBrand]);
+  }, [activeBrand, validation.valid]);
 
-  // Show error if generation failed
-  if (!generatedBrand) {
-    return (
-      <div className="h-full flex items-center justify-center p-4">
-        <div className="text-center">
-          <p className="text-sm text-foreground-secondary mb-2">
-            Unable to generate variables
-          </p>
-          <p className="text-xs text-foreground-tertiary">
-            Please check your palette assignments
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  const variables = generatedBrand.variables || [];
+  const variables = generatedBrand?.variables || [];
 
   // Filter variables by search query
   const filteredVariables = useMemo(() => {
@@ -110,6 +66,57 @@ export function BrandVariableTable() {
     
     return groups;
   }, [filteredVariables]);
+
+  // Handle different states AFTER all hooks are called
+  if (!activeBrand) {
+    return (
+      <div className="h-full flex items-center justify-center text-foreground-secondary text-sm p-4">
+        Select a brand to view variables
+      </div>
+    );
+  }
+
+  // Show validation errors if brand is not configured
+  if (!validation.valid) {
+    return (
+      <div className="h-full flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <h3 className="text-sm font-semibold text-foreground mb-2">
+            Configuration Required
+          </h3>
+          <p className="text-xs text-foreground-secondary mb-4">
+            Assign palettes in the configuration panel to generate variables
+          </p>
+          {validation.errors.length > 0 && (
+            <div className="text-left bg-surface-elevated border-l-2 border-l-red-500 rounded p-3">
+              <p className="text-xs font-medium text-red-500 mb-2">Required:</p>
+              <ul className="text-xs text-foreground-secondary space-y-1">
+                {validation.errors.map((error, idx) => (
+                  <li key={idx}>• {error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if generation failed
+  if (!generatedBrand) {
+    return (
+      <div className="h-full flex items-center justify-center p-4">
+        <div className="text-center">
+          <p className="text-sm text-foreground-secondary mb-2">
+            Unable to generate variables
+          </p>
+          <p className="text-xs text-foreground-tertiary">
+            Please check your palette assignments
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const handleExport = () => {
     // Export to CSV
