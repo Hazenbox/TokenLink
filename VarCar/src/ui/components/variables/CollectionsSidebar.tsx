@@ -3,8 +3,9 @@
  * Displays list of collections for Figma-style Variables UI
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Plus } from 'lucide-react';
+import { shallow } from 'zustand/shallow';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useBrandStore } from '@/store/brand-store';
 import { useVariablesViewStore } from '@/store/variables-view-store';
@@ -44,15 +45,29 @@ function CollectionItem({ collection, isActive, onClick }: CollectionItemProps) 
 }
 
 export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarProps) {
-  const collections = useBrandStore((state) => state.getFigmaCollections()) || [];
-  const { activeCollectionId, setActiveCollection, collectionsCollapsed } = useVariablesViewStore();
+  const collections = useBrandStore(
+    (state) => state.getFigmaCollections() || [],
+    shallow
+  );
+  const activeCollectionId = useVariablesViewStore((state) => state.activeCollectionId);
+  const setActiveCollection = useVariablesViewStore((state) => state.setActiveCollection);
+  const collectionsCollapsed = useVariablesViewStore((state) => state.collectionsCollapsed);
   
-  // Auto-select first collection if none selected
+  // Initialization guard to prevent infinite loop
+  const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Auto-select first collection if none selected (only once on mount)
   useEffect(() => {
-    if (collections.length > 0 && !activeCollectionId) {
+    if (!isInitialized && collections.length > 0 && !activeCollectionId) {
       setActiveCollection(collections[0].id);
+      setIsInitialized(true);
     }
-  }, [collections.length, activeCollectionId]);
+  }, [collections.length, activeCollectionId, setActiveCollection, isInitialized]);
+  
+  // Handle collection click
+  const handleCollectionClick = useCallback((id: string) => {
+    setActiveCollection(id);
+  }, [setActiveCollection]);
   
   if (collectionsCollapsed) {
     return (
@@ -99,7 +114,7 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
                 key={collection.id}
                 collection={collection}
                 isActive={activeCollectionId === collection.id}
-                onClick={() => setActiveCollection(collection.id)}
+                onClick={() => handleCollectionClick(collection.id)}
               />
             ))}
           </div>

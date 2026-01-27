@@ -47,6 +47,20 @@ const APPEARANCE_CONTEXTS = [
 type CollectionStrategy = 'single' | 'per-appearance';
 
 /**
+ * Cached modes array - reused to maintain stable references and prevent infinite loops
+ */
+const CACHED_MODES: FigmaMode[] = [
+  { id: 'mode_surface', name: 'Surface' },
+  { id: 'mode_high', name: 'High' },
+  { id: 'mode_medium', name: 'Medium' },
+  { id: 'mode_low', name: 'Low' },
+  { id: 'mode_heavy', name: 'Heavy' },
+  { id: 'mode_bold', name: 'Bold' },
+  { id: 'mode_bold_a11y', name: 'Bold A11Y' },
+  { id: 'mode_minimal', name: 'Minimal' }
+];
+
+/**
  * Adapter class for converting Brand data to Figma format
  */
 export class BrandToFigmaAdapter {
@@ -93,12 +107,10 @@ export class BrandToFigmaAdapter {
 
   /**
    * Generate standard modes for a collection
+   * Returns cached array to maintain stable references
    */
   private generateModes(): FigmaMode[] {
-    return SCALE_NAMES.map((name, idx) => ({
-      id: `mode_${name.toLowerCase().replace(/\s+/g, '_')}`,
-      name
-    }));
+    return CACHED_MODES;
   }
 
   /**

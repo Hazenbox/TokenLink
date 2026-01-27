@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
+import { shallow } from 'zustand/shallow';
 import { useBrandStore } from '@/store/brand-store';
 import { useVariablesViewStore } from '@/store/variables-view-store';
 import { BrandGenerator } from '@/lib/brand-generator';
@@ -15,12 +16,19 @@ import { ModeCell } from './variables/ModeCell';
 
 export function BrandVariableTable() {
   const activeBrand = useBrandStore((state) => state.getActiveBrand());
-  const { activeCollectionId, activeGroupId, searchQuery, setSearchQuery } = useVariablesViewStore();
+  const activeCollectionId = useVariablesViewStore((state) => state.activeCollectionId);
+  const activeGroupId = useVariablesViewStore((state) => state.activeGroupId);
+  const searchQuery = useVariablesViewStore((state) => state.searchQuery);
+  const setSearchQuery = useVariablesViewStore((state) => state.setSearchQuery);
   
-  // Get collections, and variables from store
-  const collections = useBrandStore((state) => state.getFigmaCollections()) || [];
-  const figmaVariables = useBrandStore((state) => 
-    activeCollectionId ? state.getFigmaVariables(activeCollectionId, activeGroupId || 'all') : []
+  // Get collections and variables from store with shallow comparison
+  const collections = useBrandStore(
+    (state) => state.getFigmaCollections() || [],
+    shallow
+  );
+  const figmaVariables = useBrandStore(
+    (state) => activeCollectionId ? state.getFigmaVariables(activeCollectionId, activeGroupId || 'all') : [],
+    shallow
   ) || [];
   
   // Get active collection

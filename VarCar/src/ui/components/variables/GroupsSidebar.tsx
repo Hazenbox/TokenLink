@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { ChevronsUpDown } from 'lucide-react';
+import { shallow } from 'zustand/shallow';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useBrandStore } from '@/store/brand-store';
 import { useVariablesViewStore } from '@/store/variables-view-store';
@@ -44,11 +45,15 @@ function GroupItem({ group, isActive, onClick }: GroupItemProps) {
 }
 
 export function GroupsSidebar({ onCreateGroup }: GroupsSidebarProps) {
-  const { activeCollectionId, activeGroupId, setActiveGroup, groupsCollapsed } = useVariablesViewStore();
+  const activeCollectionId = useVariablesViewStore((state) => state.activeCollectionId);
+  const activeGroupId = useVariablesViewStore((state) => state.activeGroupId);
+  const setActiveGroup = useVariablesViewStore((state) => state.setActiveGroup);
+  const groupsCollapsed = useVariablesViewStore((state) => state.groupsCollapsed);
   
-  // Get groups for active collection
-  const groups = useBrandStore((state) => 
-    activeCollectionId ? state.getFigmaGroups(activeCollectionId) : []
+  // Get groups for active collection with shallow comparison
+  const groups = useBrandStore(
+    (state) => activeCollectionId ? state.getFigmaGroups(activeCollectionId) : [],
+    shallow
   ) || [];
   
   // Calculate total count for "All" option
