@@ -4,7 +4,7 @@ import { App } from "./App";
 import { AutomateApp } from "./AutomateApp";
 import { safeStorage } from "@/lib/storage";
 
-type ActiveApp = "color" | "figzig" | "automate";
+export type ActiveApp = "color" | "figzig" | "automate";
 
 // Global app switcher context
 interface AppSwitcherContextValue {
@@ -22,7 +22,10 @@ export function useAppSwitcher() {
   return context;
 }
 
-export function AppSwitcher() {
+/**
+ * AppSwitcherProvider - Context provider for app switching
+ */
+export function AppSwitcherProvider({ children }: { children: React.ReactNode }) {
   const [activeApp, setActiveApp] = React.useState<ActiveApp>(() => {
     const stored = safeStorage.getItem("varcar-active-app");
     return (stored as ActiveApp) || "color";
@@ -43,13 +46,22 @@ export function AppSwitcher() {
 
   return (
     <AppSwitcherContext.Provider value={value}>
-      {activeApp === "color" ? (
-        <ColorApp />
-      ) : activeApp === "automate" ? (
-        <AutomateApp />
-      ) : (
-        <App />
-      )}
+      {children}
     </AppSwitcherContext.Provider>
   );
+}
+
+/**
+ * AppSwitcher - Content renderer based on active app
+ */
+export function AppSwitcher() {
+  const { activeApp } = useAppSwitcher();
+
+  if (activeApp === "color") {
+    return <ColorApp />;
+  } else if (activeApp === "automate") {
+    return <AutomateApp />;
+  } else {
+    return <App />;
+  }
 }
