@@ -1,22 +1,24 @@
 /**
  * Brand to Figma Variables Adapter
- * Converts VarCar's Brand model to Figma's Variables UI paradigm
+ * Converts VarCar's Brand model to Figma's Variables architecture
+ * Based on official Figma documentation and real-world structure analysis
  */
 
 import {
   Brand,
-  GeneratedVariable,
   FigmaCollection,
-  FigmaMode,
   FigmaGroup,
   FigmaVariable,
-  FigmaVariableValue
+  VariableValueByMode
 } from '@/models/brand';
+import { usePaletteStore } from '@/store/palette-store';
+import { generateAllScales } from '@/lib/colors/scale-generator';
+import { STEPS } from '@/lib/colors/color-utils';
 
 /**
- * Scale names mapping to Figma modes
+ * Scale types (emphasis levels) - part of variable names, NOT modes
  */
-const SCALE_NAMES = [
+const SCALE_TYPES = [
   'Surface',
   'High',
   'Medium',
@@ -28,278 +30,299 @@ const SCALE_NAMES = [
 ] as const;
 
 /**
- * Appearance contexts for grouping
- */
-const APPEARANCE_CONTEXTS = [
-  'Neutral',
-  'Primary',
-  'Secondary',
-  'Sparkle',
-  'Positive',
-  'Negative',
-  'Warning',
-  'Informative'
-] as const;
-
-/**
- * Strategy for collection organization
- */
-type CollectionStrategy = 'single' | 'per-appearance';
-
-/**
- * Cached modes array - reused to maintain stable references and prevent infinite loops
- */
-const CACHED_MODES: FigmaMode[] = [
-  { id: 'mode_surface', name: 'Surface' },
-  { id: 'mode_high', name: 'High' },
-  { id: 'mode_medium', name: 'Medium' },
-  { id: 'mode_low', name: 'Low' },
-  { id: 'mode_heavy', name: 'Heavy' },
-  { id: 'mode_bold', name: 'Bold' },
-  { id: 'mode_bold_a11y', name: 'Bold A11Y' },
-  { id: 'mode_minimal', name: 'Minimal' }
-];
-
-/**
  * Adapter class for converting Brand data to Figma format
  */
 export class BrandToFigmaAdapter {
-  private strategy: CollectionStrategy = 'single';
-
   /**
-   * Set collection strategy
-   */
-  setStrategy(strategy: CollectionStrategy): void {
-    this.strategy = strategy;
-  }
-
-  /**
-   * Get current collection strategy
-   */
-  getCollectionStrategy(): CollectionStrategy {
-    return this.strategy;
-  }
-
-  /**
-   * Convert Brand to Figma Collections
+   * Get all collections from brand (use brand's collections directly)
+   * This replaces the old strategy-based generation
    */
   convertBrandToCollections(brand: Brand): FigmaCollection[] {
-    if (this.strategy === 'single') {
-      // Single collection containing all variables
-      return [{
-        id: `col_${brand.id}`,
-        name: brand.name,
-        modes: this.generateModes(),
-        defaultModeId: 'mode_surface',
-        variableCount: 0 // Will be updated when variables are counted
-      }];
-    } else {
-      // One collection per appearance context
-      return APPEARANCE_CONTEXTS.map((appearance, idx) => ({
-        id: `col_${brand.id}_${appearance.toLowerCase()}`,
-        name: `${brand.name} - ${appearance}`,
-        modes: this.generateModes(),
-        defaultModeId: 'mode_surface',
-        variableCount: 0
-      }));
+    // Return brand's collections directly
+    if (brand.collections && brand.collections.length > 0) {
+      return brand.collections;
     }
+    
+    // Fallback: if brand has no collections (shouldn't happen after migration)
+    console.warn('[Adapter] Brand has no collections, returning empty array');
+    return [];
   }
-
+  
   /**
-   * Generate standard modes for a collection
-   * Returns cached array to maintain stable references
+   * Generate variables for a PRIMITIVES collection
+   * Creates: {Palette}/{Step}/{Scale} naming with slash-based hierarchy
+   * 
+   * Example output:
+   *   Grey/2500/Surface → #ffffff
+   *   Grey/2500/High → #eeeeee
+   *   Indigo/2500/Surface → #f0f0ff
    */
-  private generateModes(): FigmaMode[] {
-    return CACHED_MODES;
-  }
-
-  /**
-   * Convert Brand to Figma Groups (organized by palette)
-   */
-  convertBrandToGroups(
-    brand: Brand,
-    variables: GeneratedVariable[],
-    collectionId: string
-  ): FigmaGroup[] {
-    const groupMap = new Map<string, number>();
-
-    // Count variables per palette
-    variables.forEach((variable) => {
-      const palette = variable.sourcePalette || 'Unknown';
-      groupMap.set(palette, (groupMap.get(palette) || 0) + 1);
-    });
-
-    // Create groups sorted alphabetically
-    const groups: FigmaGroup[] = Array.from(groupMap.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([paletteName, count]) => ({
-        id: `grp_${paletteName.toLowerCase().replace(/\s+/g, '_')}`,
-        name: paletteName,
-        collectionId,
-        variableCount: count / SCALE_NAMES.length // Divide by scales to get actual variable count
-      }));
-
-    return groups;
-  }
-
-  /**
-   * Convert GeneratedVariable[] to FigmaVariable[]
-   * Transforms from (palette, step, scale) model to (variable, mode) model
-   */
-  convertVariables(
-    variables: GeneratedVariable[],
-    brand: Brand,
-    collectionId: string
+  generatePrimitivesCollectionVariables(
+    collection: FigmaCollection
   ): FigmaVariable[] {
-    // Group variables by (appearance, palette, step) to create single FigmaVariable
-    const variableMap = new Map<string, {
-      appearance: string;
-      palette: string;
-      step: number;
-      valuesByScale: Map<string, GeneratedVariable>;
-    }>();
-
-    // First pass: group by unique variable identity
-    variables.forEach((variable) => {
-      const appearance = this.extractAppearance(variable.name);
-      const palette = variable.sourcePalette || 'Unknown';
-      const step = this.extractStep(variable);
-      const scale = variable.sourceScale || 'Unknown';
+    const variables: FigmaVariable[] = [];
+    const modeId = collection.defaultModeId;
+    
+    if (!collection.paletteAssignments) {
+      console.warn('[Adapter] Primitives collection has no palette assignments');
+      return [];
+    }
+    
+    // For each palette assignment
+    Object.entries(collection.paletteAssignments).forEach(([groupName, paletteRef]) => {
+      const paletteStore = usePaletteStore.getState();
+      const palette = paletteStore.getPaletteById(paletteRef.paletteId);
       
-      // Skip variables without valid step
-      if (step === null || step === 0) {
-        console.warn(`[Figma Adapter] Skipping variable with no step: ${variable.name}`);
+      if (!palette) {
+        console.warn(`[Adapter] Palette not found: ${paletteRef.paletteId}`);
         return;
       }
-
-      const key = `${appearance}_${palette}_${step}`;
-
-      if (!variableMap.has(key)) {
-        variableMap.set(key, {
-          appearance,
-          palette,
-          step,
-          valuesByScale: new Map()
+      
+      // Generate scales for all steps
+      const scales = generateAllScales(palette.steps);
+      
+      // For each step (100, 200, 300... 2500)
+      STEPS.forEach(step => {
+        // For each scale type (Surface, High, Medium, etc.)
+        SCALE_TYPES.forEach(scaleType => {
+          const scaleKey = scaleType.toLowerCase().replace(/\s+/g, '');
+          const color = scales[step]?.[scaleKey];
+          
+          if (color) {
+            const varId = `var_${collection.id}_${groupName}_${step}_${scaleType.replace(/\s+/g, '_')}`;
+            
+            const valuesByMode: VariableValueByMode = {
+              [modeId]: {
+                type: 'COLOR',
+                value: color
+              }
+            };
+            
+            variables.push({
+              id: varId,
+              name: `${groupName}/${step}/${scaleType}`,  // Slash-based hierarchy!
+              resolvedType: 'COLOR',
+              variableCollectionId: collection.id,
+              valuesByMode,
+              resolvedValuesByMode: {
+                [modeId]: color
+              }
+            });
+          }
         });
-      }
-
-      variableMap.get(key)!.valuesByScale.set(scale, variable);
+      });
     });
-
-    // Second pass: convert to FigmaVariable[]
-    const figmaVariables: FigmaVariable[] = [];
-
-    variableMap.forEach(({ appearance, palette, step, valuesByScale }, key) => {
-      const valuesByMode: Record<string, FigmaVariableValue> = {};
-      const resolvedValuesByMode: Record<string, string> = {};
-
-      // Map each scale to its corresponding mode
-      SCALE_NAMES.forEach((scaleName) => {
-        const modeId = `mode_${scaleName.toLowerCase().replace(/\s+/g, '_')}`;
-        const variable = valuesByScale.get(scaleName);
-
-        if (variable) {
-          // Add mode value
-          valuesByMode[modeId] = {
-            type: 'COLOR',
-            value: variable.value,
-            aliasTo: variable.isAliased && variable.aliasTo ? {
-              variableId: `var_${variable.aliasTo.paletteName}_${variable.aliasTo.step}`,
-              modeId: `mode_${variable.aliasTo.scale.toLowerCase().replace(/\s+/g, '_')}`
-            } : undefined
+    
+    console.log(`[Adapter] Generated ${variables.length} primitive variables for collection ${collection.name}`);
+    return variables;
+  }
+  
+  /**
+   * Generate variables for SEMANTIC/APPEARANCES collection
+   * Creates: [semantic] {Scale} naming with ALIASES to primitives
+   * 
+   * Example output:
+   *   [appearance] Surface
+   *     → Neutral mode: ALIAS to Grey/2500/Surface
+   *     → Primary mode: ALIAS to Indigo/2500/Surface
+   *     → Secondary mode: ALIAS to Green/2500/Surface
+   */
+  generateSemanticCollectionVariables(
+    semanticCollection: FigmaCollection,
+    primitivesCollection: FigmaCollection,
+    primitivesVariables: FigmaVariable[]
+  ): FigmaVariable[] {
+    const variables: FigmaVariable[] = [];
+    
+    // Create semantic variables for each scale type
+    SCALE_TYPES.forEach(scaleType => {
+      const varId = `var_${semanticCollection.id}_appearance_${scaleType.replace(/\s+/g, '_')}`;
+      const valuesByMode: VariableValueByMode = {};
+      const resolvedValuesByMode: { [modeId: string]: string } = {};
+      
+      // For each mode (Neutral, Primary, Secondary, etc.)
+      semanticCollection.modes.forEach(mode => {
+        // Map mode name to primitive group name
+        // e.g., "Neutral" mode → "Neutral" group, "Primary" mode → "Primary" group
+        const primitiveGroupName = mode.name;
+        
+        // Find the primitive variable to alias to
+        // e.g., "Neutral/2500/Surface" (default to step 2500)
+        const targetPrimitiveVar = primitivesVariables.find(v => 
+          v.name === `${primitiveGroupName}/2500/${scaleType}`
+        );
+        
+        if (targetPrimitiveVar) {
+          // Create ALIAS
+          valuesByMode[mode.modeId] = {
+            type: 'ALIAS',
+            aliasId: targetPrimitiveVar.id,
+            aliasCollectionId: primitivesCollection.id
           };
-
-          // Add resolved color
-          resolvedValuesByMode[modeId] = variable.value || '#000000';
+          
+          // Store resolved value
+          resolvedValuesByMode[mode.modeId] = 
+            targetPrimitiveVar.resolvedValuesByMode[primitivesCollection.defaultModeId] || '#000000';
         } else {
-          // No value for this mode
-          valuesByMode[modeId] = {
+          console.warn(`[Adapter] Could not find primitive variable: ${primitiveGroupName}/2500/${scaleType}`);
+          
+          // Fallback to black
+          valuesByMode[mode.modeId] = {
             type: 'COLOR',
             value: '#000000'
           };
-          resolvedValuesByMode[modeId] = '#000000';
+          resolvedValuesByMode[mode.modeId] = '#000000';
         }
       });
-
-      figmaVariables.push({
-        id: `var_${palette}_${step}`,
-        name: `[${appearance}] ${palette} ${step}`,
-        groupId: `grp_${palette.toLowerCase().replace(/\s+/g, '_')}`,
-        collectionId,
+      
+      variables.push({
+        id: varId,
+        name: `[appearance] ${scaleType}`,  // Semantic naming
+        resolvedType: 'COLOR',
+        variableCollectionId: semanticCollection.id,
         valuesByMode,
         resolvedValuesByMode
       });
     });
-
-    // Sort by palette, then step
-    figmaVariables.sort((a, b) => {
-      const paletteCompare = a.name.localeCompare(b.name);
-      if (paletteCompare !== 0) return paletteCompare;
-
-      const stepA = parseInt(a.id.split('_').pop() || '0');
-      const stepB = parseInt(b.id.split('_').pop() || '0');
-      return stepA - stepB;
-    });
-
-    return figmaVariables;
-  }
-
-  /**
-   * Extract step number from variable
-   */
-  private extractStep(variable: GeneratedVariable): number | null {
-    // Try aliasTo first
-    if (variable.aliasTo?.step) {
-      return variable.aliasTo.step;
-    }
     
-    // Try extracting from variable name
-    // Pattern: "Brand/Appearance/[appearance] Scale" where palette has steps
-    // This is a fallback - most variables should have aliasTo.step
-    const match = variable.name.match(/(\d{3,4})/);
-    if (match && match[1]) {
-      return parseInt(match[1]);
-    }
+    console.log(`[Adapter] Generated ${variables.length} semantic variables for collection ${semanticCollection.name}`);
+    return variables;
+  }
+  
+  /**
+   * Extract groups from variables (slash-based parsing)
+   * Groups are NOT a native Figma entity - they're derived from variable names
+   * 
+   * Example:
+   *   "Grey/2500/Surface" → group: "Grey", step: "2500"
+   *   "[appearance] Surface" → group: "[appearance]"
+   */
+  extractGroupsFromVariables(
+    variables: FigmaVariable[],
+    collectionId: string
+  ): FigmaGroup[] {
+    const groupMap = new Map<string, { 
+      name: string; 
+      count: number; 
+      steps: Set<string> 
+    }>();
     
-    return null;
-  }
-
-  /**
-   * Extract appearance context from variable name
-   * Example: "MyJio/Primary/[primary] Bold" → "Primary"
-   */
-  private extractAppearance(variableName: string): string {
-    const match = variableName.match(/\/([^\/]+)\/\[/);
-    if (match && match[1]) {
-      return match[1];
-    }
-
-    // Fallback: check for appearance in brackets
-    const bracketMatch = variableName.match(/\[([^\]]+)\]/);
-    if (bracketMatch && bracketMatch[1]) {
-      const appearance = bracketMatch[1];
-      // Capitalize first letter
-      return appearance.charAt(0).toUpperCase() + appearance.slice(1);
-    }
-
-    return 'Unknown';
-  }
-
-  /**
-   * Get all unique palettes from variables
-   */
-  getUniquePalettes(variables: GeneratedVariable[]): string[] {
-    const palettes = new Set<string>();
-    variables.forEach((v) => {
-      if (v.sourcePalette) {
-        palettes.add(v.sourcePalette);
+    variables.forEach(variable => {
+      // Parse: "Grey/2500/Surface" → group:"Grey", step:"2500", type:"Surface"
+      const parts = variable.name.split('/');
+      
+      if (parts.length >= 1) {
+        const groupName = parts[0];
+        const step = parts.length >= 2 ? parts[1] : null;
+        
+        if (!groupMap.has(groupName)) {
+          groupMap.set(groupName, {
+            name: groupName,
+            count: 0,
+            steps: new Set()
+          });
+        }
+        
+        const group = groupMap.get(groupName)!;
+        group.count++;
+        
+        // Add step if it's numeric (for primitives collections)
+        if (step && !isNaN(parseInt(step))) {
+          group.steps.add(step);
+        }
       }
     });
-    return Array.from(palettes).sort();
+    
+    return Array.from(groupMap.entries()).map(([id, data]) => ({
+      id,
+      name: data.name,
+      collectionId,
+      variableCount: data.count,
+      steps: Array.from(data.steps).sort((a, b) => parseInt(b) - parseInt(a))  // Sort descending (2500, 2400, 2300...)
+    }));
   }
-
+  
   /**
-   * Filter variables by group (palette)
+   * Get all groups for a collection
+   */
+  getGroupsForCollection(
+    collectionId: string,
+    allVariables: Map<string, FigmaVariable[]>
+  ): FigmaGroup[] {
+    const variables = allVariables.get(collectionId) || [];
+    return this.extractGroupsFromVariables(variables, collectionId);
+  }
+  
+  /**
+   * Get variables for a collection
+   * Generates variables based on collection type
+   */
+  getVariablesForCollection(
+    brand: Brand,
+    collection: FigmaCollection,
+    allVariablesCache: Map<string, FigmaVariable[]>
+  ): FigmaVariable[] {
+    // Check cache first
+    const cached = allVariablesCache.get(collection.id);
+    if (cached) {
+      return cached;
+    }
+    
+    let variables: FigmaVariable[] = [];
+    
+    if (collection.generationType === 'primitives') {
+      variables = this.generatePrimitivesCollectionVariables(collection);
+    } else if (collection.generationType === 'semantic') {
+      // Need primitives collection to create aliases
+      const primitivesCollection = brand.collections?.find(c => 
+        c.id === collection.primitiveCollectionId || c.generationType === 'primitives'
+      );
+      
+      if (primitivesCollection) {
+        const primitivesVariables = this.getVariablesForCollection(
+          brand,
+          primitivesCollection,
+          allVariablesCache
+        );
+        variables = this.generateSemanticCollectionVariables(
+          collection,
+          primitivesCollection,
+          primitivesVariables
+        );
+      } else {
+        console.warn('[Adapter] Semantic collection has no primitives collection to reference');
+      }
+    } else {
+      console.warn(`[Adapter] Unknown collection type: ${collection.generationType}`);
+    }
+    
+    // Cache the result
+    allVariablesCache.set(collection.id, variables);
+    
+    return variables;
+  }
+  
+  /**
+   * Get all variables for a brand (across all collections)
+   */
+  getAllVariablesForBrand(brand: Brand): Map<string, FigmaVariable[]> {
+    const allVariables = new Map<string, FigmaVariable[]>();
+    
+    if (!brand.collections) {
+      return allVariables;
+    }
+    
+    // Generate variables for each collection
+    brand.collections.forEach(collection => {
+      const variables = this.getVariablesForCollection(brand, collection, allVariables);
+      allVariables.set(collection.id, variables);
+    });
+    
+    return allVariables;
+  }
+  
+  /**
+   * Filter variables by group
    */
   filterVariablesByGroup(
     variables: FigmaVariable[],
@@ -308,62 +331,31 @@ export class BrandToFigmaAdapter {
     if (!groupId || groupId === 'all') {
       return variables;
     }
-    return variables.filter((v) => v.groupId === groupId);
+    
+    // Filter by group name (first part before /)
+    return variables.filter(v => v.name.startsWith(`${groupId}/`));
   }
-
+  
   /**
-   * Update collection variable counts
+   * Filter variables by step
    */
-  updateCollectionCounts(
-    collections: FigmaCollection[],
-    variables: FigmaVariable[]
-  ): FigmaCollection[] {
-    return collections.map((collection) => ({
-      ...collection,
-      variableCount: variables.filter((v) => v.collectionId === collection.id).length
-    }));
-  }
-
-  /**
-   * Get statistics for converted data
-   */
-  getConversionStats(
-    collections: FigmaCollection[],
-    groups: FigmaGroup[],
-    variables: FigmaVariable[]
-  ): {
-    totalCollections: number;
-    totalGroups: number;
-    totalVariables: number;
-    totalModes: number;
-    variablesPerCollection: Record<string, number>;
-    variablesPerGroup: Record<string, number>;
-  } {
-    const variablesPerCollection: Record<string, number> = {};
-    const variablesPerGroup: Record<string, number> = {};
-
-    collections.forEach((col) => {
-      variablesPerCollection[col.name] = variables.filter(
-        (v) => v.collectionId === col.id
-      ).length;
+  filterVariablesByStep(
+    variables: FigmaVariable[],
+    step: string | null
+  ): FigmaVariable[] {
+    if (!step || step === 'all') {
+      return variables;
+    }
+    
+    // Filter by step (second part in name)
+    return variables.filter(v => {
+      const parts = v.name.split('/');
+      return parts.length >= 2 && parts[1] === step;
     });
-
-    groups.forEach((grp) => {
-      variablesPerGroup[grp.name] = variables.filter(
-        (v) => v.groupId === grp.id
-      ).length;
-    });
-
-    return {
-      totalCollections: collections.length,
-      totalGroups: groups.length,
-      totalVariables: variables.length,
-      totalModes: collections[0]?.modes.length || 0,
-      variablesPerCollection,
-      variablesPerGroup
-    };
   }
 }
 
-// Export singleton instance
+/**
+ * Global singleton instance
+ */
 export const brandToFigmaAdapter = new BrandToFigmaAdapter();
