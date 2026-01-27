@@ -1,12 +1,14 @@
 /**
  * Automate App - Brand Automation System
- * Main component with sidebar and 2-column layout
+ * Main component with sidebar and Figma-style layout
  */
 
 import React from 'react';
 import { BrandSidebar } from './components/brands/BrandSidebar';
 import { BrandConfigPanel } from './components/BrandConfigPanel';
 import { BrandVariableTable } from './components/BrandVariableTable';
+import { CollectionsSidebar } from './components/variables/CollectionsSidebar';
+import { GroupsSidebar } from './components/variables/GroupsSidebar';
 
 export function AutomateApp() {
   return (
@@ -20,9 +22,18 @@ export function AutomateApp() {
         <BrandConfigPanel />
       </div>
       
-      {/* Right: Variable Table - Takes remaining space */}
-      <div className="flex-1 bg-card overflow-hidden">
-        <BrandVariableTable />
+      {/* Right: Figma-style Variables UI */}
+      <div className="flex-1 bg-card overflow-hidden flex">
+        {/* Collections Sidebar */}
+        <CollectionsSidebar />
+        
+        {/* Groups Sidebar */}
+        <GroupsSidebar />
+        
+        {/* Variable Table - Takes remaining space */}
+        <div className="flex-1 overflow-hidden">
+          <BrandVariableTable />
+        </div>
       </div>
     </div>
   );
