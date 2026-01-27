@@ -95,12 +95,19 @@ export interface BrandBackup {
 }
 
 /**
- * Brand configuration
+ * Brand configuration (Figma File = Design System Project)
+ * A Brand acts as a container for multiple collections, similar to a Figma file
  */
 export interface Brand {
   id: string;
-  name: string;
-  colors: BrandColors;
+  name: string;                    // e.g., "OneUI Foundations"
+  
+  // NEW: Multiple independent collections
+  collections?: FigmaCollection[]; // Primitives, Semantic, Theme, Platform, etc.
+  
+  // DEPRECATED: Single colors (kept for backward compatibility during migration)
+  colors?: BrandColors;
+  
   createdAt: number;
   updatedAt: number;
   syncedAt?: number;
@@ -229,56 +236,107 @@ export interface BrandGraph {
 }
 
 /**
- * Figma Variables UI Types
- * Types for presenting VarCar data in Figma's Variables UI paradigm
+ * Figma Variables Architecture (Correct Implementation)
+ * Based on official Figma documentation and real-world structure analysis
  */
 
 /**
- * Figma Mode - represents different contexts for variable values
+ * CollectionMode - Mode within a collection
+ * Each collection has independent modes (e.g., "Light/Dark", "Neutral/Primary", "MyJio/JioFinance")
  */
-export interface FigmaMode {
-  id: string;
-  name: string; // "Surface", "High", "Medium", "Low", "Heavy", "Bold", "Bold A11Y", "Minimal"
+export interface CollectionMode {
+  modeId: string;        // Unique ID (e.g., "23:2", "mode_neutral")
+  name: string;          // Display name (e.g., "Neutral", "Light", "MyJio")
 }
 
 /**
- * Figma Collection - represents a group of variables with shared modes
+ * VariableValueByMode - Variable value for a specific mode
+ * Can be direct value or alias to another variable
  */
-export interface FigmaCollection {
-  id: string;
-  name: string;
-  modes: FigmaMode[];
-  defaultModeId: string;
-  variableCount: number;
+export interface VariableValueByMode {
+  [modeId: string]: {
+    type: 'COLOR' | 'ALIAS';
+    
+    // For direct color values
+    value?: string;      // Hex color "#ffffff"
+    
+    // For aliases (can reference variables in same or different collections)
+    aliasId?: string;           // Variable ID being referenced
+    aliasCollectionId?: string; // Collection of referenced variable (for cross-collection aliases)
+  };
 }
 
 /**
- * Figma Group - represents a color group for organizing variables
- */
-export interface FigmaGroup {
-  id: string;
-  name: string; // "Indigo", "Grey", "Green", etc.
-  collectionId: string;
-  variableCount: number;
-}
-
-/**
- * Figma Variable Value - can be direct color or alias
- */
-export interface FigmaVariableValue {
-  type: 'COLOR';
-  value?: string; // Direct hex
-  aliasTo?: { variableId: string; modeId: string }; // Alias reference
-}
-
-/**
- * Figma Variable - single variable with multiple mode values
+ * FigmaVariable - Single design token with values per mode
+ * Uses slash-based naming for grouping (e.g., "Grey/2500/Surface")
  */
 export interface FigmaVariable {
   id: string;
-  name: string; // "[Primary] Indigo 200"
-  groupId: string;
+  name: string;                    // e.g., "Grey/2500/Surface" or "[appearance] Surface"
+  description?: string;
+  resolvedType: 'COLOR' | 'NUMBER' | 'STRING' | 'BOOLEAN';
+  valuesByMode: VariableValueByMode;        // Different value per mode
+  resolvedValuesByMode: { [modeId: string]: string };  // Resolved final values
+  variableCollectionId: string;    // Parent collection
+  scopes?: string[];
+  codeSyntax?: Record<string, string>;
+}
+
+/**
+ * FigmaCollection - Independent container with its own modes
+ * Multiple collections per brand/project (like real Figma files)
+ */
+export interface FigmaCollection {
+  id: string;
+  name: string;                    // e.g., "00_Semi semantics", "1 Appearance"
+  modes: CollectionMode[];         // Independent modes for this collection (1-9+)
+  defaultModeId: string;
+  variableIds: string[];           // All variables in this collection
+  remote: boolean;
+  hiddenFromPublishing?: boolean;
+  
+  // VarCar-specific: How to generate variables for this collection
+  generationType?: 'primitives' | 'semantic' | 'component';
+  
+  // For primitive collections: palette assignments
+  paletteAssignments?: {
+    [groupName: string]: {       // "Grey", "Indigo", etc.
+      paletteId: string;
+      paletteName: string;
+    };
+  };
+  
+  // For semantic collections: reference to primitive collection
+  primitiveCollectionId?: string;
+}
+
+/**
+ * FigmaGroup - Derived from variable names (not a native Figma entity)
+ * Groups are extracted from slash-based naming conventions
+ */
+export interface FigmaGroup {
+  id: string;
+  name: string;            // "Grey", "Indigo", "[appearance]", etc.
   collectionId: string;
-  valuesByMode: Record<string, FigmaVariableValue>; // modeId → value
-  resolvedValuesByMode: Record<string, string>; // modeId → resolved hex color
+  variableCount: number;
+  steps?: string[];        // For primitives: ["2500", "2400", "2300", ...]
+}
+
+/**
+ * DEPRECATED: Old Figma Mode interface (kept for backward compatibility)
+ * @deprecated Use CollectionMode instead
+ */
+export interface FigmaMode {
+  id: string;
+  name: string;
+}
+
+/**
+ * DEPRECATED: Old Figma Variable Value interface (kept for backward compatibility)
+ * @deprecated Use VariableValueByMode instead
+ */
+export interface FigmaVariableValue {
+  type: 'COLOR';
+  value?: string;
+  aliasTo?: { variableId: string; modeId: string };
 }

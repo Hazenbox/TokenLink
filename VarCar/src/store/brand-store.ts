@@ -18,11 +18,14 @@ import {
   BrandTemplate,
   FigmaCollection,
   FigmaGroup,
-  FigmaVariable
+  FigmaVariable,
+  CollectionMode,
+  PaletteReference
 } from "@/models/brand";
 import { usePaletteStore } from "./palette-store";
 import { BrandGenerator } from "@/lib/brand-generator";
 import { brandToFigmaAdapter } from "@/adapters/brandToFigmaVariables";
+import { migrateAllLegacyBrands, needsMigration } from "@/lib/brand-migration";
 
 /**
  * Module-level cache for Figma data (outside Zustand to prevent infinite loops)
@@ -142,6 +145,20 @@ interface BrandStoreState {
   refreshFigmaData: () => void;
   refreshFigmaGroups: (collectionId: string) => void;
   refreshFigmaVariables: (collectionId: string, groupId?: string) => void;
+  
+  // Collection CRUD
+  createCollection: (brandId: string, name: string, generationType: 'primitives' | 'semantic' | 'component') => void;
+  updateCollection: (brandId: string, collectionId: string, updates: Partial<FigmaCollection>) => void;
+  deleteCollection: (brandId: string, collectionId: string) => void;
+  duplicateCollection: (brandId: string, collectionId: string) => void;
+  
+  // Mode management per collection
+  addModeToCollection: (brandId: string, collectionId: string, modeName: string) => void;
+  removeModeFromCollection: (brandId: string, collectionId: string, modeId: string) => void;
+  renameModeInCollection: (brandId: string, collectionId: string, modeId: string, newName: string) => void;
+  
+  // Palette assignment per collection
+  assignPaletteToGroup: (brandId: string, collectionId: string, groupName: string, palette: PaletteReference) => void;
 }
 
 /**
@@ -904,6 +921,260 @@ export const useBrandStore = create<BrandStoreState>()(
         }
       },
       
+      // Create collection
+      createCollection: (brandId: string, name: string, generationType: 'primitives' | 'semantic' | 'component') => {
+        const newCollection: FigmaCollection = {
+          id: `col_${generateId()}`,
+          name,
+          modes: [{ modeId: `mode_${generateId()}`, name: 'Mode 1' }],
+          defaultModeId: `mode_${generateId()}`,
+          variableIds: [],
+          remote: false,
+          hiddenFromPublishing: false,
+          generationType,
+          paletteAssignments: generationType === 'primitives' ? {} : undefined
+        };
+        
+        set((state) => {
+          const newBrands = state.brands.map((b) => {
+            if (b.id === brandId) {
+              return {
+                ...b,
+                collections: [...(b.collections || []), newCollection],
+                updatedAt: Date.now(),
+                version: b.version + 1
+              };
+            }
+            return b;
+          });
+          
+          return { brands: newBrands, isDirty: true };
+        });
+        
+        get().addAuditEntry({
+          action: 'update',
+          brandId,
+          brandName: get().brands.find(b => b.id === brandId)?.name || '',
+          metadata: { collectionCreated: newCollection.id }
+        });
+        
+        invalidateBrandCache(brandId);
+        get().refreshFigmaData();
+      },
+      
+      // Update collection
+      updateCollection: (brandId: string, collectionId: string, updates: Partial<FigmaCollection>) => {
+        set((state) => {
+          const newBrands = state.brands.map((b) => {
+            if (b.id === brandId && b.collections) {
+              return {
+                ...b,
+                collections: b.collections.map((c) =>
+                  c.id === collectionId ? { ...c, ...updates } : c
+                ),
+                updatedAt: Date.now(),
+                version: b.version + 1
+              };
+            }
+            return b;
+          });
+          
+          return { brands: newBrands, isDirty: true };
+        });
+        
+        invalidateBrandCache(brandId);
+        get().refreshFigmaData();
+      },
+      
+      // Delete collection
+      deleteCollection: (brandId: string, collectionId: string) => {
+        set((state) => {
+          const newBrands = state.brands.map((b) => {
+            if (b.id === brandId && b.collections) {
+              return {
+                ...b,
+                collections: b.collections.filter((c) => c.id !== collectionId),
+                updatedAt: Date.now(),
+                version: b.version + 1
+              };
+            }
+            return b;
+          });
+          
+          return { brands: newBrands, isDirty: true };
+        });
+        
+        get().addAuditEntry({
+          action: 'update',
+          brandId,
+          brandName: get().brands.find(b => b.id === brandId)?.name || '',
+          metadata: { collectionDeleted: collectionId }
+        });
+        
+        invalidateBrandCache(brandId);
+        get().refreshFigmaData();
+      },
+      
+      // Duplicate collection
+      duplicateCollection: (brandId: string, collectionId: string) => {
+        set((state) => {
+          const newBrands = state.brands.map((b) => {
+            if (b.id === brandId && b.collections) {
+              const sourceCollection = b.collections.find((c) => c.id === collectionId);
+              if (sourceCollection) {
+                const duplicated: FigmaCollection = {
+                  ...deepClone(sourceCollection),
+                  id: `col_${generateId()}`,
+                  name: `${sourceCollection.name} (Copy)`,
+                  variableIds: []
+                };
+                
+                return {
+                  ...b,
+                  collections: [...b.collections, duplicated],
+                  updatedAt: Date.now(),
+                  version: b.version + 1
+                };
+              }
+            }
+            return b;
+          });
+          
+          return { brands: newBrands, isDirty: true };
+        });
+        
+        invalidateBrandCache(brandId);
+        get().refreshFigmaData();
+      },
+      
+      // Add mode to collection
+      addModeToCollection: (brandId: string, collectionId: string, modeName: string) => {
+        const newMode: CollectionMode = {
+          modeId: `mode_${generateId()}`,
+          name: modeName
+        };
+        
+        set((state) => {
+          const newBrands = state.brands.map((b) => {
+            if (b.id === brandId && b.collections) {
+              return {
+                ...b,
+                collections: b.collections.map((c) =>
+                  c.id === collectionId
+                    ? { ...c, modes: [...c.modes, newMode] }
+                    : c
+                ),
+                updatedAt: Date.now(),
+                version: b.version + 1
+              };
+            }
+            return b;
+          });
+          
+          return { brands: newBrands, isDirty: true };
+        });
+        
+        invalidateBrandCache(brandId);
+        get().refreshFigmaData();
+      },
+      
+      // Remove mode from collection
+      removeModeFromCollection: (brandId: string, collectionId: string, modeId: string) => {
+        set((state) => {
+          const newBrands = state.brands.map((b) => {
+            if (b.id === brandId && b.collections) {
+              return {
+                ...b,
+                collections: b.collections.map((c) => {
+                  if (c.id === collectionId) {
+                    const newModes = c.modes.filter((m) => m.modeId !== modeId);
+                    // Update default if we're removing the default mode
+                    const newDefaultId = c.defaultModeId === modeId && newModes.length > 0
+                      ? newModes[0].modeId
+                      : c.defaultModeId;
+                    
+                    return { ...c, modes: newModes, defaultModeId: newDefaultId };
+                  }
+                  return c;
+                }),
+                updatedAt: Date.now(),
+                version: b.version + 1
+              };
+            }
+            return b;
+          });
+          
+          return { brands: newBrands, isDirty: true };
+        });
+        
+        invalidateBrandCache(brandId);
+        get().refreshFigmaData();
+      },
+      
+      // Rename mode in collection
+      renameModeInCollection: (brandId: string, collectionId: string, modeId: string, newName: string) => {
+        set((state) => {
+          const newBrands = state.brands.map((b) => {
+            if (b.id === brandId && b.collections) {
+              return {
+                ...b,
+                collections: b.collections.map((c) =>
+                  c.id === collectionId
+                    ? {
+                        ...c,
+                        modes: c.modes.map((m) =>
+                          m.modeId === modeId ? { ...m, name: newName } : m
+                        )
+                      }
+                    : c
+                ),
+                updatedAt: Date.now(),
+                version: b.version + 1
+              };
+            }
+            return b;
+          });
+          
+          return { brands: newBrands, isDirty: true };
+        });
+        
+        invalidateBrandCache(brandId);
+        get().refreshFigmaData();
+      },
+      
+      // Assign palette to group in collection
+      assignPaletteToGroup: (brandId: string, collectionId: string, groupName: string, palette: PaletteReference) => {
+        set((state) => {
+          const newBrands = state.brands.map((b) => {
+            if (b.id === brandId && b.collections) {
+              return {
+                ...b,
+                collections: b.collections.map((c) => {
+                  if (c.id === collectionId && c.paletteAssignments) {
+                    return {
+                      ...c,
+                      paletteAssignments: {
+                        ...c.paletteAssignments,
+                        [groupName]: palette
+                      }
+                    };
+                  }
+                  return c;
+                }),
+                updatedAt: Date.now(),
+                version: b.version + 1
+              };
+            }
+            return b;
+          });
+          
+          return { brands: newBrands, isDirty: true };
+        });
+        
+        invalidateBrandCache(brandId);
+        get().refreshFigmaData();
+      },
+      
     }),
     {
       name: 'varcar-brands',
@@ -913,7 +1184,22 @@ export const useBrandStore = create<BrandStoreState>()(
         activeBrandId: state.activeBrandId,
         backups: state.backups,
         auditLog: state.auditLog
-      })
+      }),
+      // Auto-migrate legacy brands on load
+      onRehydrateStorage: () => (state) => {
+        if (state && state.brands) {
+          console.log('[Migration] Checking for legacy brands...');
+          const hadLegacyBrands = state.brands.some(needsMigration);
+          
+          if (hadLegacyBrands) {
+            console.log('[Migration] Migrating legacy brands to multi-collection architecture...');
+            state.brands = migrateAllLegacyBrands(state.brands);
+            console.log('[Migration] Migration complete!');
+          } else {
+            console.log('[Migration] All brands are up to date');
+          }
+        }
+      }
     }
   )
 );
