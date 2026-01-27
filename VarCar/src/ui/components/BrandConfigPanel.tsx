@@ -80,7 +80,7 @@ export function BrandConfigPanel() {
   if (!activeBrand) {
     return (
       <div 
-        className="border-l border-border/20 bg-background flex flex-col relative flex-shrink-0"
+        className="border-l border-border/20 bg-background flex flex-col relative flex-shrink-0 overflow-hidden"
         style={{ width: `${configPanelWidth}px` }}
       >
         {/* Resize Handle */}
@@ -92,7 +92,7 @@ export function BrandConfigPanel() {
         />
         
         {/* Collapse Button */}
-        <div className="px-4 py-2 border-b border-border/20 flex items-center justify-between flex-shrink-0">
+        <div className="pl-4 pr-6 py-2 border-b border-border/20 flex items-center justify-between flex-shrink-0">
           <h2 className="text-sm font-semibold text-foreground">Configuration</h2>
           <button
             onClick={toggleConfigPanel}
@@ -197,7 +197,7 @@ export function BrandConfigPanel() {
             <span>How it works</span>
           </button>
           {showInfo && (
-            <div className="mt-2 bg-surface-elevated border-l-2 border-l-blue-500 rounded p-2 text-xs text-foreground-secondary">
+            <div className="mt-2 bg-surface-elevated border-l-2 border-l-blue-500 rounded pl-2 pr-1.5 py-2 text-xs text-foreground-secondary">
               Select palettes from RangDe (Colors tab). The system generates 224 variables
               using 8 scale types (Surface, High, Medium, Low, Heavy, Bold, Bold A11Y, Minimal).
             </div>
