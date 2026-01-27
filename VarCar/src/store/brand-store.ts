@@ -473,16 +473,24 @@ export const useBrandStore = create<BrandStoreState>()(
         // Create backup before sync
         get().createBackup(brand, 'Before sync operation', false);
 
+        // Generate variables with aliases
+        set({ syncStatus: 'previewing' });
+        const { BrandGenerator } = await import('@/lib/brand-generator');
+        const generatedBrand = BrandGenerator.generateBrand(brand);
+        
         // Update sync status
         set({ syncStatus: 'syncing' });
 
         try {
-          // Send message to plugin code
+          // Send message to plugin code with aliased variables
           window.parent.postMessage(
             {
               pluginMessage: {
-                type: 'sync-brand-to-figma',
-                data: { brand }
+                type: 'sync-brand-with-aliases',
+                data: { 
+                  brand,
+                  variables: generatedBrand.variables
+                }
               }
             },
             '*'
@@ -516,7 +524,7 @@ export const useBrandStore = create<BrandStoreState>()(
             success: true,
             brandId,
             timestamp: Date.now(),
-            variablesSynced: 224, // Placeholder
+            variablesSynced: generatedBrand.variables.length,
             modesAdded: [brand.name],
             errors: [],
             warnings: validation.warnings

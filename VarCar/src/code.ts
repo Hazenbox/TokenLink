@@ -1120,6 +1120,173 @@ figma.ui.onmessage = async (msg) => {
     }
   }
   
+  // Handle brand sync with aliasing
+  if (msg.type === 'sync-brand-with-aliases') {
+    try {
+      const { brand, variables } = msg.data;
+      console.log(`Syncing brand "${brand.name}" with ${variables.length} aliased variables...`);
+      
+      // Helper: Find or create collection
+      async function getOrCreateCollection(name: string): Promise<VariableCollection> {
+        const collections = await figma.variables.getLocalVariableCollectionsAsync();
+        let collection = collections.find(c => c.name === name);
+        
+        if (!collection) {
+          console.log(`Creating collection: ${name}`);
+          collection = figma.variables.createVariableCollection(name);
+        }
+        
+        return collection;
+      }
+      
+      // Helper: Find or create mode in collection
+      async function getOrCreateMode(collection: VariableCollection, modeName: string): Promise<{modeId: string; mode: any}> {
+        let mode = collection.modes.find(m => m.name === modeName);
+        
+        if (!mode) {
+          console.log(`Creating mode: ${modeName} in collection ${collection.name}`);
+          const modeId = collection.addMode(modeName);
+          mode = collection.modes.find(m => m.modeId === modeId);
+        }
+        
+        return { modeId: mode!.modeId, mode: mode! };
+      }
+      
+      // Helper: Find variable by name in collection
+      async function findVariableInCollection(collection: VariableCollection, varName: string): Promise<Variable | null> {
+        const allVars = await figma.variables.getLocalVariablesAsync();
+        return allVars.find(v => v.name === varName && v.variableCollectionId === collection.id) || null;
+      }
+      
+      // Helper: Create RGB color from hex
+      function hexToRGB(hex: string): RGB {
+        const r = parseInt(hex.slice(1, 3), 16) / 255;
+        const g = parseInt(hex.slice(3, 5), 16) / 255;
+        const b = parseInt(hex.slice(5, 7), 16) / 255;
+        return { r, g, b };
+      }
+      
+      // Step 1: Create/Get RangDe Primitives collection
+      console.log('Step 1: Creating/Getting RangDe Primitives collection...');
+      const rangdeCollection = await getOrCreateCollection('00_RangDe Primitives');
+      
+      // Step 2: Create primitive variables and build mapping
+      console.log('Step 2: Creating primitive variables...');
+      const paletteVariableMap = new Map<string, string>();
+      const uniquePrimitives = new Map<string, any>();
+      
+      // Collect unique primitives needed
+      for (const variable of variables) {
+        if (variable.aliasTo) {
+          const key = `${variable.aliasTo.paletteId}_${variable.aliasTo.step}_${variable.aliasTo.scale}`;
+          if (!uniquePrimitives.has(key)) {
+            uniquePrimitives.set(key, variable.aliasTo);
+          }
+        }
+      }
+      
+      console.log(`Found ${uniquePrimitives.size} unique primitives to create...`);
+      
+      // Create each primitive variable
+      for (const [key, aliasInfo] of uniquePrimitives.entries()) {
+        const primitiveName = `${aliasInfo.paletteName}/${aliasInfo.step}/${aliasInfo.scale}`;
+        
+        // Check if variable already exists
+        let primitiveVar = await findVariableInCollection(rangdeCollection, primitiveName);
+        
+        if (!primitiveVar) {
+          console.log(`Creating primitive variable: ${primitiveName}`);
+          primitiveVar = figma.variables.createVariable(primitiveName, rangdeCollection, 'COLOR');
+          
+          // Find the corresponding generated variable to get the hex color
+          const sourceVar = variables.find(v => v.aliasTo && 
+            v.aliasTo.paletteId === aliasInfo.paletteId &&
+            v.aliasTo.step === aliasInfo.step &&
+            v.aliasTo.scale === aliasInfo.scale);
+          
+          if (sourceVar && sourceVar.value) {
+            const rgb = hexToRGB(sourceVar.value);
+            primitiveVar.setValueForMode(rangdeCollection.defaultModeId, rgb);
+          }
+        }
+        
+        paletteVariableMap.set(key, primitiveVar.id);
+      }
+      
+      // Step 3: Create/Get brand collection and mode
+      console.log('Step 3: Creating/Getting brand collection and mode...');
+      const brandCollection = await getOrCreateCollection('9 Theme');
+      const { modeId: brandModeId } = await getOrCreateMode(brandCollection, brand.name);
+      
+      // Step 4: Create brand variables with aliases
+      console.log('Step 4: Creating brand variables with aliases...');
+      let createdCount = 0;
+      let updatedCount = 0;
+      
+      for (const variable of variables) {
+        if (!variable.aliasTo) continue;
+        
+        const key = `${variable.aliasTo.paletteId}_${variable.aliasTo.step}_${variable.aliasTo.scale}`;
+        const primitiveVarId = paletteVariableMap.get(key);
+        
+        if (!primitiveVarId) {
+          console.warn(`No primitive variable found for ${variable.name}`);
+          continue;
+        }
+        
+        // Check if brand variable exists
+        let brandVar = await findVariableInCollection(brandCollection, variable.name);
+        
+        if (!brandVar) {
+          console.log(`Creating brand variable: ${variable.name}`);
+          brandVar = figma.variables.createVariable(variable.name, brandCollection, 'COLOR');
+          createdCount++;
+        } else {
+          updatedCount++;
+        }
+        
+        // Set as alias
+        brandVar.setValueForMode(brandModeId, {
+          type: 'VARIABLE_ALIAS',
+          id: primitiveVarId
+        });
+      }
+      
+      console.log(`Brand sync complete: ${createdCount} created, ${updatedCount} updated`);
+      
+      // Refresh graph
+      const updatedCollections = await figma.variables.getLocalVariableCollectionsAsync();
+      const updatedVariables = await figma.variables.getLocalVariablesAsync();
+      const updatedGraph = figmaToGraph(updatedCollections, updatedVariables);
+      const serializedGraph = serializeGraph(updatedGraph);
+      
+      figma.ui.postMessage({
+        type: 'brand-sync-success',
+        data: {
+          success: true,
+          brandId: brand.id,
+          timestamp: Date.now(),
+          variablesSynced: createdCount + updatedCount,
+          modesAdded: [brand.name],
+          errors: [],
+          warnings: [],
+          graph: serializedGraph
+        }
+      });
+      
+    } catch (error) {
+      console.error('Error syncing brand:', error);
+      figma.ui.postMessage({
+        type: 'brand-sync-error',
+        data: {
+          success: false,
+          errors: [error instanceof Error ? error.message : 'Failed to sync brand'],
+          warnings: []
+        }
+      });
+    }
+  }
+  
   // Handle window resize
   if (msg.type === 'resize') {
     try {

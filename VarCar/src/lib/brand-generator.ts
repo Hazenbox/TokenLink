@@ -158,15 +158,23 @@ export class BrandGenerator {
           );
         }
 
+        // Generate aliased variable that references RangDe palette
         const variable: GeneratedVariable = {
           name: variableName,
           collection: '9 Theme',
           mode: this.brand.name,
-          value: scaleResult.hex,
+          value: scaleResult.hex, // Keep for preview/display
+          aliasTo: {
+            paletteId: paletteRef.paletteId,
+            paletteName: paletteRef.paletteName,
+            step: step,
+            scale: scaleName
+          },
           type: 'color',
           scopes: ['ALL_SCOPES'],
           sourceScale: scaleName,
-          sourcePalette: paletteRef.paletteName
+          sourcePalette: paletteRef.paletteName,
+          isAliased: true
         };
 
         this.variables.push(variable);

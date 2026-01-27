@@ -113,17 +113,29 @@ export interface Brand {
 }
 
 /**
- * Generated variable information
+ * Alias reference information for variables
+ */
+export interface AliasReference {
+  paletteId: string;
+  paletteName: string;
+  step: Step;
+  scale: string;
+}
+
+/**
+ * Generated variable information (supports both direct values and aliases)
  */
 export interface GeneratedVariable {
   name: string;
   collection: string;
   mode: string;
-  value: string;
+  value?: string; // Direct hex value (optional if aliased)
+  aliasTo?: AliasReference; // Alias reference (optional if direct value)
   type: 'color';
   scopes: string[];
   sourceScale?: string;
   sourcePalette?: string;
+  isAliased?: boolean; // Flag to indicate if this is an aliased variable
 }
 
 /**

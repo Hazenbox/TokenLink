@@ -9,7 +9,7 @@ import { BrandGenerator } from '@/lib/brand-generator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Download, Filter } from 'lucide-react';
+import { Search, Download, Filter, Link } from 'lucide-react';
 
 export function BrandVariableTable() {
   const activeBrand = useBrandStore((state) => state.getActiveBrand());
@@ -233,9 +233,22 @@ export function BrandVariableTable() {
                                     style={{ backgroundColor: variable.value }}
                                     title={variable.value}
                                   />
-                                  <span className="text-foreground-secondary font-mono text-[10px]">
-                                    {variable.value}
-                                  </span>
+                                  <div className="flex flex-col">
+                                    {variable.isAliased && variable.aliasTo ? (
+                                      <>
+                                        <span className="text-xs text-blue-400 flex items-center gap-1">
+                                          <Link className="w-3 h-3" /> Aliased
+                                        </span>
+                                        <span className="text-[10px] text-foreground-tertiary font-mono">
+                                          {variable.aliasTo.paletteName}/{variable.aliasTo.step}/{variable.aliasTo.scale}
+                                        </span>
+                                      </>
+                                    ) : (
+                                      <span className="text-foreground-secondary font-mono text-[10px]">
+                                        {variable.value}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </td>
                               <td className="py-1.5 px-2 text-foreground-secondary">
