@@ -222,7 +222,7 @@ export function BrandSidebar() {
     .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <div className="flex h-full w-48 flex-col bg-background border-r border-border/20 relative z-10">
+    <div className="flex h-full w-[220px] flex-col bg-background border-r border-border/20 relative z-10">
       {/* Header */}
       <div className="px-3 py-2 border-b border-border/20 flex items-center justify-between flex-shrink-0">
         <span className="text-[11px] font-medium text-foreground-secondary">

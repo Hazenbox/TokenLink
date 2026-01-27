@@ -103,7 +103,7 @@ export function BrandConfigPanel() {
           </button>
         </div>
         
-        <div className="h-full flex items-center justify-center text-foreground-secondary text-sm p-4">
+        <div className="h-full flex items-center justify-center text-foreground-secondary text-sm px-4">
           Select or create a brand to configure
         </div>
       </div>
@@ -151,7 +151,7 @@ export function BrandConfigPanel() {
 
   return (
     <div 
-      className="h-full flex flex-col border-l border-border/20 bg-background relative flex-shrink-0"
+      className="h-full flex flex-col border-l border-border/20 bg-background relative flex-shrink-0 overflow-hidden"
       style={{ width: `${configPanelWidth}px` }}
     >
       {/* Resize Handle */}
@@ -163,7 +163,7 @@ export function BrandConfigPanel() {
       />
       
       {/* Header with Sync Button */}
-      <div className="px-4 py-3 border-b border-border flex-shrink-0">
+      <div className="pl-4 pr-6 py-3 border-b border-border flex-shrink-0">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold text-foreground">
             {activeBrand.name}
@@ -207,7 +207,7 @@ export function BrandConfigPanel() {
 
       {/* Config Content */}
       <ScrollArea className="flex-1">
-        <div className="p-4 pr-6 space-y-6">
+        <div className="pl-4 pt-4 pb-4 pr-6 space-y-6">
           {/* Required Palettes - Single Column */}
           <div>
             <h3 className="text-xs font-semibold text-foreground mb-3">

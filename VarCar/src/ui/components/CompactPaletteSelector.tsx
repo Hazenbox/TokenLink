@@ -83,7 +83,11 @@ export function CompactPaletteSelector({
         <PopoverContent 
           className="w-[280px] p-0" 
           align="start"
+          side="left"
           sideOffset={4}
+          alignOffset={0}
+          avoidCollisions={true}
+          collisionPadding={8}
         >
           {/* Search input */}
           <div className="p-2 border-b border-border">
