@@ -1287,6 +1287,56 @@ figma.ui.onmessage = async (msg) => {
     }
   }
   
+  // Handle layer config get request
+  if (msg.type === 'get-layer-config') {
+    try {
+      console.log('Loading layer mapping config from Figma clientStorage...');
+      const config = await figma.clientStorage.getAsync('layer-mapping-config');
+      
+      figma.ui.postMessage({
+        type: 'layer-config-loaded',
+        data: config || null
+      });
+      
+      if (config) {
+        console.log('Layer config loaded successfully');
+      } else {
+        console.log('No layer config found in storage');
+      }
+    } catch (error) {
+      console.error('Error loading layer config:', error);
+      figma.ui.postMessage({
+        type: 'layer-config-error',
+        data: { message: error instanceof Error ? error.message : 'Failed to load config' }
+      });
+    }
+  }
+  
+  // Handle layer config save request
+  if (msg.type === 'save-layer-config') {
+    try {
+      console.log('Saving layer mapping config to Figma clientStorage...');
+      const config = msg.data;
+      
+      await figma.clientStorage.setAsync('layer-mapping-config', config);
+      
+      console.log('Layer config saved successfully');
+      figma.ui.postMessage({
+        type: 'layer-config-saved',
+        data: { success: true, timestamp: Date.now() }
+      });
+    } catch (error) {
+      console.error('Error saving layer config:', error);
+      figma.ui.postMessage({
+        type: 'layer-config-save-error',
+        data: { 
+          success: false,
+          message: error instanceof Error ? error.message : 'Failed to save config' 
+        }
+      });
+    }
+  }
+  
   // Handle window resize
   if (msg.type === 'resize') {
     try {

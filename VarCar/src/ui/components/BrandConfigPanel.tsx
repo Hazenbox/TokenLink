@@ -7,10 +7,11 @@ import React, { useState, useMemo } from 'react';
 import { useBrandStore } from '@/store/brand-store';
 import { useVariablesViewStore } from '@/store/variables-view-store';
 import { CompactPaletteSelector } from './CompactPaletteSelector';
+import { LayerMappingVisualizer } from './LayerMappingVisualizer';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { CompactButton } from './common/CompactButton';
-import { Info, ChevronDown, ChevronUp, Upload, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Info, ChevronDown, ChevronUp, Upload, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
 import { BrandGenerator } from '@/lib/brand-generator';
 
 export function BrandConfigPanel() {
@@ -26,6 +27,7 @@ export function BrandConfigPanel() {
   const setConfigPanelWidth = useVariablesViewStore((state) => state.setConfigPanelWidth);
   
   const [showInfo, setShowInfo] = useState(false);
+  const [showLayerConfig, setShowLayerConfig] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
 
   // Move useMemo BEFORE any early returns to comply with Rules of Hooks
@@ -299,6 +301,27 @@ export function BrandConfigPanel() {
               </div>
             </div>
           )}
+
+          {/* Layer Configuration */}
+          <div className="pt-4 border-t border-border/30">
+            <button
+              onClick={() => setShowLayerConfig(!showLayerConfig)}
+              className="flex items-center gap-2 text-xs font-semibold text-foreground mb-3 hover:text-foreground-secondary transition-colors w-full"
+            >
+              <Settings className="w-3 h-3" />
+              Layer Configuration
+              {showLayerConfig ? 
+                <ChevronUp className="w-3 h-3 ml-auto" /> : 
+                <ChevronDown className="w-3 h-3 ml-auto" />
+              }
+            </button>
+            
+            {showLayerConfig && (
+              <div className="pl-1">
+                <LayerMappingVisualizer />
+              </div>
+            )}
+          </div>
         </div>
       </ScrollArea>
     </div>

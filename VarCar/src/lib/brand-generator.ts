@@ -315,6 +315,17 @@ export class BrandGenerator {
   }
 
   /**
+   * Generate variables using layer mapping configuration
+   * This method will be used in the future for multi-layer architecture
+   */
+  public generateWithLayers(): GeneratedBrand {
+    // For now, use the standard generation
+    // TODO: Implement full multi-layer generation based on layer-mapping config
+    console.log('generateWithLayers: Using standard generation for now');
+    return this.generate();
+  }
+
+  /**
    * Static method to generate a complete brand
    */
   public static generateBrand(brand: Brand): GeneratedBrand {
@@ -328,6 +339,15 @@ export class BrandGenerator {
   public static previewBrand(brand: Brand) {
     const generator = new BrandGenerator(brand);
     return generator.preview();
+  }
+  
+  /**
+   * Static method to generate with layer mappings
+   * This is a placeholder for future multi-layer architecture support
+   */
+  public static generateBrandWithLayers(brand: Brand): GeneratedBrand {
+    const generator = new BrandGenerator(brand);
+    return generator.generateWithLayers();
   }
 }
 
