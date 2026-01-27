@@ -20,18 +20,18 @@ export function ValidationPanel() {
   const preview = BrandGenerator.previewBrand(activeBrand);
 
   return (
-    <div className="border-t border-gray-200 bg-white">
+    <div className="border-t border-border bg-card">
       <div className="p-4 space-y-4">
         {/* Status Header */}
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900">Validation Status</h3>
+          <h3 className="text-sm font-semibold text-foreground">Validation Status</h3>
           {validation.valid ? (
-            <div className="flex items-center gap-1 text-green-600">
+            <div className="flex items-center gap-1 text-green-500">
               <CheckCircle className="w-4 h-4" />
               <span className="text-xs font-medium">Valid</span>
             </div>
           ) : (
-            <div className="flex items-center gap-1 text-red-600">
+            <div className="flex items-center gap-1 text-red-500">
               <AlertCircle className="w-4 h-4" />
               <span className="text-xs font-medium">Invalid</span>
             </div>
@@ -39,17 +39,17 @@ export function ValidationPanel() {
         </div>
 
         {/* Preview Stats */}
-        <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-          <div className="text-xs text-gray-600">
+        <div className="bg-surface-elevated rounded-lg p-3 space-y-2">
+          <div className="text-xs text-foreground-secondary">
             <span className="font-medium">Variables:</span>{' '}
-            <span className="text-gray-900 font-semibold">{preview.variableCount}</span>
+            <span className="text-foreground font-semibold">{preview.variableCount}</span>
           </div>
-          <div className="text-xs text-gray-600">
+          <div className="text-xs text-foreground-secondary">
             <span className="font-medium">Palettes Used:</span>{' '}
-            <span className="text-gray-900">{preview.palettesUsed.length}</span>
+            <span className="text-foreground">{preview.palettesUsed.length}</span>
           </div>
           {preview.missingPalettes.length > 0 && (
-            <div className="text-xs text-orange-600">
+            <div className="text-xs text-orange-500">
               <span className="font-medium">Missing:</span>{' '}
               {preview.missingPalettes.join(', ')}
             </div>
@@ -59,7 +59,7 @@ export function ValidationPanel() {
         {/* Errors */}
         {validation.errors.length > 0 && (
           <div className="space-y-2">
-            <div className="flex items-center gap-1 text-red-600">
+            <div className="flex items-center gap-1 text-red-500">
               <AlertCircle className="w-4 h-4" />
               <span className="text-xs font-semibold">
                 Errors ({validation.errors.length})
@@ -70,7 +70,7 @@ export function ValidationPanel() {
                 {validation.errors.map((error, idx) => (
                   <div
                     key={idx}
-                    className="text-xs text-red-700 bg-red-50 rounded px-2 py-1"
+                    className="text-xs text-red-400 bg-surface-elevated border-l-2 border-l-red-500 rounded px-2 py-1"
                   >
                     {error}
                   </div>
@@ -83,7 +83,7 @@ export function ValidationPanel() {
         {/* Warnings */}
         {validation.warnings.length > 0 && (
           <div className="space-y-2">
-            <div className="flex items-center gap-1 text-orange-600">
+            <div className="flex items-center gap-1 text-orange-500">
               <AlertTriangle className="w-4 h-4" />
               <span className="text-xs font-semibold">
                 Warnings ({validation.warnings.length})
@@ -94,7 +94,7 @@ export function ValidationPanel() {
                 {validation.warnings.map((warning, idx) => (
                   <div
                     key={idx}
-                    className="text-xs text-orange-700 bg-orange-50 rounded px-2 py-1"
+                    className="text-xs text-orange-400 bg-surface-elevated border-l-2 border-l-orange-500 rounded px-2 py-1"
                   >
                     {warning}
                   </div>
@@ -107,7 +107,7 @@ export function ValidationPanel() {
         {/* Info */}
         {validation.info.length > 0 && (
           <div className="space-y-2">
-            <div className="flex items-center gap-1 text-blue-600">
+            <div className="flex items-center gap-1 text-blue-500">
               <Info className="w-4 h-4" />
               <span className="text-xs font-semibold">Info</span>
             </div>
@@ -115,7 +115,7 @@ export function ValidationPanel() {
               {validation.info.map((info, idx) => (
                 <div
                   key={idx}
-                  className="text-xs text-blue-700 bg-blue-50 rounded px-2 py-1"
+                  className="text-xs text-blue-400 bg-surface-elevated border-l-2 border-l-blue-500 rounded px-2 py-1"
                 >
                   {info}
                 </div>

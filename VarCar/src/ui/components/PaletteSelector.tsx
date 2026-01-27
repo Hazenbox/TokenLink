@@ -37,7 +37,7 @@ export function PaletteSelector({
 
   return (
     <div className="flex flex-col gap-2">
-      <Label className="text-sm font-medium text-gray-700">
+      <Label className="text-sm font-medium text-foreground">
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
       </Label>
@@ -45,7 +45,7 @@ export function PaletteSelector({
       <select
         value={value}
         onChange={handleChange}
-        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+        className="w-full px-3 py-2 bg-input border border-input-border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-input-focus focus:border-input-focus text-sm text-foreground"
       >
         <option value="">Select palette...</option>
         {palettes.map((palette) => (
@@ -63,7 +63,7 @@ export function PaletteSelector({
             return (
               <div
                 key={step}
-                className="h-6 flex-1 rounded border border-gray-200"
+                className="h-6 flex-1 rounded border border-border"
                 style={{ backgroundColor: color }}
                 title={`Step ${step}: ${color}`}
               />

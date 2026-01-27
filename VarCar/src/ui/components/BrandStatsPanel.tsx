@@ -14,7 +14,7 @@ export function BrandStatsPanel() {
 
   if (!activeBrand) {
     return (
-      <div className="h-full flex items-center justify-center text-gray-500 text-sm p-4">
+      <div className="h-full flex items-center justify-center text-foreground-secondary text-sm p-4">
         Select a brand to view statistics
       </div>
     );
@@ -40,56 +40,56 @@ export function BrandStatsPanel() {
       <div className="p-6 space-y-6">
         {/* Header */}
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-1">Statistics</h2>
-          <p className="text-sm text-gray-500">Overview of {activeBrand.name}</p>
+          <h2 className="text-lg font-semibold text-foreground mb-1">Statistics</h2>
+          <p className="text-sm text-foreground-secondary">Overview of {activeBrand.name}</p>
         </div>
 
         {/* Key Metrics */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-blue-50 rounded-lg p-4">
+          <div className="bg-surface-elevated border-l-4 border-l-blue-500 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-1">
-              <Package className="w-4 h-4 text-blue-600" />
-              <span className="text-xs font-medium text-blue-900">Variables</span>
+              <Package className="w-4 h-4 text-blue-500" />
+              <span className="text-xs font-medium text-foreground">Variables</span>
             </div>
-            <div className="text-2xl font-bold text-blue-900">
+            <div className="text-2xl font-bold text-foreground">
               {preview.variableCount}
             </div>
-            <div className="text-xs text-blue-700 mt-1">
+            <div className="text-xs text-foreground-secondary mt-1">
               8 scales × 24 steps × {Math.ceil(preview.variableCount / 192)} contexts
             </div>
           </div>
 
-          <div className="bg-purple-50 rounded-lg p-4">
+          <div className="bg-surface-elevated border-l-4 border-l-purple-500 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-1">
-              <Palette className="w-4 h-4 text-purple-600" />
-              <span className="text-xs font-medium text-purple-900">Palettes</span>
+              <Palette className="w-4 h-4 text-purple-500" />
+              <span className="text-xs font-medium text-foreground">Palettes</span>
             </div>
-            <div className="text-2xl font-bold text-purple-900">
+            <div className="text-2xl font-bold text-foreground">
               {configuredPalettes} / 8
             </div>
-            <div className="text-xs text-purple-700 mt-1">
+            <div className="text-xs text-foreground-secondary mt-1">
               {preview.palettesUsed.length} unique palettes used
             </div>
           </div>
 
-          <div className="bg-green-50 rounded-lg p-4">
+          <div className="bg-surface-elevated border-l-4 border-l-green-500 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-1">
-              <BarChart3 className="w-4 h-4 text-green-600" />
-              <span className="text-xs font-medium text-green-900">Collections</span>
+              <BarChart3 className="w-4 h-4 text-green-500" />
+              <span className="text-xs font-medium text-foreground">Collections</span>
             </div>
-            <div className="text-2xl font-bold text-green-900">1</div>
-            <div className="text-xs text-green-700 mt-1">9 Theme collection</div>
+            <div className="text-2xl font-bold text-foreground">1</div>
+            <div className="text-xs text-foreground-secondary mt-1">9 Theme collection</div>
           </div>
 
-          <div className="bg-orange-50 rounded-lg p-4">
+          <div className="bg-surface-elevated border-l-4 border-l-orange-500 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-1">
-              <AlertCircle className="w-4 h-4 text-orange-600" />
-              <span className="text-xs font-medium text-orange-900">Status</span>
+              <AlertCircle className="w-4 h-4 text-orange-500" />
+              <span className="text-xs font-medium text-foreground">Status</span>
             </div>
-            <div className="text-2xl font-bold text-orange-900">
+            <div className="text-2xl font-bold text-foreground">
               {validation.valid ? '✓' : '✗'}
             </div>
-            <div className="text-xs text-orange-700 mt-1">
+            <div className="text-xs text-foreground-secondary mt-1">
               {validation.errors.length} errors, {validation.warnings.length} warnings
             </div>
           </div>
@@ -97,34 +97,34 @@ export function BrandStatsPanel() {
 
         {/* Palettes Used */}
         <div>
-          <h3 className="text-sm font-semibold text-gray-900 mb-2">Palettes Used</h3>
+          <h3 className="text-sm font-semibold text-foreground mb-2">Palettes Used</h3>
           {preview.palettesUsed.length > 0 ? (
             <div className="space-y-1">
               {preview.palettesUsed.map((paletteName) => (
                 <div
                   key={paletteName}
-                  className="text-xs bg-gray-50 rounded px-2 py-1.5 text-gray-700"
+                  className="text-xs bg-surface-elevated rounded px-2 py-1.5 text-foreground"
                 >
                   {paletteName}
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-xs text-gray-500">No palettes configured</div>
+            <div className="text-xs text-foreground-secondary">No palettes configured</div>
           )}
         </div>
 
         {/* Missing Palettes */}
         {preview.missingPalettes.length > 0 && (
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 mb-2">
+            <h3 className="text-sm font-semibold text-foreground mb-2">
               Missing Palette Assignments
             </h3>
             <div className="space-y-1">
               {preview.missingPalettes.map((role) => (
                 <div
                   key={role}
-                  className="text-xs bg-orange-50 rounded px-2 py-1.5 text-orange-700"
+                  className="text-xs bg-surface-elevated border-l-2 border-l-orange-500 rounded px-2 py-1.5 text-orange-400"
                 >
                   {role}
                 </div>
@@ -135,8 +135,8 @@ export function BrandStatsPanel() {
 
         {/* Scale Breakdown */}
         <div>
-          <h3 className="text-sm font-semibold text-gray-900 mb-2">Scale Breakdown</h3>
-          <div className="space-y-1 text-xs text-gray-600">
+          <h3 className="text-sm font-semibold text-foreground mb-2">Scale Breakdown</h3>
+          <div className="space-y-1 text-xs text-foreground-secondary">
             <div className="flex justify-between py-1">
               <span>Surface</span>
               <span className="font-medium">{preview.variableCount / 8}</span>
@@ -174,8 +174,8 @@ export function BrandStatsPanel() {
 
         {/* Brand Metadata */}
         <div>
-          <h3 className="text-sm font-semibold text-gray-900 mb-2">Metadata</h3>
-          <div className="space-y-1 text-xs text-gray-600">
+          <h3 className="text-sm font-semibold text-foreground mb-2">Metadata</h3>
+          <div className="space-y-1 text-xs text-foreground-secondary">
             <div className="flex justify-between py-1">
               <span>Version</span>
               <span className="font-medium">{activeBrand.version}</span>

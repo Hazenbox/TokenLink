@@ -51,11 +51,11 @@ export function BrandListPanel() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-50 border-r border-gray-200">
+    <div className="h-full flex flex-col bg-card border-r border-border">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-gray-900">Brands</h2>
+          <h2 className="text-lg font-semibold text-foreground">Brands</h2>
           <Button
             onClick={() => setIsCreating(true)}
             size="sm"
@@ -107,7 +107,7 @@ export function BrandListPanel() {
       <ScrollArea className="flex-1">
         <div className="p-2">
           {brands.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 text-sm">
+            <div className="text-center py-8 text-foreground-secondary text-sm">
               No brands yet. Create one to get started.
             </div>
           ) : (
@@ -119,8 +119,8 @@ export function BrandListPanel() {
                     group relative rounded-lg p-3 cursor-pointer transition-colors
                     ${
                       activeBrandId === brand.id
-                        ? 'bg-blue-50 border-2 border-blue-500'
-                        : 'bg-white border border-gray-200 hover:border-gray-300'
+                        ? 'bg-surface-elevated border-2 border-blue-500'
+                        : 'bg-surface-elevated border border-border hover:border-border-strong'
                     }
                   `}
                   onClick={() => setActiveBrand(brand.id)}
@@ -165,7 +165,7 @@ export function BrandListPanel() {
                     <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
                         <h3
-                          className="font-medium text-sm text-gray-900 truncate"
+                          className="font-medium text-sm text-foreground truncate"
                           onDoubleClick={(e) => {
                             e.stopPropagation();
                             handleStartEdit(brand.id, brand.name);
@@ -174,7 +174,7 @@ export function BrandListPanel() {
                           {brand.name}
                         </h3>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-foreground-secondary">
                             {brand.syncedAt ? '✓ Synced' : '○ Not synced'}
                           </span>
                           {brand.updatedAt > (brand.syncedAt || 0) && brand.syncedAt && (
@@ -232,7 +232,7 @@ export function BrandListPanel() {
                           key={idx}
                           className={`
                             h-2 flex-1 rounded
-                            ${ref.paletteId ? 'bg-blue-400' : 'bg-gray-200'}
+                            ${ref.paletteId ? 'bg-blue-400' : 'bg-border'}
                           `}
                           title={ref.paletteName || 'Not assigned'}
                         />

@@ -16,7 +16,7 @@ export function BrandConfigPanel() {
 
   if (!activeBrand) {
     return (
-      <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+      <div className="h-full flex items-center justify-center text-foreground-secondary text-sm">
         Select or create a brand to configure
       </div>
     );
@@ -50,20 +50,20 @@ export function BrandConfigPanel() {
       <div className="p-6 space-y-6">
         {/* Header */}
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-1">
+          <h2 className="text-lg font-semibold text-foreground mb-1">
             {activeBrand.name}
           </h2>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-foreground-secondary">
             Configure color palettes for this brand
           </p>
         </div>
 
         {/* Info banner */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3">
-          <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-blue-900">
+        <div className="bg-surface-elevated border-l-4 border-l-blue-500 rounded-lg p-4 flex gap-3">
+          <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-foreground">
             <p className="font-medium mb-1">How it works</p>
-            <p>
+            <p className="text-foreground-secondary">
               Select palettes from RangDe (Colors tab) for each role. The system will
               automatically generate 224 theme variables using the 8 scale types (Surface,
               High, Medium, Low, Heavy, Bold, Bold A11Y, Minimal) for each palette.
@@ -74,7 +74,7 @@ export function BrandConfigPanel() {
         {/* Required Palettes */}
         <div className="space-y-4">
           <div>
-            <h3 className="text-base font-semibold text-gray-900 mb-3">
+            <h3 className="text-base font-semibold text-foreground mb-3">
               Required Palettes
             </h3>
             <div className="space-y-4">
@@ -111,7 +111,7 @@ export function BrandConfigPanel() {
 
           {/* Semantic Colors */}
           <div>
-            <h3 className="text-base font-semibold text-gray-900 mb-3">
+            <h3 className="text-base font-semibold text-foreground mb-3">
               Semantic Colors
             </h3>
             <div className="space-y-4">
@@ -144,8 +144,8 @@ export function BrandConfigPanel() {
         </div>
 
         {/* Metadata */}
-        <div className="pt-4 border-t border-gray-200">
-          <div className="text-xs text-gray-500 space-y-1">
+        <div className="pt-4 border-t border-border">
+          <div className="text-xs text-foreground-tertiary space-y-1">
             <div>Created: {new Date(activeBrand.createdAt).toLocaleString()}</div>
             <div>Updated: {new Date(activeBrand.updatedAt).toLocaleString()}</div>
             {activeBrand.syncedAt && (

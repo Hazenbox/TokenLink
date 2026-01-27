@@ -89,8 +89,8 @@ export function SyncPanel() {
 
   if (!activeBrand) {
     return (
-      <div className="border-t border-gray-200 bg-white p-4">
-        <div className="text-center text-gray-500 text-sm">
+      <div className="border-t border-border bg-card p-4">
+        <div className="text-center text-foreground-secondary text-sm">
           Select a brand to sync
         </div>
       </div>
@@ -101,7 +101,7 @@ export function SyncPanel() {
   const canSyncBrand = validation.valid && canSync && syncStatus === 'idle';
 
   return (
-    <div className="border-t border-gray-200 bg-white">
+    <div className="border-t border-border bg-card">
       <div className="p-4 space-y-4">
         {/* Sync Button */}
         <div>
@@ -193,7 +193,7 @@ export function SyncPanel() {
         </div>
 
         {/* Sync Info */}
-        <div className="text-xs text-gray-500 space-y-1">
+        <div className="text-xs text-foreground-tertiary space-y-1">
           {activeBrand.syncedAt ? (
             <div>
               Last synced: {new Date(activeBrand.syncedAt).toLocaleString()}
@@ -202,7 +202,7 @@ export function SyncPanel() {
             <div>Never synced</div>
           )}
           {activeBrand.updatedAt > (activeBrand.syncedAt || 0) && activeBrand.syncedAt && (
-            <div className="text-orange-600">⚠ Modified since last sync</div>
+            <div className="text-orange-500">⚠ Modified since last sync</div>
           )}
         </div>
       </div>
