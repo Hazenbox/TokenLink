@@ -36,7 +36,7 @@ function StackingCell({ label, step, hex, surfaceHex, focusBorderHex, rootOffset
     const textColor = isValidHex(hex) ? getReadableTextColor(hex) : "#000";
     return (
         <div
-            className="flex flex-col items-center justify-center p-2 rounded-sm h-16 w-full relative"
+            className="flex flex-col items-center justify-center p-1.5 rounded-sm h-14 w-full relative"
             style={{
                 backgroundColor: hex,
                 ...(focusBorderHex ? {
@@ -75,7 +75,7 @@ function StackingBlock({ title, idleStep, hoverStep, pressedStep, focusStep, pal
     const textColor = getReadableTextColor(surfaceHex);
     return (
         <div
-            className="rounded-lg p-3 space-y-2 shadow-[0_2px_10px_rgba(0,0,0,0.05)] transition-shadow hover:shadow-md"
+            className="rounded-lg p-2 space-y-1.5 shadow-[0_2px_10px_rgba(0,0,0,0.05)] transition-shadow hover:shadow-md"
             style={{ backgroundColor: surfaceHex }}
         >
             <h4
@@ -84,7 +84,7 @@ function StackingBlock({ title, idleStep, hoverStep, pressedStep, focusStep, pal
             >
                 {title}
             </h4>
-            <div className={cn("grid gap-3", showFocus ? "grid-cols-4" : "grid-cols-3")}>
+            <div className={cn("grid gap-2", showFocus ? "grid-cols-4" : "grid-cols-3")}>
                 <StackingCell label="Idle" step={idleStep} hex={paletteSteps[idleStep as Step] || "#ccc"} surfaceHex={surfaceHex} rootOffset={idleOffset} />
                 <StackingCell label="hover" step={hoverStep} hex={paletteSteps[hoverStep as Step] || "#ccc"} surfaceHex={surfaceHex} rootOffset={hoverOffset} />
                 <StackingCell label="pressed" step={pressedStep} hex={paletteSteps[pressedStep as Step] || "#ccc"} surfaceHex={surfaceHex} rootOffset={pressedOffset} />
@@ -191,8 +191,8 @@ function StackingSection({ title, isLight, activePalette, baseStep }: StackingSe
                     </Button>
                 </div>
             </div>
-            <div className="p-6">
-                <div className="grid grid-cols-5 gap-4">
+            <div className="p-4">
+                <div className="grid grid-cols-5 gap-3">
                     {columns.map((col) => {
                         const surfaceHex = activePalette.steps[col.surface as Step] || (isLight ? "#fff" : "#000");
                         const surfaceStep = col.surface;
@@ -294,12 +294,12 @@ function StackingSection({ title, isLight, activePalette, baseStep }: StackingSe
                             <div
                                 key={col.name}
                                 className={cn(
-                                    "space-y-5 rounded-xl p-4 transition-all",
+                                    "space-y-3 rounded-xl p-3 transition-all",
                                     col.name === "Elevated" ? "shadow-md ring-1 ring-black/5" : ""
                                 )}
                                 style={{ backgroundColor: surfaceHex }}
                             >
-                                <div className="flex items-center justify-between mb-2 px-1">
+                                <div className="flex items-center justify-between mb-1 px-1">
                                     <h3 className="text-sm font-bold" style={{ color: getReadableTextColor(surfaceHex) }}>{col.name}</h3>
                                     <span className="text-[10px] font-mono opacity-50" style={{ color: getReadableTextColor(surfaceHex) }}>Step {col.surface}</span>
                                 </div>
@@ -434,7 +434,7 @@ export function SurfaceStacking() {
             </div>
 
             <ScrollArea className="flex-1">
-                <div className="p-8 space-y-12">
+                <div className="p-6 space-y-8">
                     <StackingSection
                         title="Light"
                         isLight={true}
