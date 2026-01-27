@@ -3,7 +3,7 @@
  * Figma-style variable table showing variables with mode columns
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { shallow } from 'zustand/shallow';
 import { useBrandStore } from '@/store/brand-store';
 import { useVariablesViewStore } from '@/store/variables-view-store';
@@ -21,15 +21,17 @@ export function BrandVariableTable() {
   const searchQuery = useVariablesViewStore((state) => state.searchQuery);
   const setSearchQuery = useVariablesViewStore((state) => state.setSearchQuery);
   
-  // Get collections and variables from store with shallow comparison
-  const collections = useBrandStore(
-    (state) => state.getFigmaCollections() || [],
-    shallow
-  );
-  const figmaVariables = useBrandStore(
-    (state) => activeCollectionId ? state.getFigmaVariables(activeCollectionId, activeGroupId || 'all') : [],
-    shallow
-  ) || [];
+  // Simple state selectors - no function calls
+  const collections = useBrandStore((state) => state.figmaCollections, shallow);
+  const allVariablesMap = useBrandStore((state) => state.figmaVariablesByCollection, shallow);
+  const figmaVariables = activeCollectionId ? (allVariablesMap.get(activeCollectionId) || []) : [];
+  
+  // Refresh variables when collection or group changes
+  useEffect(() => {
+    if (activeCollectionId) {
+      useBrandStore.getState().refreshFigmaVariables(activeCollectionId, activeGroupId || 'all');
+    }
+  }, [activeCollectionId, activeGroupId]);
   
   // Get active collection
   const activeCollection = useMemo(() => 

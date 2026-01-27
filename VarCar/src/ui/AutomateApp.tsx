@@ -3,15 +3,21 @@
  * Main component with sidebar and Figma-style layout
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrandSidebar } from './components/brands/BrandSidebar';
 import { BrandConfigPanel } from './components/BrandConfigPanel';
 import { BrandVariableTable } from './components/BrandVariableTable';
 import { CollectionsSidebar } from './components/variables/CollectionsSidebar';
 import { GroupsSidebar } from './components/variables/GroupsSidebar';
 import { VariablesErrorBoundary } from './components/variables/VariablesErrorBoundary';
+import { useBrandStore } from '@/store/brand-store';
 
 export function AutomateApp() {
+  // Initialize Figma data on mount
+  useEffect(() => {
+    useBrandStore.getState().refreshFigmaData();
+  }, []);
+  
   return (
     <div className="h-screen w-screen flex bg-background relative">
       

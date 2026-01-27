@@ -45,10 +45,8 @@ function CollectionItem({ collection, isActive, onClick }: CollectionItemProps) 
 }
 
 export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarProps) {
-  const collections = useBrandStore(
-    (state) => state.getFigmaCollections() || [],
-    shallow
-  );
+  // Simple state selector - no function calls
+  const collections = useBrandStore((state) => state.figmaCollections, shallow);
   const activeCollectionId = useVariablesViewStore((state) => state.activeCollectionId);
   const setActiveCollection = useVariablesViewStore((state) => state.setActiveCollection);
   const collectionsCollapsed = useVariablesViewStore((state) => state.collectionsCollapsed);

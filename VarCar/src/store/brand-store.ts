@@ -80,6 +80,11 @@ interface BrandStoreState {
   // Rate limiting
   syncAttempts: { timestamp: number }[];
   
+  // Figma Variables UI - Pre-computed state
+  figmaCollections: FigmaCollection[];
+  figmaGroups: FigmaGroup[];
+  figmaVariablesByCollection: Map<string, FigmaVariable[]>;
+  
   // Actions
   createBrand: (name: string, colors?: Partial<BrandColors>) => void;
   duplicateBrand: (id: string) => void;
@@ -133,10 +138,10 @@ interface BrandStoreState {
   markDirty: () => void;
   autoSave: () => void;
   
-  // Figma-style accessors
-  getFigmaCollections: () => FigmaCollection[];
-  getFigmaGroups: (collectionId: string) => FigmaGroup[];
-  getFigmaVariables: (collectionId: string, groupId?: string) => FigmaVariable[];
+  // Figma data refresh actions
+  refreshFigmaData: () => void;
+  refreshFigmaGroups: (collectionId: string) => void;
+  refreshFigmaVariables: (collectionId: string, groupId?: string) => void;
 }
 
 /**
@@ -186,6 +191,11 @@ export const useBrandStore = create<BrandStoreState>()(
       lastAutoSave: Date.now(),
       isDirty: false,
       syncAttempts: [],
+      
+      // Figma Variables UI state
+      figmaCollections: [],
+      figmaGroups: [],
+      figmaVariablesByCollection: new Map(),
 
       // Create brand
       createBrand: (name: string, colors?: Partial<BrandColors>) => {
@@ -225,6 +235,9 @@ export const useBrandStore = create<BrandStoreState>()(
         
         // Invalidate cache for new brand
         invalidateBrandCache(newBrand.id);
+        
+        // Refresh Figma data for new brand
+        get().refreshFigmaData();
       },
 
       // Duplicate brand
@@ -268,6 +281,9 @@ export const useBrandStore = create<BrandStoreState>()(
         
         // Invalidate cache for new brand
         invalidateBrandCache(newBrand.id);
+        
+        // Refresh Figma data for duplicated brand
+        get().refreshFigmaData();
       },
 
       // Delete brand
@@ -303,6 +319,9 @@ export const useBrandStore = create<BrandStoreState>()(
         
         // Invalidate cache for deleted brand
         invalidateBrandCache(id);
+        
+        // Refresh Figma data after delete
+        get().refreshFigmaData();
       },
 
       // Update brand
@@ -338,6 +357,9 @@ export const useBrandStore = create<BrandStoreState>()(
           
           // Invalidate cache for updated brand
           invalidateBrandCache(id);
+          
+          // Refresh Figma data after update
+          get().refreshFigmaData();
         }
       },
 
@@ -349,6 +371,7 @@ export const useBrandStore = create<BrandStoreState>()(
       // Set active brand
       setActiveBrand: (id: string | null) => {
         set({ activeBrandId: id });
+        get().refreshFigmaData(); // Refresh Figma data when brand changes
       },
 
       // Get active brand
@@ -798,40 +821,46 @@ export const useBrandStore = create<BrandStoreState>()(
         set({ isDirty: false, lastAutoSave: Date.now() });
       },
       
-      // Figma-style accessors
-      getFigmaCollections: () => {
+      // Figma data refresh actions
+      refreshFigmaData: () => {
         const state = get();
         const activeBrand = state.getActiveBrand();
         
-        if (!activeBrand) return [];
-        
-        const cacheKey = `collections_${activeBrand.id}`;
-        if (figmaCache.has(cacheKey)) {
-          return figmaCache.get(cacheKey);
+        if (!activeBrand) {
+          set({
+            figmaCollections: [],
+            figmaGroups: [],
+            figmaVariablesByCollection: new Map()
+          });
+          return;
         }
         
         try {
+          // Compute collections once
           const collections = brandToFigmaAdapter.convertBrandToCollections(activeBrand);
-          figmaCache.set(cacheKey, collections);
-          return collections;
+          
+          // Store in state
+          set({ figmaCollections: collections });
+          
+          // Refresh groups for first collection
+          if (collections.length > 0) {
+            get().refreshFigmaGroups(collections[0].id);
+          }
         } catch (error) {
-          console.error('[Figma] Failed to convert collections:', error);
-          return [];
+          console.error('[Figma] Failed to refresh data:', error);
+          set({
+            figmaCollections: [],
+            figmaGroups: [],
+            figmaVariablesByCollection: new Map()
+          });
         }
       },
       
-      getFigmaGroups: (collectionId: string) => {
+      refreshFigmaGroups: (collectionId: string) => {
         const state = get();
         const activeBrand = state.getActiveBrand();
+        if (!activeBrand) return;
         
-        if (!activeBrand) return [];
-        
-        const cacheKey = `groups_${activeBrand.id}_${collectionId}`;
-        if (figmaCache.has(cacheKey)) {
-          return figmaCache.get(cacheKey);
-        }
-        
-        // Generate variables to get palettes
         try {
           const generatedBrand = BrandGenerator.generateBrand(activeBrand);
           const groups = brandToFigmaAdapter.convertBrandToGroups(
@@ -839,24 +868,19 @@ export const useBrandStore = create<BrandStoreState>()(
             generatedBrand.variables,
             collectionId
           );
-          figmaCache.set(cacheKey, groups);
-          return groups;
+          set({ figmaGroups: groups });
+          
+          // Refresh variables for 'all' group
+          get().refreshFigmaVariables(collectionId, 'all');
         } catch (error) {
-          console.error('[Figma] Failed to generate groups:', error);
-          return [];
+          console.error('[Figma] Failed to refresh groups:', error);
         }
       },
       
-      getFigmaVariables: (collectionId: string, groupId?: string) => {
+      refreshFigmaVariables: (collectionId: string, groupId?: string) => {
         const state = get();
         const activeBrand = state.getActiveBrand();
-        
-        if (!activeBrand) return [];
-        
-        const cacheKey = `variables_${activeBrand.id}_${collectionId}_${groupId || 'all'}`;
-        if (figmaCache.has(cacheKey)) {
-          return figmaCache.get(cacheKey);
-        }
+        if (!activeBrand) return;
         
         try {
           const generatedBrand = BrandGenerator.generateBrand(activeBrand);
@@ -866,19 +890,20 @@ export const useBrandStore = create<BrandStoreState>()(
             collectionId
           );
           
-          // Filter by group if specified
           const filteredVariables = brandToFigmaAdapter.filterVariablesByGroup(
             allVariables,
             groupId || null
           );
           
-          figmaCache.set(cacheKey, filteredVariables);
-          return filteredVariables;
+          // Store by collection
+          const newMap = new Map(state.figmaVariablesByCollection);
+          newMap.set(collectionId, filteredVariables);
+          set({ figmaVariablesByCollection: newMap });
         } catch (error) {
-          console.error('[Figma] Failed to generate variables:', error);
-          return [];
+          console.error('[Figma] Failed to refresh variables:', error);
         }
-      }
+      },
+      
     }),
     {
       name: 'varcar-brands',

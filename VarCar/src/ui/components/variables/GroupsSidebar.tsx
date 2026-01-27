@@ -3,7 +3,7 @@
  * Displays list of groups (color families) for filtering variables
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ChevronsUpDown } from 'lucide-react';
 import { shallow } from 'zustand/shallow';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -50,11 +50,15 @@ export function GroupsSidebar({ onCreateGroup }: GroupsSidebarProps) {
   const setActiveGroup = useVariablesViewStore((state) => state.setActiveGroup);
   const groupsCollapsed = useVariablesViewStore((state) => state.groupsCollapsed);
   
-  // Get groups for active collection with shallow comparison
-  const groups = useBrandStore(
-    (state) => activeCollectionId ? state.getFigmaGroups(activeCollectionId) : [],
-    shallow
-  ) || [];
+  // Simple state selector - no function calls
+  const groups = useBrandStore((state) => state.figmaGroups, shallow);
+  
+  // Refresh groups when collection changes
+  useEffect(() => {
+    if (activeCollectionId) {
+      useBrandStore.getState().refreshFigmaGroups(activeCollectionId);
+    }
+  }, [activeCollectionId]);
   
   // Calculate total count for "All" option
   const totalCount = groups.reduce((sum, group) => sum + (group.variableCount || 0), 0);
