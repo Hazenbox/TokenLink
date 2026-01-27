@@ -6,10 +6,65 @@
 import React, { useState, useMemo } from 'react';
 import { useBrandStore } from '@/store/brand-store';
 import { BrandGenerator } from '@/lib/brand-generator';
+import { GeneratedVariable, AliasReference } from '@/models/brand';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Download, Filter, Link } from 'lucide-react';
+
+// Scale names matching brand-generator.ts
+const SCALE_NAMES = [
+  'Surface',
+  'High',
+  'Medium',
+  'Low',
+  'Heavy',
+  'Bold',
+  'Bold A11Y',
+  'Minimal'
+] as const;
+
+// Helper: Truncate alias path for display
+function truncateAliasPath(alias: AliasReference): string {
+  const path = `${alias.paletteName}/${alias.step}/${alias.scale}`;
+  if (path.length > 25) {
+    return `.../${alias.step}/${alias.scale}`;
+  }
+  return path;
+}
+
+// Helper: Get step number from variable
+function getStepFromVariable(variable: GeneratedVariable): number {
+  return variable.aliasTo?.step || 0;
+}
+
+// Cell content component
+interface CellContentProps {
+  variable: GeneratedVariable;
+}
+
+function CellContent({ variable }: CellContentProps) {
+  return (
+    <div className="flex items-center gap-1.5 px-2 py-1.5">
+      <div
+        className="w-5 h-5 rounded border border-border/30 flex-shrink-0"
+        style={{ backgroundColor: variable.value || '#000' }}
+        title={variable.value || 'No value'}
+      />
+      <div className="flex-1 min-w-0">
+        {variable.isAliased && variable.aliasTo ? (
+          <div className="text-[10px] text-foreground-tertiary font-mono truncate">
+            {truncateAliasPath(variable.aliasTo)}
+          </div>
+        ) : (
+          <div className="text-[10px] text-foreground-tertiary font-mono">
+            {variable.value || '—'}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function BrandVariableTable() {
   const activeBrand = useBrandStore((state) => state.getActiveBrand());
@@ -42,29 +97,38 @@ export function BrandVariableTable() {
     if (!variables || variables.length === 0) return [];
     return variables.filter((v) =>
       v.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      v.sourcePalette.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      v.sourceScale.toLowerCase().includes(searchQuery.toLowerCase())
+      (v.sourcePalette || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (v.sourceScale || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [variables, searchQuery]);
 
-  // Group variables by appearance context
+  // Group variables by palette → step → scale
   const groupedVariables = useMemo(() => {
-    const groups: { [key: string]: typeof variables } = {};
+    const groups: Record<string, Record<number, Record<string, GeneratedVariable>>> = {};
     
     filteredVariables.forEach((variable) => {
-      // Extract appearance context from variable name
-      // Format: BrandName/Appearance/[appearance] Scale
-      const parts = variable.name.split('/');
-      if (parts.length >= 2) {
-        const appearance = parts[1];
-        if (!groups[appearance]) {
-          groups[appearance] = [];
-        }
-        groups[appearance].push(variable);
-      }
+      const palette = variable.sourcePalette || 'Unknown';
+      const step = getStepFromVariable(variable);
+      const scale = variable.sourceScale || 'Unknown';
+      
+      if (!groups[palette]) groups[palette] = {};
+      if (!groups[palette][step]) groups[palette][step] = {};
+      groups[palette][step][scale] = variable;
     });
     
-    return groups;
+    // Sort palettes alphabetically and steps numerically
+    const sortedGroups: typeof groups = {};
+    Object.keys(groups).sort().forEach(palette => {
+      sortedGroups[palette] = {};
+      Object.keys(groups[palette])
+        .map(Number)
+        .sort((a, b) => a - b)
+        .forEach(step => {
+          sortedGroups[palette][step] = groups[palette][step];
+        });
+    });
+    
+    return sortedGroups;
   }, [filteredVariables]);
 
   // Handle different states AFTER all hooks are called
@@ -181,79 +245,75 @@ export function BrandVariableTable() {
             </div>
           ) : (
             <div className="space-y-6">
-              {Object.entries(groupedVariables).map(([appearance, vars]) => (
-                <div key={appearance}>
-                  {/* Appearance Group Header */}
-                  <div className="sticky top-0 bg-card z-10 pb-2">
-                    <div className="flex items-center gap-2 mb-2">
+              {Object.entries(groupedVariables).map(([paletteName, steps]) => (
+                <div key={paletteName}>
+                  {/* Palette Group Header */}
+                  <div className="sticky top-0 bg-card z-10 pb-2 mb-2">
+                    <div className="flex items-center gap-2">
                       <h3 className="text-xs font-semibold text-foreground">
-                        {appearance}
+                        {paletteName}
                       </h3>
-                      <div className="flex-1 h-px bg-border" />
+                      <div className="flex-1 h-px bg-border/30" />
                       <span className="text-[10px] text-foreground-tertiary">
-                        {vars.length} variables
+                        {Object.keys(steps).length} steps
                       </span>
                     </div>
                   </div>
 
-                  {/* Variables Table */}
+                  {/* Variables Grid Table */}
                   <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
+                    <table className="w-full border-collapse text-xs">
                       <thead>
-                        <tr className="border-b border-border">
-                          <th className="text-left py-1.5 px-2 font-medium text-foreground-secondary text-[10px]">
-                            Scale
+                        <tr className="border-b border-border/20">
+                          <th className="text-left py-2 px-3 font-medium text-foreground-secondary text-[10px] sticky left-0 bg-card z-20 border-r border-border/10">
+                            Variable
                           </th>
-                          <th className="text-left py-1.5 px-2 font-medium text-foreground-secondary text-[10px]">
-                            {activeBrand.name}
-                          </th>
-                          <th className="text-left py-1.5 px-2 font-medium text-foreground-secondary text-[10px]">
-                            Palette
-                          </th>
+                          {SCALE_NAMES.map((scale) => (
+                            <th
+                              key={scale}
+                              className="text-center py-2 px-2 font-medium text-foreground-secondary text-[10px] min-w-[100px] border-r border-border/10"
+                            >
+                              {scale}
+                            </th>
+                          ))}
                         </tr>
                       </thead>
                       <tbody>
-                        {vars.map((variable, idx) => {
-                          // Extract scale from variable name
-                          const scaleMatch = variable.name.match(/\] (.+)$/);
-                          const scaleName = scaleMatch ? scaleMatch[1] : variable.sourceScale;
-
+                        {Object.entries(steps).map(([stepStr, scales]) => {
+                          const step = parseInt(stepStr);
+                          
                           return (
                             <tr
-                              key={idx}
-                              className="border-b border-border/50 hover:bg-surface transition-colors"
+                              key={`${paletteName}-${step}`}
+                              className="border-b border-border/10 hover:bg-surface/50 transition-colors"
                             >
-                              <td className="py-1.5 px-2 font-medium text-foreground">
-                                {scaleName}
-                              </td>
-                              <td className="py-1.5 px-2">
-                                <div className="flex items-center gap-2">
-                                  <div
-                                    className="w-6 h-6 rounded border border-border flex-shrink-0"
-                                    style={{ backgroundColor: variable.value }}
-                                    title={variable.value}
-                                  />
-                                  <div className="flex flex-col">
-                                    {variable.isAliased && variable.aliasTo ? (
-                                      <>
-                                        <span className="text-xs text-blue-400 flex items-center gap-1">
-                                          <Link className="w-3 h-3" /> Aliased
-                                        </span>
-                                        <span className="text-[10px] text-foreground-tertiary font-mono">
-                                          {variable.aliasTo.paletteName}/{variable.aliasTo.step}/{variable.aliasTo.scale}
-                                        </span>
-                                      </>
-                                    ) : (
-                                      <span className="text-foreground-secondary font-mono text-[10px]">
-                                        {variable.value}
-                                      </span>
-                                    )}
-                                  </div>
+                              {/* Variable name column */}
+                              <td className="py-2 px-3 font-medium text-foreground sticky left-0 bg-card z-10 border-r border-border/10">
+                                <div className="flex items-center gap-1.5">
+                                  <Link className="w-3 h-3 text-foreground-tertiary flex-shrink-0" />
+                                  <span className="text-xs">[Child] Step {step}</span>
                                 </div>
                               </td>
-                              <td className="py-1.5 px-2 text-foreground-secondary">
-                                {variable.sourcePalette}
-                              </td>
+                              
+                              {/* Scale columns */}
+                              {SCALE_NAMES.map((scaleName) => {
+                                const variable = scales[scaleName];
+                                
+                                return (
+                                  <td
+                                    key={scaleName}
+                                    className="border-r border-border/10 align-middle"
+                                  >
+                                    {variable ? (
+                                      <CellContent variable={variable} />
+                                    ) : (
+                                      <div className="px-2 py-1.5 text-center text-foreground-tertiary/30">
+                                        —
+                                      </div>
+                                    )}
+                                  </td>
+                                );
+                              })}
                             </tr>
                           );
                         })}
