@@ -93,22 +93,8 @@ export function GroupsSidebar({ onCreateGroup }: GroupsSidebarProps) {
     }).filter(Boolean) as typeof groupsWithSteps;
   }, [groupsWithSteps, searchQuery]);
   
-  if (groupsCollapsed) {
-    return (
-      <div className="w-12 border-r border-border/20 bg-background flex flex-col items-center py-2">
-        <button
-          onClick={() => useVariablesViewStore.getState().toggleGroupsSidebar()}
-          className="w-8 h-8 flex items-center justify-center rounded hover:bg-surface/50 text-foreground-tertiary"
-          title="Expand Groups"
-        >
-          ☰
-        </button>
-      </div>
-    );
-  }
-  
   return (
-    <div className="w-[200px] border-r border-border/20 bg-background flex flex-col">
+    <div className="h-full flex flex-col bg-background">
       {/* Header */}
       <div className="px-3 py-2 border-b border-border/20 flex items-center justify-between flex-shrink-0">
         <span className="text-[11px] font-medium text-foreground-secondary">

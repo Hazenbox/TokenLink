@@ -20,6 +20,9 @@ interface VariablesViewState {
   configPanelCollapsed: boolean;
   configPanelWidth: number;
   
+  // Collections/Groups split ratio
+  collectionsGroupsSplitRatio: number;
+  
   // Search
   searchQuery: string;
   
@@ -34,6 +37,7 @@ interface VariablesViewState {
   toggleGroupsSidebar: () => void;
   toggleConfigPanel: () => void;
   setConfigPanelWidth: (width: number) => void;
+  setCollectionsGroupsSplitRatio: (ratio: number) => void;
   setSearchQuery: (query: string) => void;
   toggleGroupExpanded: (groupId: string) => void;
   setSelectedStep: (step: string | 'all') => void;
@@ -54,6 +58,7 @@ export const useVariablesViewStore = create<VariablesViewState>()(
       groupsCollapsed: false,
       configPanelCollapsed: false,
       configPanelWidth: 320,
+      collectionsGroupsSplitRatio: 0.5,
       searchQuery: '',
       expandedGroups: new Set(),
       selectedStep: 'all',
@@ -93,6 +98,12 @@ export const useVariablesViewStore = create<VariablesViewState>()(
       setConfigPanelWidth: (width: number) => {
         const clampedWidth = Math.max(280, Math.min(500, width));
         set({ configPanelWidth: clampedWidth });
+      },
+      
+      // Set collections/groups split ratio
+      setCollectionsGroupsSplitRatio: (ratio: number) => {
+        const clampedRatio = Math.max(0.2, Math.min(0.8, ratio));
+        set({ collectionsGroupsSplitRatio: clampedRatio });
       },
       
       // Set search query
@@ -139,6 +150,7 @@ export const useVariablesViewStore = create<VariablesViewState>()(
           groupsCollapsed: false,
           configPanelCollapsed: false,
           configPanelWidth: 320,
+          collectionsGroupsSplitRatio: 0.5,
           searchQuery: '',
           expandedGroups: new Set(),
           selectedStep: 'all'
@@ -155,6 +167,7 @@ export const useVariablesViewStore = create<VariablesViewState>()(
         groupsCollapsed: state.groupsCollapsed,
         configPanelCollapsed: state.configPanelCollapsed,
         configPanelWidth: state.configPanelWidth,
+        collectionsGroupsSplitRatio: state.collectionsGroupsSplitRatio,
         selectedStep: state.selectedStep,
         expandedGroups: Array.from(state.expandedGroups) // Convert Set to Array for JSON
       }),

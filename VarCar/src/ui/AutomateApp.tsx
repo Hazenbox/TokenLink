@@ -7,8 +7,7 @@ import React, { useEffect } from 'react';
 import { BrandSidebar } from './components/brands/BrandSidebar';
 import { BrandConfigPanel } from './components/BrandConfigPanel';
 import { BrandVariableTable } from './components/BrandVariableTable';
-import { CollectionsSidebar } from './components/variables/CollectionsSidebar';
-import { GroupsSidebar } from './components/variables/GroupsSidebar';
+import { CollectionsGroupsPanel } from './components/variables/CollectionsGroupsPanel';
 import { VariablesErrorBoundary } from './components/variables/VariablesErrorBoundary';
 import { useBrandStore } from '@/store/brand-store';
 
@@ -26,14 +25,9 @@ export function AutomateApp() {
       
       {/* Middle: Figma-style Variables UI */}
       <div className="flex-1 bg-background overflow-hidden flex">
-        {/* Collections Sidebar */}
+        {/* Collections & Groups Combined Panel */}
         <VariablesErrorBoundary>
-          <CollectionsSidebar />
-        </VariablesErrorBoundary>
-        
-        {/* Groups Sidebar */}
-        <VariablesErrorBoundary>
-          <GroupsSidebar />
+          <CollectionsGroupsPanel />
         </VariablesErrorBoundary>
         
         {/* Variable Table - Takes remaining space */}

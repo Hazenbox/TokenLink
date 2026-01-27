@@ -64,7 +64,7 @@ export function BrandConfigPanel() {
   // Collapsed state - show only toggle button
   if (configPanelCollapsed) {
     return (
-      <div className="w-12 border-l border-border/20 bg-background flex flex-col items-center py-2">
+      <div className="w-12 border-l border-border/20 bg-background flex flex-col items-center py-2 flex-shrink-0">
         <button
           onClick={toggleConfigPanel}
           className="w-8 h-8 flex items-center justify-center rounded hover:bg-surface/50 text-foreground-tertiary"
@@ -80,7 +80,7 @@ export function BrandConfigPanel() {
   if (!activeBrand) {
     return (
       <div 
-        className="border-l border-border/20 bg-background flex flex-col relative"
+        className="border-l border-border/20 bg-background flex flex-col relative flex-shrink-0"
         style={{ width: `${configPanelWidth}px` }}
       >
         {/* Resize Handle */}
@@ -151,7 +151,7 @@ export function BrandConfigPanel() {
 
   return (
     <div 
-      className="h-full flex flex-col border-l border-border/20 bg-background relative"
+      className="h-full flex flex-col border-l border-border/20 bg-background relative flex-shrink-0"
       style={{ width: `${configPanelWidth}px` }}
     >
       {/* Resize Handle */}
@@ -207,7 +207,7 @@ export function BrandConfigPanel() {
 
       {/* Config Content */}
       <ScrollArea className="flex-1">
-        <div className="p-4 space-y-6">
+        <div className="p-4 pr-6 space-y-6">
           {/* Required Palettes - Single Column */}
           <div>
             <h3 className="text-xs font-semibold text-foreground mb-3">
