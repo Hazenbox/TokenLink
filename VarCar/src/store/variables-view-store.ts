@@ -16,6 +16,10 @@ interface VariablesViewState {
   collectionsCollapsed: boolean;
   groupsCollapsed: boolean;
   
+  // Config panel states
+  configPanelCollapsed: boolean;
+  configPanelWidth: number;
+  
   // Search
   searchQuery: string;
   
@@ -28,6 +32,8 @@ interface VariablesViewState {
   setActiveGroup: (id: string | null) => void;
   toggleCollectionsSidebar: () => void;
   toggleGroupsSidebar: () => void;
+  toggleConfigPanel: () => void;
+  setConfigPanelWidth: (width: number) => void;
   setSearchQuery: (query: string) => void;
   toggleGroupExpanded: (groupId: string) => void;
   setSelectedStep: (step: string | 'all') => void;
@@ -46,6 +52,8 @@ export const useVariablesViewStore = create<VariablesViewState>()(
       activeGroupId: 'all',
       collectionsCollapsed: false,
       groupsCollapsed: false,
+      configPanelCollapsed: false,
+      configPanelWidth: 320,
       searchQuery: '',
       expandedGroups: new Set(),
       selectedStep: 'all',
@@ -74,6 +82,17 @@ export const useVariablesViewStore = create<VariablesViewState>()(
       // Toggle groups sidebar
       toggleGroupsSidebar: () => {
         set((state) => ({ groupsCollapsed: !state.groupsCollapsed }));
+      },
+      
+      // Toggle config panel
+      toggleConfigPanel: () => {
+        set((state) => ({ configPanelCollapsed: !state.configPanelCollapsed }));
+      },
+      
+      // Set config panel width
+      setConfigPanelWidth: (width: number) => {
+        const clampedWidth = Math.max(280, Math.min(500, width));
+        set({ configPanelWidth: clampedWidth });
       },
       
       // Set search query
@@ -118,6 +137,8 @@ export const useVariablesViewStore = create<VariablesViewState>()(
           activeGroupId: 'all',
           collectionsCollapsed: false,
           groupsCollapsed: false,
+          configPanelCollapsed: false,
+          configPanelWidth: 320,
           searchQuery: '',
           expandedGroups: new Set(),
           selectedStep: 'all'
@@ -132,6 +153,8 @@ export const useVariablesViewStore = create<VariablesViewState>()(
         activeGroupId: state.activeGroupId,
         collectionsCollapsed: state.collectionsCollapsed,
         groupsCollapsed: state.groupsCollapsed,
+        configPanelCollapsed: state.configPanelCollapsed,
+        configPanelWidth: state.configPanelWidth,
         selectedStep: state.selectedStep,
         expandedGroups: Array.from(state.expandedGroups) // Convert Set to Array for JSON
       }),

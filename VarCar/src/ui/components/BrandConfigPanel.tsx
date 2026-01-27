@@ -5,11 +5,12 @@
 
 import React, { useState, useMemo } from 'react';
 import { useBrandStore } from '@/store/brand-store';
+import { useVariablesViewStore } from '@/store/variables-view-store';
 import { CompactPaletteSelector } from './CompactPaletteSelector';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { CompactButton } from './common/CompactButton';
-import { Info, ChevronDown, ChevronUp, Upload } from 'lucide-react';
+import { Info, ChevronDown, ChevronUp, Upload, ChevronLeft, ChevronRight } from 'lucide-react';
 import { BrandGenerator } from '@/lib/brand-generator';
 
 export function BrandConfigPanel() {
@@ -19,7 +20,13 @@ export function BrandConfigPanel() {
   const syncStatus = useBrandStore((state) => state.syncStatus);
   const canSync = useBrandStore((state) => state.canSync());
   
+  const configPanelCollapsed = useVariablesViewStore((state) => state.configPanelCollapsed);
+  const configPanelWidth = useVariablesViewStore((state) => state.configPanelWidth);
+  const toggleConfigPanel = useVariablesViewStore((state) => state.toggleConfigPanel);
+  const setConfigPanelWidth = useVariablesViewStore((state) => state.setConfigPanelWidth);
+  
   const [showInfo, setShowInfo] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
 
   // Move useMemo BEFORE any early returns to comply with Rules of Hooks
   const validation = useMemo(
@@ -30,11 +37,75 @@ export function BrandConfigPanel() {
     [activeBrand]
   );
 
+  // Handle resize
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    
+    const startX = e.clientX;
+    const startWidth = configPanelWidth;
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = startX - e.clientX;
+      const newWidth = startWidth + deltaX;
+      setConfigPanelWidth(newWidth);
+    };
+    
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+  
+  // Collapsed state - show only toggle button
+  if (configPanelCollapsed) {
+    return (
+      <div className="w-12 border-l border-border/20 bg-background flex flex-col items-center py-2">
+        <button
+          onClick={toggleConfigPanel}
+          className="w-8 h-8 flex items-center justify-center rounded hover:bg-surface/50 text-foreground-tertiary"
+          title="Expand Configuration"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+      </div>
+    );
+  }
+  
   // Handle null activeBrand case
   if (!activeBrand) {
     return (
-      <div className="h-full flex items-center justify-center text-foreground-secondary text-sm">
-        Select or create a brand to configure
+      <div 
+        className="border-l border-border/20 bg-background flex flex-col relative"
+        style={{ width: `${configPanelWidth}px` }}
+      >
+        {/* Resize Handle */}
+        <div
+          onMouseDown={handleMouseDown}
+          className={`absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-blue-500/20 transition-colors ${
+            isResizing ? 'bg-blue-500/40' : ''
+          }`}
+        />
+        
+        {/* Collapse Button */}
+        <div className="px-4 py-2 border-b border-border/20 flex items-center justify-between flex-shrink-0">
+          <h2 className="text-sm font-semibold text-foreground">Configuration</h2>
+          <button
+            onClick={toggleConfigPanel}
+            className="w-6 h-6 flex items-center justify-center rounded hover:bg-surface/50 text-foreground-tertiary"
+            title="Collapse Panel"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+        
+        <div className="h-full flex items-center justify-center text-foreground-secondary text-sm p-4">
+          Select or create a brand to configure
+        </div>
       </div>
     );
   }
@@ -79,13 +150,31 @@ export function BrandConfigPanel() {
   const canSyncBrand = validation.valid && canSync && syncStatus === 'idle';
 
   return (
-    <div className="h-full flex flex-col">
+    <div 
+      className="h-full flex flex-col border-l border-border/20 bg-background relative"
+      style={{ width: `${configPanelWidth}px` }}
+    >
+      {/* Resize Handle */}
+      <div
+        onMouseDown={handleMouseDown}
+        className={`absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-blue-500/20 transition-colors z-20 ${
+          isResizing ? 'bg-blue-500/40' : ''
+        }`}
+      />
+      
       {/* Header with Sync Button */}
-      <div className="px-6 py-4 border-b border-border flex-shrink-0">
+      <div className="px-4 py-3 border-b border-border flex-shrink-0">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-foreground">
+          <h2 className="text-sm font-semibold text-foreground">
             {activeBrand.name}
           </h2>
+          <button
+            onClick={toggleConfigPanel}
+            className="w-6 h-6 flex items-center justify-center rounded hover:bg-surface/50 text-foreground-tertiary"
+            title="Collapse Panel"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
         
         <CompactButton
@@ -98,7 +187,7 @@ export function BrandConfigPanel() {
         />
 
         {/* Collapsible info banner */}
-        <div className="mt-3">
+        <div className="mt-2">
           <button
             onClick={() => setShowInfo(!showInfo)}
             className="flex items-center gap-2 text-xs text-foreground-secondary hover:text-foreground transition-colors"
