@@ -249,51 +249,61 @@ export class BrandGenerator {
    * Static method to validate brand before generation
    */
   public static validate(brand: Brand): ValidationResult {
-    const errors: string[] = [];
-    const warnings: string[] = [];
-    const info: string[] = [];
+    try {
+      const errors: string[] = [];
+      const warnings: string[] = [];
+      const info: string[] = [];
 
-    // Check required palette assignments
-    const requiredRoles = ['primary', 'secondary', 'sparkle', 'neutral'] as const;
-    for (const role of requiredRoles) {
-      if (!brand.colors[role].paletteId) {
-        errors.push(`Missing ${role} palette assignment`);
+      // Check required palette assignments
+      const requiredRoles = ['primary', 'secondary', 'sparkle', 'neutral'] as const;
+      for (const role of requiredRoles) {
+        if (!brand.colors[role]?.paletteId) {
+          errors.push(`Missing ${role} palette assignment`);
+        }
       }
-    }
 
-    // Check semantic colors
-    const semanticRoles = ['positive', 'negative', 'warning', 'informative'] as const;
-    for (const role of semanticRoles) {
-      if (!brand.colors.semantic[role].paletteId) {
-        warnings.push(`Missing ${role} semantic color assignment`);
+      // Check semantic colors
+      const semanticRoles = ['positive', 'negative', 'warning', 'informative'] as const;
+      for (const role of semanticRoles) {
+        if (!brand.colors.semantic?.[role]?.paletteId) {
+          warnings.push(`Missing ${role} semantic color assignment`);
+        }
       }
-    }
 
-    // Check if palettes exist
-    const paletteStore = usePaletteStore.getState();
-    const allPaletteRefs = [
-      brand.colors.primary,
-      brand.colors.secondary,
-      brand.colors.sparkle,
-      brand.colors.neutral,
-      brand.colors.semantic.positive,
-      brand.colors.semantic.negative,
-      brand.colors.semantic.warning,
-      brand.colors.semantic.informative
-    ];
+      // Check if palettes exist
+      const paletteStore = usePaletteStore.getState();
+      const allPaletteRefs = [
+        brand.colors.primary,
+        brand.colors.secondary,
+        brand.colors.sparkle,
+        brand.colors.neutral,
+        brand.colors.semantic?.positive,
+        brand.colors.semantic?.negative,
+        brand.colors.semantic?.warning,
+        brand.colors.semantic?.informative
+      ].filter(Boolean); // Remove undefined values
 
-    for (const ref of allPaletteRefs) {
-      if (ref.paletteId && !paletteStore.palettes.find((p) => p.id === ref.paletteId)) {
-        errors.push(`Palette "${ref.paletteName}" not found in RangDe`);
+      for (const ref of allPaletteRefs) {
+        if (ref?.paletteId && !paletteStore.palettes.find((p) => p.id === ref.paletteId)) {
+          errors.push(`Palette "${ref.paletteName}" not found in RangDe`);
+        }
       }
-    }
 
-    return {
-      valid: errors.length === 0,
-      errors,
-      warnings,
-      info
-    };
+      return {
+        valid: errors.length === 0,
+        errors,
+        warnings,
+        info
+      };
+    } catch (error) {
+      console.error('Brand validation error:', error);
+      return {
+        valid: false,
+        errors: ['Validation failed: ' + ((error as Error)?.message || 'Unknown error')],
+        warnings: [],
+        info: []
+      };
+    }
   }
 
   /**

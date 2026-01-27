@@ -113,7 +113,7 @@ export function CompactPaletteSelector({
                     {/* Preview palette steps */}
                     <div className="flex gap-0.5">
                       {[200, 600, 1200, 2500].map((step) => {
-                        const color = (palette.steps as any)[step] || '#ccc';
+                        const color = (palette?.steps as any)?.[step] || '#ccc';
                         return (
                           <div
                             key={step}
@@ -136,7 +136,7 @@ export function CompactPaletteSelector({
       {selectedPalette && (
         <div className="flex gap-0.5 mt-0.5">
           {[200, 600, 1200, 2500].map((step) => {
-            const color = (selectedPalette.steps as any)[step] || '#ccc';
+            const color = (selectedPalette?.steps as any)?.[step] || '#ccc';
             return (
               <div
                 key={step}

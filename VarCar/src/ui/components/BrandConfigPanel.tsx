@@ -3,7 +3,7 @@
  * Configuration interface for brand colors and palette selection
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useBrandStore } from '@/store/brand-store';
 import { CompactPaletteSelector } from './CompactPaletteSelector';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -51,8 +51,12 @@ export function BrandConfigPanel() {
     useBrandStore.getState().updateBrand(activeBrand.id, { colors: newColors });
   };
 
+  const validation = useMemo(
+    () => BrandGenerator.validate(activeBrand),
+    [activeBrand]
+  );
+
   const handleSync = async () => {
-    const validation = BrandGenerator.validate(activeBrand);
     if (!validation.valid) {
       alert('Cannot sync: Brand has validation errors. Please fix them first.');
       return;
@@ -66,7 +70,6 @@ export function BrandConfigPanel() {
     await syncBrand(activeBrand.id);
   };
 
-  const validation = BrandGenerator.validate(activeBrand);
   const canSyncBrand = validation.valid && canSync && syncStatus === 'idle';
 
   return (
@@ -116,7 +119,7 @@ export function BrandConfigPanel() {
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-6">
           {/* Inline Validation Status */}
-          {!validation.valid && (
+          {!validation.valid && validation.errors && validation.errors.length > 0 && (
             <div className="bg-surface-elevated border-l-2 border-l-orange-500 rounded p-3">
               <div className="text-xs font-semibold text-orange-500 mb-2">
                 Configuration Incomplete
@@ -210,7 +213,7 @@ export function BrandConfigPanel() {
           </div>
 
           {/* Warnings (if any) */}
-          {validation.valid && validation.warnings.length > 0 && (
+          {validation.valid && validation.warnings && validation.warnings.length > 0 && (
             <div className="bg-surface-elevated border-l-2 border-l-yellow-500 rounded p-3">
               <div className="text-xs font-semibold text-yellow-500 mb-2">Warnings</div>
               <div className="space-y-1">
