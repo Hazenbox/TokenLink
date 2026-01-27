@@ -8,6 +8,7 @@ import { useBrandStore } from '@/store/brand-store';
 import { CompactPaletteSelector } from './CompactPaletteSelector';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
+import { CompactButton } from './common/CompactButton';
 import { Info, ChevronDown, ChevronUp, Upload } from 'lucide-react';
 import { BrandGenerator } from '@/lib/brand-generator';
 
@@ -87,15 +88,14 @@ export function BrandConfigPanel() {
           </h2>
         </div>
         
-        <Button
+        <CompactButton
+          icon={Upload}
+          label="Sync to Figma"
+          variant="secondary"
           onClick={handleSync}
           disabled={!canSyncBrand}
-          size="default"
           className="w-full"
-        >
-          <Upload className="w-4 h-4 mr-2" />
-          Sync to Figma
-        </Button>
+        />
 
         {/* Collapsible info banner */}
         <div className="mt-3">

@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { ChevronDown, Search } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@colors/utils';
 
 interface CompactPaletteSelectorProps {
   label: string;
@@ -61,10 +62,21 @@ export function CompactPaletteSelector({
             className="w-full justify-between h-8 px-2 text-xs font-normal"
             onClick={() => setOpen(!open)}
           >
-            <span className={value ? "text-foreground" : "text-foreground-tertiary"}>
-              {value ? selectedPalette?.name || paletteName : "Select palette..."}
-            </span>
-            <ChevronDown className="w-3 h-3 ml-2 opacity-50" />
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              {selectedPalette && (
+                <div
+                  className="h-4 w-4 rounded border border-border/50 flex-shrink-0"
+                  style={{ backgroundColor: selectedPalette.steps[600] || '#ccc' }}
+                />
+              )}
+              <span className={cn(
+                "truncate",
+                value ? "text-foreground" : "text-foreground-tertiary"
+              )}>
+                {value ? selectedPalette?.name || paletteName : "Select palette..."}
+              </span>
+            </div>
+            <ChevronDown className="w-3 h-3 ml-2 opacity-50 flex-shrink-0" />
           </Button>
         </PopoverTrigger>
         
