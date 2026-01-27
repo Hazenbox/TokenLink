@@ -15,9 +15,14 @@ import {
   SyncStatus,
   SyncResult,
   GeneratedBrand,
-  BrandTemplate
+  BrandTemplate,
+  FigmaCollection,
+  FigmaGroup,
+  FigmaVariable
 } from "@/models/brand";
 import { usePaletteStore } from "./palette-store";
+import { BrandGenerator } from "@/lib/brand-generator";
+import { brandToFigmaAdapter } from "@/adapters/brandToFigmaVariables";
 
 /**
  * History state for undo/redo
@@ -49,6 +54,9 @@ interface BrandStoreState {
   
   // Rate limiting
   syncAttempts: { timestamp: number }[];
+  
+  // Figma conversion cache
+  figmaDataCache: Map<string, any>;
   
   // Actions
   createBrand: (name: string, colors?: Partial<BrandColors>) => void;
@@ -102,6 +110,12 @@ interface BrandStoreState {
   // Auto-save
   markDirty: () => void;
   autoSave: () => void;
+  
+  // Figma-style accessors
+  getFigmaCollections: () => FigmaCollection[];
+  getFigmaGroups: (collectionId: string) => FigmaGroup[];
+  getFigmaVariables: (collectionId: string, groupId?: string) => FigmaVariable[];
+  invalidateFigmaCache: () => void;
 }
 
 /**
@@ -151,6 +165,7 @@ export const useBrandStore = create<BrandStoreState>()(
       lastAutoSave: Date.now(),
       isDirty: false,
       syncAttempts: [],
+      figmaDataCache: new Map(),
 
       // Create brand
       createBrand: (name: string, colors?: Partial<BrandColors>) => {
@@ -748,6 +763,87 @@ export const useBrandStore = create<BrandStoreState>()(
         }
 
         set({ isDirty: false, lastAutoSave: Date.now() });
+      },
+      
+      // Figma-style accessors
+      getFigmaCollections: () => {
+        const state = get();
+        const activeBrand = state.getActiveBrand();
+        
+        if (!activeBrand) return [];
+        
+        const cacheKey = `collections_${activeBrand.id}`;
+        if (state.figmaDataCache.has(cacheKey)) {
+          return state.figmaDataCache.get(cacheKey);
+        }
+        
+        const collections = brandToFigmaAdapter.convertBrandToCollections(activeBrand);
+        state.figmaDataCache.set(cacheKey, collections);
+        return collections;
+      },
+      
+      getFigmaGroups: (collectionId: string) => {
+        const state = get();
+        const activeBrand = state.getActiveBrand();
+        
+        if (!activeBrand) return [];
+        
+        const cacheKey = `groups_${activeBrand.id}_${collectionId}`;
+        if (state.figmaDataCache.has(cacheKey)) {
+          return state.figmaDataCache.get(cacheKey);
+        }
+        
+        // Generate variables to get palettes
+        try {
+          const generatedBrand = BrandGenerator.generateBrand(activeBrand);
+          const groups = brandToFigmaAdapter.convertBrandToGroups(
+            activeBrand,
+            generatedBrand.variables,
+            collectionId
+          );
+          state.figmaDataCache.set(cacheKey, groups);
+          return groups;
+        } catch (error) {
+          console.error('Failed to generate groups:', error);
+          return [];
+        }
+      },
+      
+      getFigmaVariables: (collectionId: string, groupId?: string) => {
+        const state = get();
+        const activeBrand = state.getActiveBrand();
+        
+        if (!activeBrand) return [];
+        
+        const cacheKey = `variables_${activeBrand.id}_${collectionId}_${groupId || 'all'}`;
+        if (state.figmaDataCache.has(cacheKey)) {
+          return state.figmaDataCache.get(cacheKey);
+        }
+        
+        try {
+          const generatedBrand = BrandGenerator.generateBrand(activeBrand);
+          const allVariables = brandToFigmaAdapter.convertVariables(
+            generatedBrand.variables,
+            activeBrand,
+            collectionId
+          );
+          
+          // Filter by group if specified
+          const filteredVariables = brandToFigmaAdapter.filterVariablesByGroup(
+            allVariables,
+            groupId || null
+          );
+          
+          state.figmaDataCache.set(cacheKey, filteredVariables);
+          return filteredVariables;
+        } catch (error) {
+          console.error('Failed to generate variables:', error);
+          return [];
+        }
+      },
+      
+      invalidateFigmaCache: () => {
+        set({ figmaDataCache: new Map() });
       }
     }),
     {

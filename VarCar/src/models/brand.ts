@@ -227,3 +227,58 @@ export interface BrandGraph {
     aliasChains: number;
   };
 }
+
+/**
+ * Figma Variables UI Types
+ * Types for presenting VarCar data in Figma's Variables UI paradigm
+ */
+
+/**
+ * Figma Mode - represents different contexts for variable values
+ */
+export interface FigmaMode {
+  id: string;
+  name: string; // "Surface", "High", "Medium", "Low", "Heavy", "Bold", "Bold A11Y", "Minimal"
+}
+
+/**
+ * Figma Collection - represents a group of variables with shared modes
+ */
+export interface FigmaCollection {
+  id: string;
+  name: string;
+  modes: FigmaMode[];
+  defaultModeId: string;
+  variableCount: number;
+}
+
+/**
+ * Figma Group - represents a color group for organizing variables
+ */
+export interface FigmaGroup {
+  id: string;
+  name: string; // "Indigo", "Grey", "Green", etc.
+  collectionId: string;
+  variableCount: number;
+}
+
+/**
+ * Figma Variable Value - can be direct color or alias
+ */
+export interface FigmaVariableValue {
+  type: 'COLOR';
+  value?: string; // Direct hex
+  aliasTo?: { variableId: string; modeId: string }; // Alias reference
+}
+
+/**
+ * Figma Variable - single variable with multiple mode values
+ */
+export interface FigmaVariable {
+  id: string;
+  name: string; // "[Primary] Indigo 200"
+  groupId: string;
+  collectionId: string;
+  valuesByMode: Record<string, FigmaVariableValue>; // modeId → value
+  resolvedValuesByMode: Record<string, string>; // modeId → resolved hex color
+}
