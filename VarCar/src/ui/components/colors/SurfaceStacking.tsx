@@ -7,15 +7,32 @@ import { usePaletteStore } from "@/store/palette-store";
 import { STEPS, Step, isValidHex, getReadableTextColor, getContrastRatio } from "@colors/color-utils";
 import { cn } from "@colors/utils";
 
+/**
+ * Calculate root offset label (e.g., "root", "root+1", "root-1")
+ */
+function getRootOffsetLabel(rootStep: number, currentStep: number): string {
+    const rootIndex = STEPS.indexOf(rootStep as Step);
+    const currentIndex = STEPS.indexOf(currentStep as Step);
+    
+    if (rootIndex === -1 || currentIndex === -1) return "";
+    
+    const offset = currentIndex - rootIndex;
+    
+    if (offset === 0) return "root";
+    if (offset > 0) return `root+${offset}`;
+    return `root${offset}`; // negative numbers already have minus sign
+}
+
 interface StackingCellProps {
     label: string;
     step: number;
     hex: string;
     surfaceHex: string;
     focusBorderHex?: string;
+    rootOffset?: string;
 }
 
-function StackingCell({ label, step, hex, surfaceHex, focusBorderHex }: StackingCellProps) {
+function StackingCell({ label, step, hex, surfaceHex, focusBorderHex, rootOffset }: StackingCellProps) {
     const textColor = isValidHex(hex) ? getReadableTextColor(hex) : "#000";
     return (
         <div
@@ -29,8 +46,11 @@ function StackingCell({ label, step, hex, surfaceHex, focusBorderHex }: Stacking
                 } : {})
             }}
         >
-            <span className="text-[10px] font-medium mb-1 opacity-70" style={{ color: textColor }}>{label}</span>
+            <span className="text-[10px] font-medium mb-0.5 opacity-70" style={{ color: textColor }}>{label}</span>
             <span className="text-xs font-mono font-semibold" style={{ color: textColor }}>{step}</span>
+            {rootOffset && (
+                <span className="text-[8px] font-mono opacity-50 mt-0.5" style={{ color: textColor }}>{rootOffset}</span>
+            )}
         </div>
     );
 }
@@ -45,9 +65,13 @@ interface StackingBlockProps {
     surfaceHex: string;
     focusBorderHex: string;
     showFocus: boolean;
+    idleOffset?: string;
+    hoverOffset?: string;
+    pressedOffset?: string;
+    focusOffset?: string;
 }
 
-function StackingBlock({ title, idleStep, hoverStep, pressedStep, focusStep, paletteSteps, surfaceHex, focusBorderHex, showFocus }: StackingBlockProps) {
+function StackingBlock({ title, idleStep, hoverStep, pressedStep, focusStep, paletteSteps, surfaceHex, focusBorderHex, showFocus, idleOffset, hoverOffset, pressedOffset, focusOffset }: StackingBlockProps) {
     const textColor = getReadableTextColor(surfaceHex);
     return (
         <div
@@ -61,11 +85,11 @@ function StackingBlock({ title, idleStep, hoverStep, pressedStep, focusStep, pal
                 {title}
             </h4>
             <div className={cn("grid gap-3", showFocus ? "grid-cols-4" : "grid-cols-3")}>
-                <StackingCell label="Idle" step={idleStep} hex={paletteSteps[idleStep as Step] || "#ccc"} surfaceHex={surfaceHex} />
-                <StackingCell label="hover" step={hoverStep} hex={paletteSteps[hoverStep as Step] || "#ccc"} surfaceHex={surfaceHex} />
-                <StackingCell label="pressed" step={pressedStep} hex={paletteSteps[pressedStep as Step] || "#ccc"} surfaceHex={surfaceHex} />
+                <StackingCell label="Idle" step={idleStep} hex={paletteSteps[idleStep as Step] || "#ccc"} surfaceHex={surfaceHex} rootOffset={idleOffset} />
+                <StackingCell label="hover" step={hoverStep} hex={paletteSteps[hoverStep as Step] || "#ccc"} surfaceHex={surfaceHex} rootOffset={hoverOffset} />
+                <StackingCell label="pressed" step={pressedStep} hex={paletteSteps[pressedStep as Step] || "#ccc"} surfaceHex={surfaceHex} rootOffset={pressedOffset} />
                 {showFocus && (
-                    <StackingCell label="focus" step={focusStep} hex={paletteSteps[focusStep as Step] || "#ccc"} surfaceHex={surfaceHex} focusBorderHex={focusBorderHex} />
+                    <StackingCell label="focus" step={focusStep} hex={paletteSteps[focusStep as Step] || "#ccc"} surfaceHex={surfaceHex} focusBorderHex={focusBorderHex} rootOffset={focusOffset} />
                 )}
             </div>
         </div>
@@ -180,50 +204,91 @@ function StackingSection({ title, isLight, activePalette, baseStep }: StackingSe
 
                         const dir = isLight ? -1 : 1;
 
+                        // Root steps for each variant
+                        let ghostRoot, minimalRoot, subtleRoot, boldRoot;
+                        
                         if (col.name === "Bold") {
                             const surfaceHexVal = activePalette.steps[surfaceStep];
                             const contrast2500 = getContrastRatio(activePalette.steps[2500], surfaceHexVal);
                             const contrast200 = getContrastRatio(activePalette.steps[200], surfaceHexVal);
                             const contrastDir = contrast2500 > contrast200 ? 1 : -1;
 
+                            ghostRoot = surfaceStep;
                             ghostIdle = surfaceStep;
                             ghostHover = getStep(getIndex(ghostIdle) + contrastDir);
                             ghostPressed = getStep(getIndex(ghostHover) + contrastDir);
 
+                            minimalRoot = ghostHover;
                             minimalIdle = ghostHover;
                             minimalHover = getStep(getIndex(minimalIdle) + contrastDir);
                             minimalPressed = getStep(getIndex(minimalHover) + contrastDir);
 
+                            subtleRoot = minimalHover;
                             subtleIdle = minimalHover;
                             subtleHover = getStep(getIndex(subtleIdle) + contrastDir);
                             subtlePressed = getStep(getIndex(subtleHover) + contrastDir);
 
                             const boldShift = surfaceStep <= 1100 ? 7 : -7;
-                            boldIdle = getStep(getIndex(surfaceStep) + boldShift);
+                            boldRoot = getStep(getIndex(surfaceStep) + boldShift);
+                            boldIdle = boldRoot;
                             boldHover = getStep(getIndex(boldIdle) - 1);
                             boldPressed = getStep(getIndex(boldHover) - 1);
                         } else {
+                            ghostRoot = surfaceStep;
                             ghostIdle = surfaceStep;
                             ghostHover = getStep(getIndex(ghostIdle) + dir);
                             ghostPressed = getStep(getIndex(ghostIdle) + (dir * 2));
 
-                            minimalIdle = getStep(getIndex(surfaceStep) + dir);
+                            minimalRoot = getStep(getIndex(surfaceStep) + dir);
+                            minimalIdle = minimalRoot;
                             minimalHover = getStep(getIndex(minimalIdle) + dir);
                             minimalPressed = getStep(getIndex(minimalIdle) + (dir * 2));
 
-                            subtleIdle = getStep(getIndex(surfaceStep) + (dir * 2));
+                            subtleRoot = getStep(getIndex(surfaceStep) + (dir * 2));
+                            subtleIdle = subtleRoot;
                             subtleHover = getStep(getIndex(subtleIdle) + dir);
                             subtlePressed = getStep(getIndex(subtleIdle) + (dir * 2));
 
                             const adjustedBase = getAdjustedBoldStep(activePalette.primaryStep);
                             if (col.name === "Default" || (col.name === "Elevated" && isLight)) {
+                                boldRoot = adjustedBase;
                                 boldIdle = adjustedBase;
                             } else {
-                                boldIdle = getBoldStepWithContrast(surfaceStep, adjustedBase);
+                                boldRoot = getBoldStepWithContrast(surfaceStep, adjustedBase);
+                                boldIdle = boldRoot;
                             }
                             boldHover = getStep(getIndex(boldIdle) - 1);
                             boldPressed = getStep(getIndex(boldHover) - 1);
                         }
+
+                        // Calculate offset labels for each variant
+                        const ghostOffsets = {
+                            idle: getRootOffsetLabel(ghostRoot, ghostIdle),
+                            hover: getRootOffsetLabel(ghostRoot, ghostHover),
+                            pressed: getRootOffsetLabel(ghostRoot, ghostPressed),
+                            focus: getRootOffsetLabel(ghostRoot, ghostIdle),
+                        };
+                        
+                        const minimalOffsets = {
+                            idle: getRootOffsetLabel(minimalRoot, minimalIdle),
+                            hover: getRootOffsetLabel(minimalRoot, minimalHover),
+                            pressed: getRootOffsetLabel(minimalRoot, minimalPressed),
+                            focus: getRootOffsetLabel(minimalRoot, minimalIdle),
+                        };
+                        
+                        const subtleOffsets = {
+                            idle: getRootOffsetLabel(subtleRoot, subtleIdle),
+                            hover: getRootOffsetLabel(subtleRoot, subtleHover),
+                            pressed: getRootOffsetLabel(subtleRoot, subtlePressed),
+                            focus: getRootOffsetLabel(subtleRoot, subtleIdle),
+                        };
+                        
+                        const boldOffsets = {
+                            idle: getRootOffsetLabel(boldRoot, boldIdle),
+                            hover: getRootOffsetLabel(boldRoot, boldHover),
+                            pressed: getRootOffsetLabel(boldRoot, boldPressed),
+                            focus: getRootOffsetLabel(boldRoot, boldIdle),
+                        };
 
                         return (
                             <div
@@ -249,6 +314,10 @@ function StackingSection({ title, isLight, activePalette, baseStep }: StackingSe
                                     surfaceHex={surfaceHex}
                                     focusBorderHex={activePalette.steps[boldIdle as Step]}
                                     showFocus={showFocus}
+                                    idleOffset={ghostOffsets.idle}
+                                    hoverOffset={ghostOffsets.hover}
+                                    pressedOffset={ghostOffsets.pressed}
+                                    focusOffset={ghostOffsets.focus}
                                 />
                                 <StackingBlock
                                     title="Minimal"
@@ -260,6 +329,10 @@ function StackingSection({ title, isLight, activePalette, baseStep }: StackingSe
                                     surfaceHex={surfaceHex}
                                     focusBorderHex={activePalette.steps[boldIdle as Step]}
                                     showFocus={showFocus}
+                                    idleOffset={minimalOffsets.idle}
+                                    hoverOffset={minimalOffsets.hover}
+                                    pressedOffset={minimalOffsets.pressed}
+                                    focusOffset={minimalOffsets.focus}
                                 />
                                 <StackingBlock
                                     title="Subtle"
@@ -271,6 +344,10 @@ function StackingSection({ title, isLight, activePalette, baseStep }: StackingSe
                                     surfaceHex={surfaceHex}
                                     focusBorderHex={activePalette.steps[boldIdle as Step]}
                                     showFocus={showFocus}
+                                    idleOffset={subtleOffsets.idle}
+                                    hoverOffset={subtleOffsets.hover}
+                                    pressedOffset={subtleOffsets.pressed}
+                                    focusOffset={subtleOffsets.focus}
                                 />
                                 <StackingBlock
                                     title="Bold"
@@ -282,6 +359,10 @@ function StackingSection({ title, isLight, activePalette, baseStep }: StackingSe
                                     surfaceHex={surfaceHex}
                                     focusBorderHex={activePalette.steps[boldIdle as Step]}
                                     showFocus={showFocus}
+                                    idleOffset={boldOffsets.idle}
+                                    hoverOffset={boldOffsets.hover}
+                                    pressedOffset={boldOffsets.pressed}
+                                    focusOffset={boldOffsets.focus}
                                 />
                             </div>
                         );
