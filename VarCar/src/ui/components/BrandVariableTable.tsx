@@ -11,7 +11,7 @@ import { BrandGenerator } from '@/lib/brand-generator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Download, Link } from 'lucide-react';
+import { Search, Download, Link, ChevronRight, ChevronDown } from 'lucide-react';
 import { ModeCell } from './variables/ModeCell';
 
 export function BrandVariableTable() {
@@ -20,6 +20,8 @@ export function BrandVariableTable() {
   const activeGroupId = useVariablesViewStore((state) => state.activeGroupId);
   const searchQuery = useVariablesViewStore((state) => state.searchQuery);
   const setSearchQuery = useVariablesViewStore((state) => state.setSearchQuery);
+  const expandedGroups = useVariablesViewStore((state) => state.expandedGroups);
+  const toggleGroupExpanded = useVariablesViewStore((state) => state.toggleGroupExpanded);
   
   // Simple state selectors - no function calls
   const collections = useBrandStore((state) => state.figmaCollections, shallow);
@@ -41,15 +43,92 @@ export function BrandVariableTable() {
   
   const modes = activeCollection?.modes || [];
 
-  // Filter variables by search query
-  const filteredVariables = useMemo(() => {
-    if (!searchQuery) return figmaVariables;
+  // Group variables by group and step
+  const groupedData = useMemo(() => {
+    if (!figmaVariables.length) return new Map();
+    
+    const grouped = new Map<string, {
+      groupName: string;
+      steps: Map<number, {
+        valuesByMode: Record<string, any>;
+        resolvedByMode: Record<string, string>;
+      }>;
+    }>();
+    
+    figmaVariables.forEach((variable) => {
+      const { groupId, name } = variable;
+      
+      // Extract palette and step from name: "[Primary] Indigo 200" → "Indigo", 200
+      const match = name.match(/\[.*?\]\s+(.*?)\s+(\d{3,4})$/);
+      if (!match) return;
+      
+      const [, paletteName, stepStr] = match;
+      const step = parseInt(stepStr);
+      
+      if (!grouped.has(groupId)) {
+        grouped.set(groupId, {
+          groupName: paletteName,
+          steps: new Map()
+        });
+      }
+      
+      if (!grouped.get(groupId)!.steps.has(step)) {
+        grouped.get(groupId)!.steps.set(step, {
+          valuesByMode: {},
+          resolvedByMode: {}
+        });
+      }
+      
+      const stepData = grouped.get(groupId)!.steps.get(step)!;
+      stepData.valuesByMode = variable.valuesByMode;
+      stepData.resolvedByMode = variable.resolvedValuesByMode;
+    });
+    
+    return grouped;
+  }, [figmaVariables]);
+  
+  // Helper to get sorted steps
+  const getSortedSteps = (steps: Map<number, any>) => {
+    return Array.from(steps.keys()).sort((a, b) => a - b);
+  };
+  
+  // Filter grouped data by search query
+  const filteredGroupedData = useMemo(() => {
+    if (!searchQuery) return groupedData;
     
     const query = searchQuery.toLowerCase();
-    return figmaVariables.filter((v) =>
-      v.name.toLowerCase().includes(query)
-    );
-  }, [figmaVariables, searchQuery]);
+    const filtered = new Map();
+    
+    groupedData.forEach((groupData, groupId) => {
+      // Check if group name matches
+      const groupMatches = groupData.groupName.toLowerCase().includes(query);
+      
+      // Filter steps
+      const matchingSteps = new Map();
+      groupData.steps.forEach((stepData, step) => {
+        const stepMatches = step.toString().includes(query);
+        if (groupMatches || stepMatches) {
+          matchingSteps.set(step, stepData);
+        }
+      });
+      
+      if (matchingSteps.size > 0) {
+        filtered.set(groupId, {
+          ...groupData,
+          steps: matchingSteps
+        });
+      }
+    });
+    
+    return filtered;
+  }, [groupedData, searchQuery]);
+  
+  // Auto-expand all groups when searching
+  useEffect(() => {
+    if (searchQuery) {
+      useVariablesViewStore.getState().expandAllGroups();
+    }
+  }, [searchQuery]);
   
   // Validate brand
   const validation = useMemo(() => {
@@ -61,15 +140,22 @@ export function BrandVariableTable() {
   const handleExport = () => {
     if (!activeBrand) return;
     
-    // Export to CSV with mode columns
-    const headers = ['Variable Name', ...modes.map(m => m.name)];
-    const rows = filteredVariables.map((variable) => {
-      const row = [variable.name];
-      modes.forEach((mode) => {
-        const color = variable.resolvedValuesByMode[mode.id] || '';
-        row.push(color);
+    // Export to CSV with Group, Step, and mode columns
+    const headers = ['Group', 'Step', ...modes.map(m => m.name)];
+    const rows: string[] = [];
+    
+    filteredGroupedData.forEach((groupData, groupId) => {
+      const sortedSteps = getSortedSteps(groupData.steps);
+      
+      sortedSteps.forEach((step) => {
+        const stepData = groupData.steps.get(step)!;
+        const row = [
+          groupData.groupName,
+          step.toString(),
+          ...modes.map((mode) => stepData.resolvedByMode[mode.id] || '')
+        ];
+        rows.push(row.join(','));
       });
-      return row.join(',');
     });
     
     const csv = [headers.join(','), ...rows].join('\n');
@@ -135,18 +221,37 @@ export function BrandVariableTable() {
               Variables
             </h2>
             <p className="text-xs text-foreground-secondary">
-              {filteredVariables.length} variables
+              {groupedData.size} groups
             </p>
           </div>
-          <Button
-            onClick={handleExport}
-            size="sm"
-            variant="outline"
-            className="h-7 px-3"
-          >
-            <Download className="w-3 h-3 mr-1" />
-            Export CSV
-          </Button>
+          
+          <div className="flex gap-2">
+            <Button
+              onClick={() => useVariablesViewStore.getState().expandAllGroups()}
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2 text-xs"
+            >
+              Expand All
+            </Button>
+            <Button
+              onClick={() => useVariablesViewStore.getState().collapseAllGroups()}
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2 text-xs"
+            >
+              Collapse All
+            </Button>
+            <Button
+              onClick={handleExport}
+              size="sm"
+              variant="outline"
+              className="h-7 px-3"
+            >
+              <Download className="w-3 h-3 mr-1" />
+              Export CSV
+            </Button>
+          </div>
         </div>
 
         {/* Search */}
@@ -164,7 +269,7 @@ export function BrandVariableTable() {
       {/* Variables Table */}
       <ScrollArea className="flex-1">
         <div className="overflow-x-auto">
-          {filteredVariables.length === 0 ? (
+          {filteredGroupedData.size === 0 ? (
             <div className="text-center py-12 text-foreground-secondary text-xs">
               {searchQuery ? 'No variables match your search' : 'No variables in this collection'}
             </div>
@@ -194,41 +299,83 @@ export function BrandVariableTable() {
               </thead>
               
               <tbody>
-                {filteredVariables.map((variable) => (
-                  <tr 
-                    key={variable.id} 
-                    className="border-b border-border/10 hover:bg-surface/50 transition-colors"
-                  >
-                    {/* Variable Name */}
-                    <td className="sticky left-0 z-10 bg-card px-3 py-2 border-r border-border/10">
-                      <div className="flex items-center gap-2">
-                        <Link className="w-3 h-3 text-foreground-tertiary flex-shrink-0" />
-                        <span className="text-[11px] text-foreground">{variable.name}</span>
-                      </div>
-                    </td>
-                    
-                    {/* Mode Values */}
-                    {modes.map((mode) => {
-                      const value = variable.valuesByMode[mode.id];
-                      const resolvedColor = variable.resolvedValuesByMode[mode.id];
-                      
-                      return (
-                        <td 
-                          key={mode.id} 
-                          className="border-r border-border/10 align-middle"
-                        >
-                          {value ? (
-                            <ModeCell value={value} color={resolvedColor} />
-                          ) : (
-                            <div className="px-3 py-2 text-center text-foreground-tertiary/30">
-                              —
-                            </div>
-                          )}
+                {Array.from(filteredGroupedData.entries()).map(([groupId, groupData]) => {
+                  const isExpanded = expandedGroups.has(groupId);
+                  const sortedSteps = getSortedSteps(groupData.steps);
+                  
+                  return (
+                    <React.Fragment key={groupId}>
+                      {/* Group Header Row */}
+                      <tr 
+                        className="border-b border-border/10 hover:bg-surface/50 cursor-pointer transition-colors"
+                        onClick={() => toggleGroupExpanded(groupId)}
+                      >
+                        <td className="sticky left-0 z-10 bg-card px-3 py-2 border-r border-border/10">
+                          <div className="flex items-center gap-2">
+                            {isExpanded ? (
+                              <ChevronDown className="w-3 h-3 text-foreground-tertiary" />
+                            ) : (
+                              <ChevronRight className="w-3 h-3 text-foreground-tertiary" />
+                            )}
+                            <span className="text-[11px] font-medium text-foreground">
+                              {groupData.groupName}
+                            </span>
+                            <span className="text-[10px] text-foreground-tertiary">
+                              ({sortedSteps.length})
+                            </span>
+                          </div>
                         </td>
-                      );
-                    })}
-                  </tr>
-                ))}
+                        
+                        {/* Empty cells for modes in group header */}
+                        {modes.map((mode) => (
+                          <td key={mode.id} className="border-r border-border/10" />
+                        ))}
+                      </tr>
+                      
+                      {/* Step Sub-Rows (shown when expanded) */}
+                      {isExpanded && sortedSteps.map((step) => {
+                        const stepData = groupData.steps.get(step)!;
+                        
+                        return (
+                          <tr 
+                            key={`${groupId}_${step}`}
+                            className="border-b border-border/10 hover:bg-surface/30 transition-colors"
+                          >
+                            {/* Step Name (indented) */}
+                            <td className="sticky left-0 z-10 bg-card px-3 py-2 border-r border-border/10">
+                              <div className="flex items-center gap-2 pl-5">
+                                <span className="text-[11px] text-foreground-secondary">
+                                  {step}
+                                </span>
+                              </div>
+                            </td>
+                            
+                            {/* Mode Values */}
+                            {modes.map((mode) => {
+                              const value = stepData.valuesByMode[mode.id];
+                              const resolvedColor = stepData.resolvedByMode[mode.id];
+                              
+                              return (
+                                <td 
+                                  key={mode.id} 
+                                  className="border-r border-border/10 align-middle"
+                                >
+                                  {value ? (
+                                    <ModeCell value={value} color={resolvedColor} />
+                                  ) : (
+                                    <div className="px-3 py-2 text-center text-foreground-tertiary/30">
+                                      —
+                                    </div>
+                                  )}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        );
+                      })}
+                    </React.Fragment>
+                  );
+                })}
               </tbody>
             </table>
           )}
@@ -242,7 +389,12 @@ export function BrandVariableTable() {
             Collection: <span className="text-foreground">{activeCollection?.name || 'None'}</span>
           </div>
           <div>
-            Variables: <span className="text-foreground">{filteredVariables.length}</span>
+            Groups: <span className="text-foreground">{filteredGroupedData.size}</span>
+          </div>
+          <div>
+            Steps: <span className="text-foreground">
+              {Array.from(filteredGroupedData.values()).reduce((sum, g) => sum + g.steps.size, 0)}
+            </span>
           </div>
           <div>
             Modes: <span className="text-foreground">{modes.length}</span>

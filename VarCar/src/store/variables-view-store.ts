@@ -19,12 +19,18 @@ interface VariablesViewState {
   // Search
   searchQuery: string;
   
+  // Accordion state
+  expandedGroups: Set<string>; // groupIds that are expanded
+  
   // Actions
   setActiveCollection: (id: string | null) => void;
   setActiveGroup: (id: string | null) => void;
   toggleCollectionsSidebar: () => void;
   toggleGroupsSidebar: () => void;
   setSearchQuery: (query: string) => void;
+  toggleGroupExpanded: (groupId: string) => void;
+  expandAllGroups: () => void;
+  collapseAllGroups: () => void;
   
   // Reset
   reset: () => void;
@@ -39,6 +45,7 @@ export const useVariablesViewStore = create<VariablesViewState>()(
       collectionsCollapsed: false,
       groupsCollapsed: false,
       searchQuery: '',
+      expandedGroups: new Set(),
       
       // Set active collection
       setActiveCollection: (id: string | null) => {
@@ -68,6 +75,31 @@ export const useVariablesViewStore = create<VariablesViewState>()(
         set({ searchQuery: query });
       },
       
+      // Toggle group expanded state
+      toggleGroupExpanded: (groupId: string) => {
+        set((state) => {
+          const newExpanded = new Set(state.expandedGroups);
+          if (newExpanded.has(groupId)) {
+            newExpanded.delete(groupId);
+          } else {
+            newExpanded.add(groupId);
+          }
+          return { expandedGroups: newExpanded };
+        });
+      },
+      
+      // Expand all groups
+      expandAllGroups: () => {
+        const { useBrandStore } = require('@/store/brand-store');
+        const groups = useBrandStore.getState().figmaGroups;
+        set({ expandedGroups: new Set(groups.map((g: any) => g.id)) });
+      },
+      
+      // Collapse all groups
+      collapseAllGroups: () => {
+        set({ expandedGroups: new Set() });
+      },
+      
       // Reset all state
       reset: () => {
         set({
@@ -75,7 +107,8 @@ export const useVariablesViewStore = create<VariablesViewState>()(
           activeGroupId: 'all',
           collectionsCollapsed: false,
           groupsCollapsed: false,
-          searchQuery: ''
+          searchQuery: '',
+          expandedGroups: new Set()
         });
       }
     }),
@@ -86,8 +119,15 @@ export const useVariablesViewStore = create<VariablesViewState>()(
         activeCollectionId: state.activeCollectionId,
         activeGroupId: state.activeGroupId,
         collectionsCollapsed: state.collectionsCollapsed,
-        groupsCollapsed: state.groupsCollapsed
-      })
+        groupsCollapsed: state.groupsCollapsed,
+        expandedGroups: Array.from(state.expandedGroups) // Convert Set to Array for JSON
+      }),
+      // Rehydrate Set from Array
+      onRehydrateStorage: () => (state) => {
+        if (state && Array.isArray((state as any).expandedGroups)) {
+          state.expandedGroups = new Set((state as any).expandedGroups);
+        }
+      }
     }
   )
 );
