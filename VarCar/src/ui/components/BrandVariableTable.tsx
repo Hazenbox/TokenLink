@@ -27,7 +27,7 @@ const SCALE_NAMES = [
 // Helper: Truncate alias path for display
 function truncateAliasPath(alias: AliasReference): string {
   const path = `${alias.paletteName}/${alias.step}/${alias.scale}`;
-  if (path.length > 25) {
+  if (path.length > 35) {
     return `.../${alias.step}/${alias.scale}`;
   }
   return path;
@@ -45,7 +45,7 @@ interface CellContentProps {
 
 function CellContent({ variable }: CellContentProps) {
   return (
-    <div className="flex items-center gap-1.5 px-2 py-1.5">
+    <div className="flex items-center gap-2 px-3 py-2">
       <div
         className="w-5 h-5 rounded border border-border/30 flex-shrink-0"
         style={{ backgroundColor: variable.value || '#000' }}
@@ -53,11 +53,17 @@ function CellContent({ variable }: CellContentProps) {
       />
       <div className="flex-1 min-w-0">
         {variable.isAliased && variable.aliasTo ? (
-          <div className="text-[10px] text-foreground-tertiary font-mono truncate">
+          <div 
+            className="text-[10px] text-foreground-tertiary font-mono truncate"
+            title={`${variable.aliasTo.paletteName}/${variable.aliasTo.step}/${variable.aliasTo.scale}`}
+          >
             {truncateAliasPath(variable.aliasTo)}
           </div>
         ) : (
-          <div className="text-[10px] text-foreground-tertiary font-mono">
+          <div 
+            className="text-[10px] text-foreground-tertiary font-mono"
+            title={variable.value || ''}
+          >
             {variable.value || '—'}
           </div>
         )}

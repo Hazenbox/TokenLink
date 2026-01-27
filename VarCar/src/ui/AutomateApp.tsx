@@ -15,17 +15,17 @@ export function AutomateApp() {
       <CanvasBackground />
       
       {/* Left: Brand List - Fixed width */}
-      <div className="w-[250px] border-r border-border/50 bg-surface flex-shrink-0 shadow-[inset_-1px_0_0_0_rgba(0,0,0,0.05)]">
+      <div className="w-[250px] border-r border-border/50 bg-surface flex-shrink-0 shadow-[inset_-1px_0_0_0_rgba(0,0,0,0.05)] overflow-hidden">
         <BrandListPanel />
       </div>
       
       {/* Middle: Configuration - Fixed width (reduced by 50%) */}
-      <div className="w-[400px] border-r border-border/50 bg-card shadow-[inset_-1px_0_0_0_rgba(0,0,0,0.05)]">
+      <div className="w-[400px] border-r border-border/50 bg-card shadow-[inset_-1px_0_0_0_rgba(0,0,0,0.05)] overflow-hidden">
         <BrandConfigPanel />
       </div>
       
       {/* Right: Variable Table - Takes remaining space */}
-      <div className="flex-1 bg-card">
+      <div className="flex-1 bg-card overflow-hidden">
         <BrandVariableTable />
       </div>
     </div>
