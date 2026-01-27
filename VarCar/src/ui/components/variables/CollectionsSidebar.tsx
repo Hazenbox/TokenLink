@@ -69,7 +69,7 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
   
   if (collectionsCollapsed) {
     return (
-      <div className="w-12 border-r border-border/20 bg-surface-elevated flex flex-col items-center py-2">
+      <div className="w-12 border-r border-border/20 bg-background flex flex-col items-center py-2">
         <button
           onClick={() => useVariablesViewStore.getState().toggleCollectionsSidebar()}
           className="w-8 h-8 flex items-center justify-center rounded hover:bg-surface/50 text-foreground-tertiary"
@@ -82,7 +82,7 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
   }
   
   return (
-    <div className="w-[180px] border-r border-border/20 bg-surface-elevated flex flex-col">
+    <div className="w-[180px] border-r border-border/20 bg-background flex flex-col">
       {/* Header */}
       <div className="px-3 py-2 border-b border-border/20 flex items-center justify-between flex-shrink-0">
         <span className="text-[11px] font-medium text-foreground-secondary">

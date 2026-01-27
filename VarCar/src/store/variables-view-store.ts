@@ -19,8 +19,9 @@ interface VariablesViewState {
   // Search
   searchQuery: string;
   
-  // Accordion state
-  expandedGroups: Set<string>; // groupIds that are expanded
+  // Groups sidebar accordion state
+  expandedGroups: Set<string>; // groupIds that are expanded in sidebar
+  selectedStep: string | 'all'; // Selected step within group ("2500", "2400", "all")
   
   // Actions
   setActiveCollection: (id: string | null) => void;
@@ -29,6 +30,7 @@ interface VariablesViewState {
   toggleGroupsSidebar: () => void;
   setSearchQuery: (query: string) => void;
   toggleGroupExpanded: (groupId: string) => void;
+  setSelectedStep: (step: string | 'all') => void;
   expandAllGroups: () => void;
   collapseAllGroups: () => void;
   
@@ -46,6 +48,7 @@ export const useVariablesViewStore = create<VariablesViewState>()(
       groupsCollapsed: false,
       searchQuery: '',
       expandedGroups: new Set(),
+      selectedStep: 'all',
       
       // Set active collection
       setActiveCollection: (id: string | null) => {
@@ -57,7 +60,10 @@ export const useVariablesViewStore = create<VariablesViewState>()(
       
       // Set active group
       setActiveGroup: (id: string | null) => {
-        set({ activeGroupId: id || 'all' });
+        set({ 
+          activeGroupId: id || 'all',
+          selectedStep: 'all' // Reset step when changing groups
+        });
       },
       
       // Toggle collections sidebar
@@ -100,6 +106,11 @@ export const useVariablesViewStore = create<VariablesViewState>()(
         set({ expandedGroups: new Set() });
       },
       
+      // Set selected step
+      setSelectedStep: (step: string | 'all') => {
+        set({ selectedStep: step });
+      },
+      
       // Reset all state
       reset: () => {
         set({
@@ -108,7 +119,8 @@ export const useVariablesViewStore = create<VariablesViewState>()(
           collectionsCollapsed: false,
           groupsCollapsed: false,
           searchQuery: '',
-          expandedGroups: new Set()
+          expandedGroups: new Set(),
+          selectedStep: 'all'
         });
       }
     }),
@@ -120,6 +132,7 @@ export const useVariablesViewStore = create<VariablesViewState>()(
         activeGroupId: state.activeGroupId,
         collectionsCollapsed: state.collectionsCollapsed,
         groupsCollapsed: state.groupsCollapsed,
+        selectedStep: state.selectedStep,
         expandedGroups: Array.from(state.expandedGroups) // Convert Set to Array for JSON
       }),
       // Rehydrate Set from Array

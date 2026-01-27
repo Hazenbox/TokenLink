@@ -1,57 +1,32 @@
 /**
  * Groups Sidebar
- * Displays list of groups (color families) for filtering variables
+ * Displays accordion of groups with expandable steps for filtering
  */
 
-import React, { useEffect } from 'react';
-import { ChevronsUpDown } from 'lucide-react';
+import React, { useEffect, useMemo } from 'react';
+import { ChevronsUpDown, ChevronRight, ChevronDown } from 'lucide-react';
 import { shallow } from 'zustand/shallow';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useBrandStore } from '@/store/brand-store';
 import { useVariablesViewStore } from '@/store/variables-view-store';
-import { FigmaGroup } from '@/models/brand';
 
 interface GroupsSidebarProps {
   onCreateGroup?: () => void;
 }
 
-interface GroupItemProps {
-  group: FigmaGroup & { id: string; name: string; variableCount: number };
-  isActive: boolean;
-  onClick: () => void;
-}
-
-function GroupItem({ group, isActive, onClick }: GroupItemProps) {
-  return (
-    <button
-      onClick={onClick}
-      className={`
-        w-full px-3 py-2 flex items-center justify-between
-        text-left text-[11px] transition-colors
-        hover:bg-surface/50
-        ${isActive ? 'bg-surface-selected border-l-2 border-l-blue-500' : ''}
-      `}
-    >
-      <div className="flex-1 min-w-0">
-        <div className={`font-medium truncate ${isActive ? 'text-foreground' : 'text-foreground-secondary'}`}>
-          {group.name}
-        </div>
-      </div>
-      <div className="ml-2 text-[10px] text-foreground-tertiary">
-        {Math.round(group.variableCount)}
-      </div>
-    </button>
-  );
-}
-
 export function GroupsSidebar({ onCreateGroup }: GroupsSidebarProps) {
   const activeCollectionId = useVariablesViewStore((state) => state.activeCollectionId);
   const activeGroupId = useVariablesViewStore((state) => state.activeGroupId);
+  const selectedStep = useVariablesViewStore((state) => state.selectedStep);
   const setActiveGroup = useVariablesViewStore((state) => state.setActiveGroup);
+  const setSelectedStep = useVariablesViewStore((state) => state.setSelectedStep);
   const groupsCollapsed = useVariablesViewStore((state) => state.groupsCollapsed);
+  const expandedGroups = useVariablesViewStore((state) => state.expandedGroups);
+  const toggleGroupExpanded = useVariablesViewStore((state) => state.toggleGroupExpanded);
   
   // Simple state selector - no function calls
   const groups = useBrandStore((state) => state.figmaGroups, shallow);
+  const allVariablesMap = useBrandStore((state) => state.figmaVariablesByCollection, shallow);
   
   // Refresh groups when collection changes
   useEffect(() => {
@@ -60,12 +35,43 @@ export function GroupsSidebar({ onCreateGroup }: GroupsSidebarProps) {
     }
   }, [activeCollectionId]);
   
+  // Get variables for current collection to extract steps per group
+  const groupsWithSteps = useMemo(() => {
+    const variables = allVariablesMap.get(activeCollectionId || '') || [];
+    const groupStepsMap = new Map<string, Set<string>>();
+    
+    variables.forEach(variable => {
+      // Parse: "Grey/2500/Surface" → group:"Grey", step:"2500"
+      const parts = variable.name.split('/');
+      
+      if (parts.length >= 2) {
+        const [groupName, step] = parts;
+        
+        if (!groupStepsMap.has(groupName)) {
+          groupStepsMap.set(groupName, new Set());
+        }
+        
+        // Add step if numeric
+        if (!isNaN(parseInt(step))) {
+          groupStepsMap.get(groupName)!.add(step);
+        }
+      }
+    });
+    
+    // Match groups with their steps
+    return groups.map(group => ({
+      ...group,
+      steps: Array.from(groupStepsMap.get(group.name) || [])
+        .sort((a, b) => parseInt(b) - parseInt(a)) // Sort descending (2500, 2400, 2300...)
+    }));
+  }, [groups, allVariablesMap, activeCollectionId]);
+  
   // Calculate total count for "All" option
   const totalCount = groups.reduce((sum, group) => sum + (group.variableCount || 0), 0);
   
   if (groupsCollapsed) {
     return (
-      <div className="w-12 border-r border-border/20 bg-surface-elevated flex flex-col items-center py-2">
+      <div className="w-12 border-r border-border/20 bg-background flex flex-col items-center py-2">
         <button
           onClick={() => useVariablesViewStore.getState().toggleGroupsSidebar()}
           className="w-8 h-8 flex items-center justify-center rounded hover:bg-surface/50 text-foreground-tertiary"
@@ -78,7 +84,7 @@ export function GroupsSidebar({ onCreateGroup }: GroupsSidebarProps) {
   }
   
   return (
-    <div className="w-[180px] border-r border-border/20 bg-surface-elevated flex flex-col">
+    <div className="w-[200px] border-r border-border/20 bg-background flex flex-col">
       {/* Header */}
       <div className="px-3 py-2 border-b border-border/20 flex items-center justify-between flex-shrink-0">
         <span className="text-[11px] font-medium text-foreground-secondary">
@@ -94,13 +100,29 @@ export function GroupsSidebar({ onCreateGroup }: GroupsSidebarProps) {
       </div>
       
       {/* All Option */}
-      <GroupItem
-        group={{ id: 'all', name: 'All', variableCount: totalCount, collectionId: activeCollectionId || '' }}
-        isActive={activeGroupId === 'all'}
-        onClick={() => setActiveGroup('all')}
-      />
+      <button
+        onClick={() => {
+          setActiveGroup('all');
+          setSelectedStep('all');
+        }}
+        className={`
+          w-full px-3 py-2 flex items-center justify-between
+          text-left text-[11px] transition-colors
+          hover:bg-surface/50
+          ${activeGroupId === 'all' ? 'bg-surface-selected border-l-2 border-l-blue-500' : ''}
+        `}
+      >
+        <div className="flex-1 min-w-0">
+          <div className={`font-medium truncate ${activeGroupId === 'all' ? 'text-foreground' : 'text-foreground-secondary'}`}>
+            All
+          </div>
+        </div>
+        <div className="ml-2 text-[10px] text-foreground-tertiary">
+          {totalCount}
+        </div>
+      </button>
       
-      {/* Groups List */}
+      {/* Groups List with Accordion */}
       <ScrollArea className="flex-1">
         {groups.length === 0 ? (
           <div className="px-3 py-8 text-center text-[10px] text-foreground-tertiary">
@@ -108,14 +130,91 @@ export function GroupsSidebar({ onCreateGroup }: GroupsSidebarProps) {
           </div>
         ) : (
           <div className="py-1">
-            {groups.map((group) => (
-              <GroupItem
-                key={group.id}
-                group={group}
-                isActive={activeGroupId === group.id}
-                onClick={() => setActiveGroup(group.id)}
-              />
-            ))}
+            {groupsWithSteps.map((group) => {
+              const isExpanded = expandedGroups.has(group.id);
+              const isActiveGroup = activeGroupId === group.id;
+              const hasSteps = group.steps && group.steps.length > 0;
+              
+              return (
+                <div key={group.id}>
+                  {/* Group Header - Clickable */}
+                  <button
+                    onClick={() => {
+                      if (hasSteps) {
+                        toggleGroupExpanded(group.id);
+                      }
+                      setActiveGroup(group.id);
+                      setSelectedStep('all');
+                    }}
+                    className={`
+                      w-full px-3 py-2 flex items-center gap-2
+                      text-left text-[11px] transition-colors
+                      hover:bg-surface/50
+                      ${isActiveGroup && selectedStep === 'all' ? 'bg-surface-selected border-l-2 border-l-blue-500' : ''}
+                    `}
+                  >
+                    {/* Chevron icon (only if has steps) */}
+                    {hasSteps && (
+                      isExpanded ? (
+                        <ChevronDown className="w-3 h-3 text-foreground-tertiary flex-shrink-0" />
+                      ) : (
+                        <ChevronRight className="w-3 h-3 text-foreground-tertiary flex-shrink-0" />
+                      )
+                    )}
+                    
+                    {/* Group name */}
+                    <div className="flex-1 min-w-0">
+                      <div className={`font-medium truncate ${isActiveGroup ? 'text-foreground' : 'text-foreground-secondary'}`}>
+                        {group.name}
+                      </div>
+                    </div>
+                    
+                    {/* Count */}
+                    <div className="ml-2 text-[10px] text-foreground-tertiary">
+                      {group.variableCount || 0}
+                    </div>
+                  </button>
+                  
+                  {/* Steps List (when expanded) */}
+                  {isExpanded && hasSteps && (
+                    <div className="pl-5 py-1 bg-background">
+                      {/* All steps option */}
+                      <button
+                        onClick={() => {
+                          setActiveGroup(group.id);
+                          setSelectedStep('all');
+                        }}
+                        className={`
+                          w-full px-3 py-1.5 text-left text-[11px]
+                          transition-colors hover:bg-surface/50 rounded
+                          ${isActiveGroup && selectedStep === 'all' ? 'text-blue-500 font-medium' : 'text-foreground-secondary'}
+                        `}
+                      >
+                        All steps
+                      </button>
+                      
+                      {/* Individual steps */}
+                      {group.steps!.map(step => (
+                        <button
+                          key={step}
+                          onClick={() => {
+                            setActiveGroup(group.id);
+                            setSelectedStep(step);
+                          }}
+                          className={`
+                            w-full px-3 py-1.5 text-left text-[11px]
+                            transition-colors hover:bg-surface/50 rounded
+                            ${isActiveGroup && selectedStep === step ? 'text-blue-500 font-medium' : 'text-foreground-secondary'}
+                          `}
+                        >
+                          {step}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </ScrollArea>

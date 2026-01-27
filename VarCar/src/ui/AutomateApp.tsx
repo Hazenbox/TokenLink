@@ -25,12 +25,12 @@ export function AutomateApp() {
       <BrandSidebar />
       
       {/* Middle: Configuration - Fixed width */}
-      <div className="w-[280px] border-r border-border/50 bg-card shadow-[inset_-1px_0_0_0_rgba(0,0,0,0.05)] overflow-hidden">
+      <div className="w-[280px] border-r border-border/50 bg-background shadow-[inset_-1px_0_0_0_rgba(0,0,0,0.05)] overflow-hidden">
         <BrandConfigPanel />
       </div>
       
       {/* Right: Figma-style Variables UI */}
-      <div className="flex-1 bg-card overflow-hidden flex">
+      <div className="flex-1 bg-background overflow-hidden flex">
         {/* Collections Sidebar */}
         <VariablesErrorBoundary>
           <CollectionsSidebar />
