@@ -51,6 +51,7 @@ export default {
         surface: {
           DEFAULT: "hsl(var(--surface))",
           elevated: "hsl(var(--surface-elevated))",
+          selected: "hsl(var(--surface-selected))",
         },
         interactive: {
           DEFAULT: "hsl(var(--interactive))",
@@ -103,10 +104,29 @@ export default {
           thumb: "hsl(var(--scrollbar-thumb))",
           "thumb-hover": "hsl(var(--scrollbar-thumb-hover))",
         },
+        // Figma Variables UI colors (exact match from screenshot)
+        figma: {
+          bg: '#1E1E1E',
+          surface: '#2C2C2C',
+          elevated: '#252525',
+          border: '#3C3C3C',
+          'border-subtle': '#323232',
+          hover: '#2A2A2A',
+          accent: '#3B82F6',
+          text: {
+            primary: '#E5E5E5',
+            secondary: '#A0A0A0',
+            tertiary: '#707070',
+          }
+        },
       },
       fontFamily: {
         sans: ['var(--font-geist-sans)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         mono: ['var(--font-geist-mono)', 'ui-monospace', 'monospace'],
+      },
+      fontSize: {
+        '10': '10px',
+        '11': '11px',
       },
       borderRadius: {
         lg: "var(--radius)",

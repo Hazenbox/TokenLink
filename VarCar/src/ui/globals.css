@@ -17,6 +17,7 @@
     --background-canvas: 0 0% 9%;      /* gray-900 - Canvas/workspace background */
     --surface: 0 0% 14.9%;             /* gray-800 - Elevated surfaces (cards, panels) */
     --surface-elevated: 0 0% 23.1%;    /* gray-700 - Higher elevation (nodes, active items) */
+    --surface-selected: 0 0% 20%;      /* Selected item background for Figma-style UI */
     
     /* Grid Pattern - Subtle dot/grid for canvas */
     --grid-color: 0 0% 23.1%;          /* gray-700 - Grid dots/lines */
