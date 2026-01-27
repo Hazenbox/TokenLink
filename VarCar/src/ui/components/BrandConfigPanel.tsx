@@ -3,16 +3,22 @@
  * Configuration interface for brand colors and palette selection
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useBrandStore } from '@/store/brand-store';
-import { PaletteSelector } from './PaletteSelector';
+import { CompactPaletteSelector } from './CompactPaletteSelector';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Label } from '@/components/ui/label';
-import { Info } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Info, ChevronDown, ChevronUp, Upload } from 'lucide-react';
+import { BrandGenerator } from '@/lib/brand-generator';
 
 export function BrandConfigPanel() {
   const activeBrand = useBrandStore((state) => state.getActiveBrand());
   const updateBrandPalette = useBrandStore((state) => state.updateBrandPalette);
+  const syncBrand = useBrandStore((state) => state.syncBrand);
+  const syncStatus = useBrandStore((state) => state.syncStatus);
+  const canSync = useBrandStore((state) => state.canSync());
+  
+  const [showInfo, setShowInfo] = useState(false);
 
   if (!activeBrand) {
     return (
@@ -45,116 +51,163 @@ export function BrandConfigPanel() {
     useBrandStore.getState().updateBrand(activeBrand.id, { colors: newColors });
   };
 
-  return (
-    <ScrollArea className="h-full">
-      <div className="p-6 space-y-6">
-        {/* Header */}
-        <div>
-          <h2 className="text-lg font-semibold text-foreground mb-1">
-            {activeBrand.name}
-          </h2>
-          <p className="text-sm text-foreground-secondary">
-            Configure color palettes for this brand
-          </p>
-        </div>
+  const handleSync = async () => {
+    const validation = BrandGenerator.validate(activeBrand);
+    if (!validation.valid) {
+      alert('Cannot sync: Brand has validation errors. Please fix them first.');
+      return;
+    }
 
-        {/* Info banner */}
-        <div className="bg-surface-elevated border-l-4 border-l-blue-500 rounded-lg p-4 flex gap-3">
-          <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-foreground">
-            <p className="font-medium mb-1">How it works</p>
-            <p className="text-foreground-secondary">
-              Select palettes from RangDe (Colors tab) for each role. The system will
-              automatically generate 224 theme variables using the 8 scale types (Surface,
-              High, Medium, Low, Heavy, Bold, Bold A11Y, Minimal) for each palette.
+    if (!canSync) {
+      alert('Rate limit exceeded. Please wait before syncing again.');
+      return;
+    }
+
+    await syncBrand(activeBrand.id);
+  };
+
+  const validation = BrandGenerator.validate(activeBrand);
+  const canSyncBrand = validation.valid && canSync && syncStatus === 'idle';
+
+  return (
+    <div className="h-full flex flex-col">
+      {/* Header with Sync Button */}
+      <div className="p-4 border-b border-border flex-shrink-0">
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h2 className="text-sm font-semibold text-foreground">
+              {activeBrand.name}
+            </h2>
+            <p className="text-xs text-foreground-secondary">
+              Configure palettes
             </p>
           </div>
+          <Button
+            onClick={handleSync}
+            disabled={!canSyncBrand}
+            size="sm"
+            className="h-7 px-3"
+          >
+            <Upload className="w-3 h-3 mr-1" />
+            Sync to Figma
+          </Button>
         </div>
 
-        {/* Required Palettes */}
-        <div className="space-y-4">
+        {/* Collapsible info banner */}
+        <div className="mt-2">
+          <button
+            onClick={() => setShowInfo(!showInfo)}
+            className="flex items-center gap-2 text-xs text-foreground-secondary hover:text-foreground transition-colors"
+          >
+            {showInfo ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            <Info className="w-3 h-3" />
+            <span>How it works</span>
+          </button>
+          {showInfo && (
+            <div className="mt-2 bg-surface-elevated border-l-2 border-l-blue-500 rounded p-2 text-xs text-foreground-secondary">
+              Select palettes from RangDe (Colors tab). The system generates 224 variables
+              using 8 scale types (Surface, High, Medium, Low, Heavy, Bold, Bold A11Y, Minimal).
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Config Content */}
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-6">
+          {/* Required Palettes - 2 Column Grid */}
           <div>
-            <h3 className="text-base font-semibold text-foreground mb-3">
+            <h3 className="text-xs font-semibold text-foreground mb-3">
               Required Palettes
             </h3>
-            <div className="space-y-4">
-              <PaletteSelector
+            <div className="grid grid-cols-2 gap-3">
+              <CompactPaletteSelector
                 label="Primary"
                 value={activeBrand.colors.primary.paletteId}
                 paletteName={activeBrand.colors.primary.paletteName}
                 onChange={(id, name) => handleUpdatePalette('primary', id, name)}
                 required
+                compact
               />
-              <PaletteSelector
+              <CompactPaletteSelector
                 label="Secondary"
                 value={activeBrand.colors.secondary.paletteId}
                 paletteName={activeBrand.colors.secondary.paletteName}
                 onChange={(id, name) => handleUpdatePalette('secondary', id, name)}
                 required
+                compact
               />
-              <PaletteSelector
+              <CompactPaletteSelector
                 label="Sparkle"
                 value={activeBrand.colors.sparkle.paletteId}
                 paletteName={activeBrand.colors.sparkle.paletteName}
                 onChange={(id, name) => handleUpdatePalette('sparkle', id, name)}
                 required
+                compact
               />
-              <PaletteSelector
+              <CompactPaletteSelector
                 label="Neutral"
                 value={activeBrand.colors.neutral.paletteId}
                 paletteName={activeBrand.colors.neutral.paletteName}
                 onChange={(id, name) => handleUpdatePalette('neutral', id, name)}
                 required
+                compact
               />
             </div>
           </div>
 
-          {/* Semantic Colors */}
+          {/* Semantic Colors - 2 Column Grid */}
           <div>
-            <h3 className="text-base font-semibold text-foreground mb-3">
+            <h3 className="text-xs font-semibold text-foreground mb-3">
               Semantic Colors
             </h3>
-            <div className="space-y-4">
-              <PaletteSelector
-                label="Positive (Success)"
+            <div className="grid grid-cols-2 gap-3">
+              <CompactPaletteSelector
+                label="Positive"
                 value={activeBrand.colors.semantic.positive.paletteId}
                 paletteName={activeBrand.colors.semantic.positive.paletteName}
                 onChange={(id, name) => handleUpdateSemantic('positive', id, name)}
+                compact
               />
-              <PaletteSelector
-                label="Negative (Error)"
+              <CompactPaletteSelector
+                label="Negative"
                 value={activeBrand.colors.semantic.negative.paletteId}
                 paletteName={activeBrand.colors.semantic.negative.paletteName}
                 onChange={(id, name) => handleUpdateSemantic('negative', id, name)}
+                compact
               />
-              <PaletteSelector
+              <CompactPaletteSelector
                 label="Warning"
                 value={activeBrand.colors.semantic.warning.paletteId}
                 paletteName={activeBrand.colors.semantic.warning.paletteName}
                 onChange={(id, name) => handleUpdateSemantic('warning', id, name)}
+                compact
               />
-              <PaletteSelector
+              <CompactPaletteSelector
                 label="Informative"
                 value={activeBrand.colors.semantic.informative.paletteId}
                 paletteName={activeBrand.colors.semantic.informative.paletteName}
                 onChange={(id, name) => handleUpdateSemantic('informative', id, name)}
+                compact
               />
             </div>
           </div>
-        </div>
 
-        {/* Metadata */}
-        <div className="pt-4 border-t border-border">
-          <div className="text-xs text-foreground-tertiary space-y-1">
-            <div>Created: {new Date(activeBrand.createdAt).toLocaleString()}</div>
-            <div>Updated: {new Date(activeBrand.updatedAt).toLocaleString()}</div>
-            {activeBrand.syncedAt && (
-              <div>Last Synced: {new Date(activeBrand.syncedAt).toLocaleString()}</div>
-            )}
-            <div>Version: {activeBrand.version}</div>
-          </div>
+          {/* Validation Status Inline */}
+          {!validation.valid && (
+            <div className="bg-surface-elevated border-l-2 border-l-red-500 rounded p-3">
+              <div className="text-xs font-semibold text-red-500 mb-2">Validation Errors</div>
+              <div className="space-y-1">
+                {validation.errors.map((error, idx) => (
+                  <div key={idx} className="text-xs text-red-400">
+                    • {error}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      </div>
-    </ScrollArea>
+      </ScrollArea>
+    </div>
   );
 }
