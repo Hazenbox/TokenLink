@@ -853,16 +853,24 @@ export const useBrandStore = create<BrandStoreState>()(
         }
         
         try {
-          // Compute collections once
+          // Get collections from brand (use brand's collections directly)
           const collections = brandToFigmaAdapter.convertBrandToCollections(activeBrand);
           
+          // Generate variables for all collections
+          const allVariables = brandToFigmaAdapter.getAllVariablesForBrand(activeBrand);
+          
           // Store in state
-          set({ figmaCollections: collections });
+          set({ 
+            figmaCollections: collections,
+            figmaVariablesByCollection: allVariables
+          });
           
           // Refresh groups for first collection
           if (collections.length > 0) {
             get().refreshFigmaGroups(collections[0].id);
           }
+          
+          console.log(`[Figma] Refreshed ${collections.length} collections, ${allVariables.size} variable sets`);
         } catch (error) {
           console.error('[Figma] Failed to refresh data:', error);
           set({
@@ -875,50 +883,27 @@ export const useBrandStore = create<BrandStoreState>()(
       
       refreshFigmaGroups: (collectionId: string) => {
         const state = get();
-        const activeBrand = state.getActiveBrand();
-        if (!activeBrand) return;
+        const allVariables = state.figmaVariablesByCollection;
         
         try {
-          const generatedBrand = BrandGenerator.generateBrand(activeBrand);
-          const groups = brandToFigmaAdapter.convertBrandToGroups(
-            activeBrand,
-            generatedBrand.variables,
-            collectionId
+          // Extract groups from variables using slash-based parsing
+          const groups = brandToFigmaAdapter.getGroupsForCollection(
+            collectionId,
+            allVariables
           );
-          set({ figmaGroups: groups });
           
-          // Refresh variables for 'all' group
-          get().refreshFigmaVariables(collectionId, 'all');
+          set({ figmaGroups: groups });
+          console.log(`[Figma] Refreshed ${groups.length} groups for collection ${collectionId}`);
         } catch (error) {
           console.error('[Figma] Failed to refresh groups:', error);
+          set({ figmaGroups: [] });
         }
       },
       
       refreshFigmaVariables: (collectionId: string, groupId?: string) => {
-        const state = get();
-        const activeBrand = state.getActiveBrand();
-        if (!activeBrand) return;
-        
-        try {
-          const generatedBrand = BrandGenerator.generateBrand(activeBrand);
-          const allVariables = brandToFigmaAdapter.convertVariables(
-            generatedBrand.variables,
-            activeBrand,
-            collectionId
-          );
-          
-          const filteredVariables = brandToFigmaAdapter.filterVariablesByGroup(
-            allVariables,
-            groupId || null
-          );
-          
-          // Store by collection
-          const newMap = new Map(state.figmaVariablesByCollection);
-          newMap.set(collectionId, filteredVariables);
-          set({ figmaVariablesByCollection: newMap });
-        } catch (error) {
-          console.error('[Figma] Failed to refresh variables:', error);
-        }
+        // Variables are already generated in refreshFigmaData
+        // This method just triggers groups refresh if needed
+        console.log(`[Figma] Variables already loaded for collection ${collectionId}`);
       },
       
       // Create collection
