@@ -12,6 +12,15 @@ interface ModeCellProps {
 }
 
 export function ModeCell({ value, color }: ModeCellProps) {
+  // Defensive checks
+  if (!value || !color) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-2">
+        <div className="text-[10px] text-foreground-tertiary/30">—</div>
+      </div>
+    );
+  }
+  
   const isAlias = value.aliasTo !== undefined;
   
   return (
@@ -19,8 +28,8 @@ export function ModeCell({ value, color }: ModeCellProps) {
       {/* Color Swatch */}
       <div
         className="w-6 h-6 rounded border border-border/30 flex-shrink-0"
-        style={{ backgroundColor: color }}
-        title={color}
+        style={{ backgroundColor: color || '#000000' }}
+        title={color || 'No color'}
       />
       
       {/* Value/Alias Display */}
@@ -28,16 +37,16 @@ export function ModeCell({ value, color }: ModeCellProps) {
         {isAlias ? (
           <div 
             className="text-[10px] text-foreground-tertiary font-mono truncate"
-            title={`Alias: ${value.aliasTo?.variableId} (${value.aliasTo?.modeId})`}
+            title={`Alias: ${value.aliasTo?.variableId || 'unknown'} (${value.aliasTo?.modeId || 'unknown'})`}
           >
             .../[Colour Mode]
           </div>
         ) : (
           <div 
             className="text-[10px] text-foreground-tertiary font-mono"
-            title={color}
+            title={color || ''}
           >
-            {color}
+            {color || '—'}
           </div>
         )}
       </div>

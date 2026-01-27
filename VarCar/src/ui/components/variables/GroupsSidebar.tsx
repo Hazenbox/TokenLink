@@ -49,10 +49,10 @@ export function GroupsSidebar({ onCreateGroup }: GroupsSidebarProps) {
   // Get groups for active collection
   const groups = useBrandStore((state) => 
     activeCollectionId ? state.getFigmaGroups(activeCollectionId) : []
-  );
+  ) || [];
   
   // Calculate total count for "All" option
-  const totalCount = groups.reduce((sum, group) => sum + group.variableCount, 0);
+  const totalCount = groups.reduce((sum, group) => sum + (group.variableCount || 0), 0);
   
   if (groupsCollapsed) {
     return (

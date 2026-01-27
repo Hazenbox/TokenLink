@@ -44,7 +44,7 @@ function CollectionItem({ collection, isActive, onClick }: CollectionItemProps) 
 }
 
 export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarProps) {
-  const collections = useBrandStore((state) => state.getFigmaCollections());
+  const collections = useBrandStore((state) => state.getFigmaCollections()) || [];
   const { activeCollectionId, setActiveCollection, collectionsCollapsed } = useVariablesViewStore();
   
   // Auto-select first collection if none selected
@@ -52,7 +52,7 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
     if (collections.length > 0 && !activeCollectionId) {
       setActiveCollection(collections[0].id);
     }
-  }, [collections, activeCollectionId, setActiveCollection]);
+  }, [collections.length, activeCollectionId]);
   
   if (collectionsCollapsed) {
     return (

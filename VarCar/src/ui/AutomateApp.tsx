@@ -9,6 +9,7 @@ import { BrandConfigPanel } from './components/BrandConfigPanel';
 import { BrandVariableTable } from './components/BrandVariableTable';
 import { CollectionsSidebar } from './components/variables/CollectionsSidebar';
 import { GroupsSidebar } from './components/variables/GroupsSidebar';
+import { VariablesErrorBoundary } from './components/variables/VariablesErrorBoundary';
 
 export function AutomateApp() {
   return (
@@ -25,15 +26,21 @@ export function AutomateApp() {
       {/* Right: Figma-style Variables UI */}
       <div className="flex-1 bg-card overflow-hidden flex">
         {/* Collections Sidebar */}
-        <CollectionsSidebar />
+        <VariablesErrorBoundary>
+          <CollectionsSidebar />
+        </VariablesErrorBoundary>
         
         {/* Groups Sidebar */}
-        <GroupsSidebar />
+        <VariablesErrorBoundary>
+          <GroupsSidebar />
+        </VariablesErrorBoundary>
         
         {/* Variable Table - Takes remaining space */}
-        <div className="flex-1 overflow-hidden">
-          <BrandVariableTable />
-        </div>
+        <VariablesErrorBoundary>
+          <div className="flex-1 overflow-hidden">
+            <BrandVariableTable />
+          </div>
+        </VariablesErrorBoundary>
       </div>
     </div>
   );

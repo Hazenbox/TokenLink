@@ -25,6 +25,31 @@ import { BrandGenerator } from "@/lib/brand-generator";
 import { brandToFigmaAdapter } from "@/adapters/brandToFigmaVariables";
 
 /**
+ * Module-level cache for Figma data (outside Zustand to prevent infinite loops)
+ */
+const figmaCache = new Map<string, any>();
+
+/**
+ * Invalidate all cached Figma data for a specific brand
+ */
+function invalidateBrandCache(brandId: string): void {
+  const keysToDelete: string[] = [];
+  figmaCache.forEach((_, key) => {
+    if (key.includes(brandId)) {
+      keysToDelete.push(key);
+    }
+  });
+  keysToDelete.forEach(key => figmaCache.delete(key));
+}
+
+/**
+ * Clear all Figma cache
+ */
+function clearFigmaCache(): void {
+  figmaCache.clear();
+}
+
+/**
  * History state for undo/redo
  */
 interface HistoryState {
@@ -54,9 +79,6 @@ interface BrandStoreState {
   
   // Rate limiting
   syncAttempts: { timestamp: number }[];
-  
-  // Figma conversion cache
-  figmaDataCache: Map<string, any>;
   
   // Actions
   createBrand: (name: string, colors?: Partial<BrandColors>) => void;
@@ -115,7 +137,6 @@ interface BrandStoreState {
   getFigmaCollections: () => FigmaCollection[];
   getFigmaGroups: (collectionId: string) => FigmaGroup[];
   getFigmaVariables: (collectionId: string, groupId?: string) => FigmaVariable[];
-  invalidateFigmaCache: () => void;
 }
 
 /**
@@ -165,7 +186,6 @@ export const useBrandStore = create<BrandStoreState>()(
       lastAutoSave: Date.now(),
       isDirty: false,
       syncAttempts: [],
-      figmaDataCache: new Map(),
 
       // Create brand
       createBrand: (name: string, colors?: Partial<BrandColors>) => {
@@ -202,6 +222,9 @@ export const useBrandStore = create<BrandStoreState>()(
           brandId: newBrand.id,
           brandName: name
         });
+        
+        // Invalidate cache for new brand
+        invalidateBrandCache(newBrand.id);
       },
 
       // Duplicate brand
@@ -242,6 +265,9 @@ export const useBrandStore = create<BrandStoreState>()(
           brandName: newBrand.name,
           metadata: { duplicatedFrom: id }
         });
+        
+        // Invalidate cache for new brand
+        invalidateBrandCache(newBrand.id);
       },
 
       // Delete brand
@@ -274,6 +300,9 @@ export const useBrandStore = create<BrandStoreState>()(
           brandId: id,
           brandName: brand.name
         });
+        
+        // Invalidate cache for deleted brand
+        invalidateBrandCache(id);
       },
 
       // Update brand
@@ -306,6 +335,9 @@ export const useBrandStore = create<BrandStoreState>()(
             brandName: brand.name,
             changes: updates
           });
+          
+          // Invalidate cache for updated brand
+          invalidateBrandCache(id);
         }
       },
 
@@ -344,6 +376,7 @@ export const useBrandStore = create<BrandStoreState>()(
         }
 
         get().updateBrand(brandId, { colors: newColors });
+        // Note: updateBrand already invalidates cache
       },
 
       // Get available palettes from RangDe
@@ -773,13 +806,18 @@ export const useBrandStore = create<BrandStoreState>()(
         if (!activeBrand) return [];
         
         const cacheKey = `collections_${activeBrand.id}`;
-        if (state.figmaDataCache.has(cacheKey)) {
-          return state.figmaDataCache.get(cacheKey);
+        if (figmaCache.has(cacheKey)) {
+          return figmaCache.get(cacheKey);
         }
         
-        const collections = brandToFigmaAdapter.convertBrandToCollections(activeBrand);
-        state.figmaDataCache.set(cacheKey, collections);
-        return collections;
+        try {
+          const collections = brandToFigmaAdapter.convertBrandToCollections(activeBrand);
+          figmaCache.set(cacheKey, collections);
+          return collections;
+        } catch (error) {
+          console.error('[Figma] Failed to convert collections:', error);
+          return [];
+        }
       },
       
       getFigmaGroups: (collectionId: string) => {
@@ -789,8 +827,8 @@ export const useBrandStore = create<BrandStoreState>()(
         if (!activeBrand) return [];
         
         const cacheKey = `groups_${activeBrand.id}_${collectionId}`;
-        if (state.figmaDataCache.has(cacheKey)) {
-          return state.figmaDataCache.get(cacheKey);
+        if (figmaCache.has(cacheKey)) {
+          return figmaCache.get(cacheKey);
         }
         
         // Generate variables to get palettes
@@ -801,10 +839,10 @@ export const useBrandStore = create<BrandStoreState>()(
             generatedBrand.variables,
             collectionId
           );
-          state.figmaDataCache.set(cacheKey, groups);
+          figmaCache.set(cacheKey, groups);
           return groups;
         } catch (error) {
-          console.error('Failed to generate groups:', error);
+          console.error('[Figma] Failed to generate groups:', error);
           return [];
         }
       },
@@ -816,8 +854,8 @@ export const useBrandStore = create<BrandStoreState>()(
         if (!activeBrand) return [];
         
         const cacheKey = `variables_${activeBrand.id}_${collectionId}_${groupId || 'all'}`;
-        if (state.figmaDataCache.has(cacheKey)) {
-          return state.figmaDataCache.get(cacheKey);
+        if (figmaCache.has(cacheKey)) {
+          return figmaCache.get(cacheKey);
         }
         
         try {
@@ -834,16 +872,12 @@ export const useBrandStore = create<BrandStoreState>()(
             groupId || null
           );
           
-          state.figmaDataCache.set(cacheKey, filteredVariables);
+          figmaCache.set(cacheKey, filteredVariables);
           return filteredVariables;
         } catch (error) {
-          console.error('Failed to generate variables:', error);
+          console.error('[Figma] Failed to generate variables:', error);
           return [];
         }
-      },
-      
-      invalidateFigmaCache: () => {
-        set({ figmaDataCache: new Map() });
       }
     }),
     {

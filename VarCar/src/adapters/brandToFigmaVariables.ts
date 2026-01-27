@@ -151,8 +151,14 @@ export class BrandToFigmaAdapter {
     variables.forEach((variable) => {
       const appearance = this.extractAppearance(variable.name);
       const palette = variable.sourcePalette || 'Unknown';
-      const step = variable.aliasTo?.step || 0;
+      const step = this.extractStep(variable);
       const scale = variable.sourceScale || 'Unknown';
+      
+      // Skip variables without valid step
+      if (step === null || step === 0) {
+        console.warn(`[Figma Adapter] Skipping variable with no step: ${variable.name}`);
+        return;
+      }
 
       const key = `${appearance}_${palette}_${step}`;
 
@@ -224,6 +230,26 @@ export class BrandToFigmaAdapter {
     });
 
     return figmaVariables;
+  }
+
+  /**
+   * Extract step number from variable
+   */
+  private extractStep(variable: GeneratedVariable): number | null {
+    // Try aliasTo first
+    if (variable.aliasTo?.step) {
+      return variable.aliasTo.step;
+    }
+    
+    // Try extracting from variable name
+    // Pattern: "Brand/Appearance/[appearance] Scale" where palette has steps
+    // This is a fallback - most variables should have aliasTo.step
+    const match = variable.name.match(/(\d{3,4})/);
+    if (match && match[1]) {
+      return parseInt(match[1]);
+    }
+    
+    return null;
   }
 
   /**

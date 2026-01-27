@@ -18,10 +18,10 @@ export function BrandVariableTable() {
   const { activeCollectionId, activeGroupId, searchQuery, setSearchQuery } = useVariablesViewStore();
   
   // Get collections, and variables from store
-  const collections = useBrandStore((state) => state.getFigmaCollections());
+  const collections = useBrandStore((state) => state.getFigmaCollections()) || [];
   const figmaVariables = useBrandStore((state) => 
     activeCollectionId ? state.getFigmaVariables(activeCollectionId, activeGroupId || 'all') : []
-  );
+  ) || [];
   
   // Get active collection
   const activeCollection = useMemo(() => 
