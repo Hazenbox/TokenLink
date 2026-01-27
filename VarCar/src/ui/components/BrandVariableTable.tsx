@@ -24,11 +24,66 @@ export function BrandVariableTable() {
     );
   }
 
-  const generatedBrand = BrandGenerator.generateBrand(activeBrand);
-  const variables = generatedBrand.variables;
+  // Validate brand before generation
+  const validation = useMemo(() => BrandGenerator.validate(activeBrand), [activeBrand]);
+
+  // Show validation errors if brand is not configured
+  if (!validation.valid) {
+    return (
+      <div className="h-full flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <h3 className="text-sm font-semibold text-foreground mb-2">
+            Configuration Required
+          </h3>
+          <p className="text-xs text-foreground-secondary mb-4">
+            Assign palettes in the configuration panel to generate variables
+          </p>
+          {validation.errors.length > 0 && (
+            <div className="text-left bg-surface-elevated border-l-2 border-l-red-500 rounded p-3">
+              <p className="text-xs font-medium text-red-500 mb-2">Required:</p>
+              <ul className="text-xs text-foreground-secondary space-y-1">
+                {validation.errors.map((error, idx) => (
+                  <li key={idx}>• {error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Generate brand variables with error handling
+  const generatedBrand = useMemo(() => {
+    try {
+      return BrandGenerator.generateBrand(activeBrand);
+    } catch (error) {
+      console.error('Failed to generate brand variables:', error);
+      return null;
+    }
+  }, [activeBrand]);
+
+  // Show error if generation failed
+  if (!generatedBrand) {
+    return (
+      <div className="h-full flex items-center justify-center p-4">
+        <div className="text-center">
+          <p className="text-sm text-foreground-secondary mb-2">
+            Unable to generate variables
+          </p>
+          <p className="text-xs text-foreground-tertiary">
+            Please check your palette assignments
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const variables = generatedBrand.variables || [];
 
   // Filter variables by search query
   const filteredVariables = useMemo(() => {
+    if (!variables || variables.length === 0) return [];
     return variables.filter((v) =>
       v.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       v.sourcePalette.toLowerCase().includes(searchQuery.toLowerCase()) ||

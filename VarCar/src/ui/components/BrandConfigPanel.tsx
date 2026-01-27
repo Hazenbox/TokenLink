@@ -115,6 +115,22 @@ export function BrandConfigPanel() {
       {/* Config Content */}
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-6">
+          {/* Inline Validation Status */}
+          {!validation.valid && (
+            <div className="bg-surface-elevated border-l-2 border-l-orange-500 rounded p-3">
+              <div className="text-xs font-semibold text-orange-500 mb-2">
+                Configuration Incomplete
+              </div>
+              <div className="space-y-1">
+                {validation.errors.map((error, idx) => (
+                  <div key={idx} className="text-xs text-foreground-secondary">
+                    • {error}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Required Palettes - 2 Column Grid */}
           <div>
             <h3 className="text-xs font-semibold text-foreground mb-3">
@@ -193,14 +209,14 @@ export function BrandConfigPanel() {
             </div>
           </div>
 
-          {/* Validation Status Inline */}
-          {!validation.valid && (
-            <div className="bg-surface-elevated border-l-2 border-l-red-500 rounded p-3">
-              <div className="text-xs font-semibold text-red-500 mb-2">Validation Errors</div>
+          {/* Warnings (if any) */}
+          {validation.valid && validation.warnings.length > 0 && (
+            <div className="bg-surface-elevated border-l-2 border-l-yellow-500 rounded p-3">
+              <div className="text-xs font-semibold text-yellow-500 mb-2">Warnings</div>
               <div className="space-y-1">
-                {validation.errors.map((error, idx) => (
-                  <div key={idx} className="text-xs text-red-400">
-                    • {error}
+                {validation.warnings.map((warning, idx) => (
+                  <div key={idx} className="text-xs text-foreground-secondary">
+                    • {warning}
                   </div>
                 ))}
               </div>
