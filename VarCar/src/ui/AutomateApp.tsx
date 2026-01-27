@@ -1,10 +1,10 @@
 /**
  * Automate App - Brand Automation System
- * Main component with 3-column layout
+ * Main component with sidebar and 2-column layout
  */
 
 import React from 'react';
-import { BrandListPanel } from './components/BrandListPanel';
+import { BrandSidebar } from './components/brands/BrandSidebar';
 import { BrandConfigPanel } from './components/BrandConfigPanel';
 import { BrandVariableTable } from './components/BrandVariableTable';
 import { CanvasBackground } from './layout/CanvasBackground';
@@ -14,13 +14,11 @@ export function AutomateApp() {
     <div className="h-screen w-screen flex bg-background-canvas relative">
       <CanvasBackground />
       
-      {/* Left: Brand List - Fixed width */}
-      <div className="w-[250px] border-r border-border/50 bg-surface flex-shrink-0 shadow-[inset_-1px_0_0_0_rgba(0,0,0,0.05)] overflow-hidden">
-        <BrandListPanel />
-      </div>
+      {/* Left: Brand Sidebar - 192px like ColorSidebar */}
+      <BrandSidebar />
       
-      {/* Middle: Configuration - Fixed width (reduced by 50%) */}
-      <div className="w-[400px] border-r border-border/50 bg-card shadow-[inset_-1px_0_0_0_rgba(0,0,0,0.05)] overflow-hidden">
+      {/* Middle: Configuration - Fixed width */}
+      <div className="w-[420px] border-r border-border/50 bg-card shadow-[inset_-1px_0_0_0_rgba(0,0,0,0.05)] overflow-hidden">
         <BrandConfigPanel />
       </div>
       

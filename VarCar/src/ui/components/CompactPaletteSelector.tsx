@@ -132,23 +132,6 @@ export function CompactPaletteSelector({
         </PopoverContent>
       </Popover>
 
-      {/* Preview selected palette */}
-      {selectedPalette && (
-        <div className="flex gap-0.5 mt-0.5">
-          {[200, 600, 1200, 2500].map((step) => {
-            const color = (selectedPalette?.steps as any)?.[step] || '#ccc';
-            return (
-              <div
-                key={step}
-                className="h-3 flex-1 rounded border border-border/50"
-                style={{ backgroundColor: color }}
-                title={`Step ${step}: ${color}`}
-              />
-            );
-          })}
-        </div>
-      )}
-
       {!selectedPalette && value && (
         <div className="text-[10px] text-red-500 mt-0.5">
           ⚠ Palette not found: {paletteName}

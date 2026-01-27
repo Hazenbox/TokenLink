@@ -80,29 +80,25 @@ export function BrandConfigPanel() {
   return (
     <div className="h-full flex flex-col">
       {/* Header with Sync Button */}
-      <div className="p-4 border-b border-border flex-shrink-0">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h2 className="text-sm font-semibold text-foreground">
-              {activeBrand.name}
-            </h2>
-            <p className="text-xs text-foreground-secondary">
-              Configure palettes
-            </p>
-          </div>
-          <Button
-            onClick={handleSync}
-            disabled={!canSyncBrand}
-            size="sm"
-            className="h-7 px-3"
-          >
-            <Upload className="w-3 h-3 mr-1" />
-            Sync to Figma
-          </Button>
+      <div className="px-6 py-4 border-b border-border flex-shrink-0">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold text-foreground">
+            {activeBrand.name}
+          </h2>
         </div>
+        
+        <Button
+          onClick={handleSync}
+          disabled={!canSyncBrand}
+          size="default"
+          className="w-full"
+        >
+          <Upload className="w-4 h-4 mr-2" />
+          Sync to Figma
+        </Button>
 
         {/* Collapsible info banner */}
-        <div className="mt-2">
+        <div className="mt-3">
           <button
             onClick={() => setShowInfo(!showInfo)}
             className="flex items-center gap-2 text-xs text-foreground-secondary hover:text-foreground transition-colors"
@@ -123,28 +119,12 @@ export function BrandConfigPanel() {
       {/* Config Content */}
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-6">
-          {/* Inline Validation Status */}
-          {!validation.valid && validation.errors && validation.errors.length > 0 && (
-            <div className="bg-surface-elevated border-l-2 border-l-orange-500 rounded p-3">
-              <div className="text-xs font-semibold text-orange-500 mb-2">
-                Configuration Incomplete
-              </div>
-              <div className="space-y-1">
-                {validation.errors.map((error, idx) => (
-                  <div key={idx} className="text-xs text-foreground-secondary">
-                    • {error}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Required Palettes - 2 Column Grid */}
+          {/* Required Palettes - Single Column */}
           <div>
             <h3 className="text-xs font-semibold text-foreground mb-3">
               Required Palettes
             </h3>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-3">
               <CompactPaletteSelector
                 label="Primary"
                 value={activeBrand.colors.primary.paletteId}
@@ -180,12 +160,12 @@ export function BrandConfigPanel() {
             </div>
           </div>
 
-          {/* Semantic Colors - 2 Column Grid */}
+          {/* Semantic Colors - Single Column */}
           <div>
             <h3 className="text-xs font-semibold text-foreground mb-3">
               Semantic Colors
             </h3>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-3">
               <CompactPaletteSelector
                 label="Positive"
                 value={activeBrand.colors.semantic.positive.paletteId}
