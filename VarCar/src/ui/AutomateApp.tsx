@@ -16,14 +16,27 @@ export function AutomateApp() {
   // Initialize palettes and brands on mount (order matters!)
   useEffect(() => {
     const loadData = async () => {
-      // Load palettes first (brands reference them)
-      await usePaletteStore.getState().loadPalettes();
-      
-      // Then load brands
-      await useBrandStore.getState().loadBrands();
-      
-      // Finally refresh UI
-      useBrandStore.getState().refreshFigmaData();
+      try {
+        console.log('[Init] Starting data load...');
+        
+        // Load palettes first (brands reference them)
+        await usePaletteStore.getState().loadPalettes();
+        console.log('[Init] Palettes loaded');
+        
+        // Then load brands
+        await useBrandStore.getState().loadBrands();
+        console.log('[Init] Brands loaded');
+        
+        // Finally refresh UI (now safe - data is loaded)
+        useBrandStore.getState().refreshFigmaData();
+        console.log('[Init] UI refreshed');
+        
+        console.log('[Init] Initialization complete ✓');
+      } catch (error) {
+        console.error('[Init] Error during initialization:', error);
+        // Still try to refresh UI with whatever data we have
+        useBrandStore.getState().refreshFigmaData();
+      }
     };
     
     loadData();

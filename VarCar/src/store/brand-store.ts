@@ -81,6 +81,11 @@ interface BrandStoreState {
   lastAutoSave: number;
   isDirty: boolean;
   
+  // Save queue (for debouncing)
+  saveQueue: ReturnType<typeof setTimeout> | null;
+  isSaving: boolean;
+  isLoading: boolean;
+  
   // Rate limiting
   syncAttempts: { timestamp: number }[];
   
@@ -211,6 +216,9 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
       auditLog: [],
       lastAutoSave: Date.now(),
       isDirty: false,
+      saveQueue: null,
+      isSaving: false,
+      isLoading: false,
       syncAttempts: [],
       
       // Figma Variables UI state
@@ -814,6 +822,9 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
             isDirty: true
           };
         });
+        
+        // Save after undo
+        get().saveBrands();
       },
 
       // Redo
@@ -830,6 +841,9 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
             isDirty: true
           };
         });
+        
+        // Save after redo
+        get().saveBrands();
       },
 
       // Can undo
@@ -1004,8 +1018,18 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
       },
       
       // Load brands from Figma clientStorage with localStorage fallback
-      loadBrands: async () => {
-        try {
+      loadBrands: (): Promise<void> => {
+        const state = get();
+        
+        // Prevent duplicate loads
+        if (state.isLoading) {
+          console.log('[Storage] Brand load already in progress');
+          return Promise.resolve();
+        }
+        
+        set({ isLoading: true });
+        
+        return new Promise((resolve) => {
           // Helper function to apply migration and set state
           const applyBrandsWithMigration = (data: any) => {
             let brands = data.brands || [];
@@ -1059,79 +1083,115 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
             }
           };
 
-          // Request from Figma clientStorage (via plugin message)
-          parent.postMessage({
-            pluginMessage: { type: 'get-brands' }
-          }, '*');
+          const timeoutId = setTimeout(() => {
+            cleanup();
+            console.log('[Storage] Figma storage timeout, using localStorage');
+            loadFromLocalStorage();
+            resolve();
+          }, 3000); // Increase to 3 seconds for reliability
+          
+          const cleanup = () => {
+            window.removeEventListener('message', handleMessage);
+            clearTimeout(timeoutId);
+            set({ isLoading: false });
+          };
           
           // Set up message listener for response
           const handleMessage = (event: MessageEvent) => {
             if (event.data.pluginMessage?.type === 'brands-loaded') {
+              cleanup();
+              
               const loadedData = event.data.pluginMessage.data;
               if (loadedData) {
                 console.log('[Storage] Loaded brands from Figma clientStorage');
                 applyBrandsWithMigration(loadedData);
                 
                 // Also save to localStorage as backup
-                safeStorage.setItem('varcar-brands', JSON.stringify({
-                  brands: get().brands,
-                  activeBrandId: get().activeBrandId,
-                  backups: get().backups,
-                  auditLog: get().auditLog
-                }));
+                try {
+                  safeStorage.setItem('varcar-brands', JSON.stringify({
+                    brands: get().brands,
+                    activeBrandId: get().activeBrandId,
+                    backups: get().backups,
+                    auditLog: get().auditLog
+                  }));
+                } catch (e) {
+                  console.warn('[Storage] Failed to save to localStorage:', e);
+                }
               } else {
                 // Fallback to localStorage
                 console.log('[Storage] No Figma data found, trying localStorage...');
                 loadFromLocalStorage();
               }
-              window.removeEventListener('message', handleMessage);
+              
+              resolve();
             } else if (event.data.pluginMessage?.type === 'brands-error') {
+              cleanup();
               console.warn('[Storage] Error loading from Figma storage, falling back to localStorage');
               loadFromLocalStorage();
-              window.removeEventListener('message', handleMessage);
+              resolve();
             }
           };
           
           window.addEventListener('message', handleMessage);
           
-          // Timeout fallback to localStorage after 1 second
-          setTimeout(() => {
-            window.removeEventListener('message', handleMessage);
-            console.log('[Storage] Figma storage timeout, using localStorage');
-            loadFromLocalStorage();
-          }, 1000);
-          
-        } catch (error) {
-          console.error('[Storage] Error loading brands:', error);
-        }
+          // Request from Figma clientStorage (via plugin message)
+          parent.postMessage({
+            pluginMessage: { type: 'get-brands' }
+          }, '*');
+        });
       },
       
-      // Save brands to both Figma clientStorage and localStorage
-      saveBrands: async () => {
-        try {
-          const state = get();
-          const dataToSave = {
-            brands: state.brands,
-            activeBrandId: state.activeBrandId,
-            backups: state.backups,
-            auditLog: state.auditLog
-          };
-          
-          // Save to Figma clientStorage (primary)
-          parent.postMessage({
-            pluginMessage: { 
-              type: 'save-brands',
-              data: dataToSave
-            }
-          }, '*');
-          
-          // Save to localStorage (backup)
-          safeStorage.setItem('varcar-brands', JSON.stringify(dataToSave));
-          
-          console.log('[Storage] Brands saved to both Figma clientStorage and localStorage');
-        } catch (error) {
-          console.error('[Storage] Error saving brands:', error);
+      // Save brands to both Figma clientStorage and localStorage (with debouncing)
+      saveBrands: () => {
+        const state = get();
+        
+        // Clear existing timeout
+        if (state.saveQueue) {
+          clearTimeout(state.saveQueue);
         }
+        
+        // Debounce: wait 300ms for more changes
+        const timeoutId = setTimeout(async () => {
+          if (get().isSaving) {
+            console.log('[Storage] Save already in progress, queuing...');
+            return;
+          }
+          
+          set({ isSaving: true });
+          
+          try {
+            const currentState = get();
+            const dataToSave = {
+              brands: currentState.brands,
+              activeBrandId: currentState.activeBrandId,
+              backups: currentState.backups,
+              auditLog: currentState.auditLog
+            };
+            
+            // Save to Figma clientStorage (primary)
+            parent.postMessage({
+              pluginMessage: { 
+                type: 'save-brands',
+                data: dataToSave
+              }
+            }, '*');
+            
+            // Save to localStorage (backup)
+            try {
+              safeStorage.setItem('varcar-brands', JSON.stringify(dataToSave));
+            } catch (e) {
+              console.warn('[Storage] Failed to save to localStorage:', e);
+            }
+            
+            console.log('[Storage] Brands saved to both Figma clientStorage and localStorage');
+          } catch (error) {
+            console.error('[Storage] Error saving brands:', error);
+          } finally {
+            set({ isSaving: false, saveQueue: null });
+          }
+        }, 300);
+        
+        set({ saveQueue: timeoutId });
       },
       
       // Figma data refresh actions

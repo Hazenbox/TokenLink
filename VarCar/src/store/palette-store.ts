@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
 import { Step, PaletteSteps, StepScales } from "@colors/color-utils";
 import { generateAllScales, createDefaultPalette } from "@colors/scale-generator";
 import { loadPalettesFromJSON } from "@colors/palette-loader";
@@ -23,6 +22,11 @@ interface PaletteState {
   generatedScales: GeneratedScalesMap | null;
   viewMode: ViewMode;
   isFullscreen: boolean;
+  
+  // Save queue (for debouncing)
+  saveQueue: ReturnType<typeof setTimeout> | null;
+  isSaving: boolean;
+  isLoading: boolean;
 
   // Actions
   createPalette: (name: string) => void;
@@ -95,19 +99,20 @@ const INITIAL_PALETTES = DEFAULT_PALETTES.length > 0
 
 const INITIAL_ACTIVE_PALETTE_ID = INITIAL_PALETTES[0]?.id || INDIGO_SAMPLE_PALETTE.id;
 
-export const usePaletteStore = create<PaletteState>()(
-  persist(
-    (set, get) => {
-      const initialPalette = INITIAL_PALETTES.find(p => p.id === INITIAL_ACTIVE_PALETTE_ID) || INITIAL_PALETTES[0];
+export const usePaletteStore = create<PaletteState>()((set, get) => {
+  const initialPalette = INITIAL_PALETTES.find(p => p.id === INITIAL_ACTIVE_PALETTE_ID) || INITIAL_PALETTES[0];
 
-      return {
-        palettes: INITIAL_PALETTES,
-        activePaletteId: INITIAL_ACTIVE_PALETTE_ID,
-        generatedScales: initialPalette
-          ? generateAllScales(initialPalette.steps, initialPalette.primaryStep)
-          : null,
-        viewMode: "palette" as ViewMode,
-        isFullscreen: false,
+  return {
+    palettes: INITIAL_PALETTES,
+    activePaletteId: INITIAL_ACTIVE_PALETTE_ID,
+    generatedScales: initialPalette
+      ? generateAllScales(initialPalette.steps, initialPalette.primaryStep)
+      : null,
+    viewMode: "palette" as ViewMode,
+    isFullscreen: false,
+    saveQueue: null,
+    isSaving: false,
+    isLoading: false,
 
         createPalette: (name: string) => {
           const newPalette: Palette = {
@@ -166,6 +171,9 @@ export const usePaletteStore = create<PaletteState>()(
             newPalettes.splice(endIndex, 0, removed);
             return { palettes: newPalettes };
           });
+          
+          // Save to storage
+          get().savePalettes();
         },
 
         setActivePalette: (id: string) => {
@@ -293,16 +301,34 @@ export const usePaletteStore = create<PaletteState>()(
         },
         
         // Load palettes from Figma clientStorage with localStorage fallback
-        loadPalettes: async () => {
-          try {
-            // Request from Figma clientStorage (via plugin message)
-            parent.postMessage({
-              pluginMessage: { type: 'get-palettes' }
-            }, '*');
+        loadPalettes: (): Promise<void> => {
+          const state = get();
+          
+          // Prevent duplicate loads
+          if (state.isLoading) {
+            console.log('[Storage] Palette load already in progress');
+            return Promise.resolve();
+          }
+          
+          set({ isLoading: true });
+          
+          return new Promise((resolve) => {
+            const timeoutId = setTimeout(() => {
+              cleanup();
+              console.warn('[Storage] Palette load timeout, using persisted state');
+              resolve(); // Don't reject - use fallback
+            }, 3000); // Increase to 3 seconds for reliability
             
-            // Set up message listener for response
+            const cleanup = () => {
+              window.removeEventListener('message', handleMessage);
+              clearTimeout(timeoutId);
+              set({ isLoading: false });
+            };
+            
             const handleMessage = (event: MessageEvent) => {
               if (event.data.pluginMessage?.type === 'palettes-loaded') {
+                cleanup();
+                
                 const loadedData = event.data.pluginMessage.data;
                 if (loadedData && loadedData.palettes) {
                   console.log('[Storage] Syncing palettes from Figma clientStorage');
@@ -331,104 +357,84 @@ export const usePaletteStore = create<PaletteState>()(
                   });
                   
                   // Also save to localStorage as backup
-                  safeStorage.setItem('figmap-palettes', JSON.stringify({
-                    palettes: mergedPalettes,
-                    activePaletteId: get().activePaletteId
-                  }));
+                  try {
+                    safeStorage.setItem('figmap-palettes', JSON.stringify({
+                      palettes: mergedPalettes,
+                      activePaletteId: get().activePaletteId
+                    }));
+                  } catch (e) {
+                    console.warn('[Storage] Failed to save to localStorage:', e);
+                  }
                 } else {
                   console.log('[Storage] No palette data in Figma storage, using persisted state');
                 }
-                window.removeEventListener('message', handleMessage);
+                
+                resolve();
               } else if (event.data.pluginMessage?.type === 'palettes-error') {
-                console.warn('[Storage] Error loading palettes from Figma storage');
-                window.removeEventListener('message', handleMessage);
+                cleanup();
+                console.warn('[Storage] Error loading palettes from Figma storage, using persisted state');
+                resolve(); // Don't reject - use fallback
               }
             };
             
             window.addEventListener('message', handleMessage);
             
-            // Timeout cleanup after 1 second
-            setTimeout(() => {
-              window.removeEventListener('message', handleMessage);
-            }, 1000);
-            
-          } catch (error) {
-            console.error('[Storage] Error loading palettes:', error);
-          }
+            // Request from Figma clientStorage (via plugin message)
+            parent.postMessage({
+              pluginMessage: { type: 'get-palettes' }
+            }, '*');
+          });
         },
         
-        // Save palettes to both Figma clientStorage and localStorage
-        savePalettes: async () => {
-          try {
-            const state = get();
-            const dataToSave = {
-              palettes: state.palettes,
-              activePaletteId: state.activePaletteId
-            };
-            
-            // Save to Figma clientStorage (primary)
-            parent.postMessage({
-              pluginMessage: { 
-                type: 'save-palettes',
-                data: dataToSave
-              }
-            }, '*');
-            
-            // localStorage is already handled by Zustand persist middleware
-            console.log('[Storage] Palettes saved to Figma clientStorage');
-          } catch (error) {
-            console.error('[Storage] Error saving palettes:', error);
+        // Save palettes to both Figma clientStorage and localStorage (with debouncing)
+        savePalettes: () => {
+          const state = get();
+          
+          // Clear existing timeout
+          if (state.saveQueue) {
+            clearTimeout(state.saveQueue);
           }
+          
+          // Debounce: wait 300ms for more changes
+          const timeoutId = setTimeout(async () => {
+            if (get().isSaving) {
+              console.log('[Storage] Save already in progress, queuing...');
+              return;
+            }
+            
+            set({ isSaving: true });
+            
+            try {
+              const currentState = get();
+              const dataToSave = {
+                palettes: currentState.palettes,
+                activePaletteId: currentState.activePaletteId
+              };
+              
+              // Save to Figma clientStorage (primary)
+              parent.postMessage({
+                pluginMessage: { 
+                  type: 'save-palettes',
+                  data: dataToSave
+                }
+              }, '*');
+              
+              // Also save to localStorage as backup
+              try {
+                safeStorage.setItem('figmap-palettes', JSON.stringify(dataToSave));
+              } catch (e) {
+                console.warn('[Storage] Failed to save to localStorage:', e);
+              }
+              
+              console.log('[Storage] Palettes saved to both Figma clientStorage and localStorage');
+            } catch (error) {
+              console.error('[Storage] Error saving palettes:', error);
+            } finally {
+              set({ isSaving: false, saveQueue: null });
+            }
+          }, 300);
+          
+          set({ saveQueue: timeoutId });
         },
       };
-    },
-    {
-      name: "figmap-palettes",
-      storage: createJSONStorage(() => safeStorage),
-      partialize: (state) => ({
-        palettes: state.palettes,
-        activePaletteId: state.activePaletteId
-      }),
-      // Merge function to ensure default palettes exist for existing users
-      merge: (persistedState, currentState) => {
-        const persisted = persistedState as Partial<PaletteState>;
-        let palettes = persisted.palettes || [];
-
-        // Remove old sample palettes
-        const oldSampleIds = ["sample_indigo", "sample_indigo_v2"];
-        palettes = palettes.filter(p => !oldSampleIds.includes(p.id));
-
-        // Ensure all palettes have primaryStep (migration for existing palettes)
-        palettes = palettes.map(p => ({
-          ...p,
-          primaryStep: p.primaryStep || 600
-        }));
-
-        // Get default palette names from loaded palettes
-        const defaultPaletteNames = new Set(INITIAL_PALETTES.map(p => p.name));
-
-        // Filter out any persisted palettes that match default names (to avoid duplicates)
-        const userCreatedPalettes = palettes.filter(p => !defaultPaletteNames.has(p.name));
-
-        // Merge: default palettes first, then user-created palettes
-        const mergedPalettes = [...INITIAL_PALETTES, ...userCreatedPalettes];
-
-        // Set active palette - use persisted if valid, otherwise use first default
-        const activePaletteId = persisted.activePaletteId && mergedPalettes.some(p => p.id === persisted.activePaletteId)
-          ? persisted.activePaletteId
-          : INITIAL_ACTIVE_PALETTE_ID;
-
-        const activePalette = mergedPalettes.find(p => p.id === activePaletteId);
-
-        return {
-          ...currentState,
-          palettes: mergedPalettes,
-          activePaletteId,
-          generatedScales: activePalette
-            ? generateAllScales(activePalette.steps, activePalette.primaryStep)
-            : null
-        };
-      }
-    }
-  )
-);
+});

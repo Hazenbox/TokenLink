@@ -1518,7 +1518,18 @@ figma.ui.onmessage = async (msg) => {
   if (msg.type === 'save-brands') {
     try {
       console.log('Saving brands to Figma clientStorage...');
+      
+      // Validate data before saving
+      if (!msg.data) {
+        throw new Error('No brands data provided');
+      }
+      
       const brandsData = msg.data;
+      
+      // Validate structure
+      if (!brandsData.brands || !Array.isArray(brandsData.brands)) {
+        throw new Error('Invalid brands data structure: brands must be an array');
+      }
       
       await figma.clientStorage.setAsync('varcar-brands', brandsData);
       
@@ -1568,7 +1579,18 @@ figma.ui.onmessage = async (msg) => {
   if (msg.type === 'save-palettes') {
     try {
       console.log('Saving palettes to Figma clientStorage...');
+      
+      // Validate data before saving
+      if (!msg.data) {
+        throw new Error('No palettes data provided');
+      }
+      
       const palettesData = msg.data;
+      
+      // Validate structure
+      if (!palettesData.palettes || !Array.isArray(palettesData.palettes)) {
+        throw new Error('Invalid palettes data structure: palettes must be an array');
+      }
       
       await figma.clientStorage.setAsync('varcar-palettes', palettesData);
       
