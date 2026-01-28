@@ -20,13 +20,13 @@ export function AutomateApp() {
   }, []);
   
   return (
-    <div className="h-full w-full flex bg-background relative overflow-hidden">
+    <div className="h-full w-full flex bg-background relative overflow-hidden min-w-0">
       
       {/* Left: Brand Sidebar */}
       <BrandSidebar />
       
       {/* Middle: Figma-style Variables UI */}
-      <div className="flex-1 bg-background overflow-hidden flex">
+      <div className="flex-1 bg-background overflow-hidden flex max-w-full">
         {/* Collections & Groups Combined Panel */}
         <VariablesErrorBoundary>
           <CollectionsGroupsPanel />
@@ -34,7 +34,7 @@ export function AutomateApp() {
         
         {/* Variable Table - Takes remaining space */}
         <VariablesErrorBoundary>
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden min-w-0">
             <BrandVariableTable />
           </div>
         </VariablesErrorBoundary>
