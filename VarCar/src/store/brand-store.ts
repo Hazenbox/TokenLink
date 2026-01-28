@@ -32,6 +32,28 @@ import { useVariablesViewStore } from "./variables-view-store";
  * Module-level cache for Figma data (outside Zustand to prevent infinite loops)
  */
 const figmaCache = new Map<string, any>();
+const MAX_CACHE_SIZE = 100;
+
+/**
+ * Set cache item with LRU eviction
+ */
+function setCacheItem(key: string, value: any): void {
+  // Remove oldest entry if cache is full
+  if (figmaCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = figmaCache.keys().next().value;
+    if (firstKey) {
+      figmaCache.delete(firstKey);
+    }
+  }
+  figmaCache.set(key, value);
+}
+
+/**
+ * Get cache item
+ */
+function getCacheItem(key: string): any | undefined {
+  return figmaCache.get(key);
+}
 
 /**
  * Invalidate all cached Figma data for a specific brand
@@ -88,6 +110,9 @@ interface BrandStoreState {
   
   // Rate limiting
   syncAttempts: { timestamp: number }[];
+  
+  // Timeout tracking for cleanup
+  statusResetTimeout: ReturnType<typeof setTimeout> | null;
   
   // Figma Variables UI - Pre-computed state
   figmaCollections: FigmaCollection[];
@@ -221,6 +246,7 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
       isSaving: false,
       isLoading: false,
       syncAttempts: [],
+      statusResetTimeout: null,
       
       // Figma Variables UI state
       figmaCollections: [],
@@ -536,6 +562,19 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
       syncBrand: async (brandId: string) => {
         const state = get();
         
+        // Prevent concurrent syncs
+        if (state.syncStatus !== 'idle' && state.syncStatus !== 'error') {
+          return {
+            success: false,
+            brandId,
+            timestamp: Date.now(),
+            variablesSynced: 0,
+            modesAdded: [],
+            errors: ['Sync already in progress'],
+            warnings: []
+          };
+        }
+        
         // Rate limiting check (max 5 syncs per minute)
         const oneMinuteAgo = Date.now() - 60000;
         const recentAttempts = state.syncAttempts.filter(
@@ -609,10 +648,13 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
             '*'
           );
 
-          // Record sync attempt
-          set((state) => ({
-            syncAttempts: [...state.syncAttempts, { timestamp: Date.now() }]
-          }));
+          // Record sync attempt (keep last 100 to prevent unbounded growth)
+          set((state) => {
+            const newAttempts = [...state.syncAttempts, { timestamp: Date.now() }];
+            return {
+              syncAttempts: newAttempts.slice(-100)
+            };
+          });
 
           // Update brand sync timestamp
           get().updateBrand(brandId, { syncedAt: Date.now() });
@@ -653,6 +695,19 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
       // Sync brand with multi-layer architecture
       syncBrandWithLayers: async (brandId: string) => {
         const state = get();
+        
+        // Prevent concurrent syncs
+        if (state.syncStatus !== 'idle' && state.syncStatus !== 'error') {
+          return {
+            success: false,
+            brandId,
+            timestamp: Date.now(),
+            variablesSynced: 0,
+            modesAdded: [],
+            errors: ['Sync already in progress'],
+            warnings: []
+          };
+        }
         
         // Rate limiting check (max 5 syncs per minute)
         const oneMinuteAgo = Date.now() - 60000;
@@ -739,10 +794,13 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
             '*'
           );
 
-          // Record sync attempt
-          set((state) => ({
-            syncAttempts: [...state.syncAttempts, { timestamp: Date.now() }]
-          }));
+          // Record sync attempt (keep last 100 to prevent unbounded growth)
+          set((state) => {
+            const newAttempts = [...state.syncAttempts, { timestamp: Date.now() }];
+            return {
+              syncAttempts: newAttempts.slice(-100)
+            };
+          });
 
           // Update brand sync timestamp
           get().updateBrand(brandId, { syncedAt: Date.now() });
@@ -799,15 +857,23 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
       updateSyncStatusFromPlugin: (status: 'success' | 'error', data?: any) => {
         console.log('[Brand Store] Updating sync status from plugin:', status, data);
         
+        // Clear any existing timeout
+        const existingTimeout = get().statusResetTimeout;
+        if (existingTimeout) {
+          clearTimeout(existingTimeout);
+        }
+        
         if (status === 'success') {
           set({ syncStatus: 'success' });
           
           // Reset to idle after 3 seconds
-          setTimeout(() => {
+          const timeout = setTimeout(() => {
             if (get().syncStatus === 'success') {
-              set({ syncStatus: 'idle' });
+              set({ syncStatus: 'idle', statusResetTimeout: null });
             }
           }, 3000);
+          
+          set({ statusResetTimeout: timeout });
           
           // If graph data is included, refresh Figma data
           if (data?.graph) {
@@ -818,11 +884,13 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
           set({ syncStatus: 'error' });
           
           // Reset to idle after 5 seconds
-          setTimeout(() => {
+          const timeout = setTimeout(() => {
             if (get().syncStatus === 'error') {
-              set({ syncStatus: 'idle' });
+              set({ syncStatus: 'idle', statusResetTimeout: null });
             }
           }, 5000);
+          
+          set({ statusResetTimeout: timeout });
         }
       },
 
@@ -1545,8 +1613,22 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
     }));
 
 // Auto-save every 30 seconds
-if (typeof window !== 'undefined') {
-  setInterval(() => {
+let autoSaveInterval: ReturnType<typeof setInterval> | null = null;
+
+if (typeof window !== 'undefined' && !autoSaveInterval) {
+  autoSaveInterval = setInterval(() => {
     useBrandStore.getState().autoSave();
   }, 30000);
+}
+
+/**
+ * Cleanup function to clear intervals and prevent memory leaks
+ * Call this when the plugin is closing or on unmount
+ */
+export function cleanupBrandStore() {
+  if (autoSaveInterval) {
+    clearInterval(autoSaveInterval);
+    autoSaveInterval = null;
+    console.log('[Brand Store] Auto-save interval cleared');
+  }
 }

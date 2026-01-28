@@ -17,6 +17,68 @@ import {
   getFigmaNativeStats 
 } from './adapters/figmaNativeImporter';
 
+// ============================================================================
+// Module-Level State for Cleanup
+// ============================================================================
+
+let documentChangeHandler: ((event: DocumentChangeEvent) => void) | null = null;
+
+// ============================================================================
+// Shared Helper Functions for Sync Operations
+// ============================================================================
+
+/**
+ * Find or create a variable collection by name
+ */
+async function getOrCreateCollection(name: string): Promise<VariableCollection> {
+  const collections = await figma.variables.getLocalVariableCollectionsAsync();
+  let collection = collections.find(c => c.name === name);
+  
+  if (!collection) {
+    console.log(`Creating collection: ${name}`);
+    collection = figma.variables.createVariableCollection(name);
+  }
+  
+  return collection;
+}
+
+/**
+ * Find or create a mode in a collection
+ */
+async function getOrCreateMode(collection: VariableCollection, modeName: string): Promise<{modeId: string; mode: any}> {
+  let mode = collection.modes.find(m => m.name === modeName);
+  
+  if (!mode) {
+    console.log(`Creating mode: ${modeName} in collection ${collection.name}`);
+    const modeId = collection.addMode(modeName);
+    mode = collection.modes.find(m => m.modeId === modeId);
+  }
+  
+  return { modeId: mode!.modeId, mode: mode! };
+}
+
+/**
+ * Find a variable by name in a specific collection
+ */
+async function findVariableInCollection(collection: VariableCollection, varName: string): Promise<Variable | null> {
+  const allVars = await figma.variables.getLocalVariablesAsync();
+  return allVars.find(v => v.name === varName && v.variableCollectionId === collection.id) || null;
+}
+
+/**
+ * Convert hex color to RGB object for Figma
+ */
+function hexToRGB(hex: string): RGB {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  return { r, g, b };
+}
+
+// ============================================================================
+// Main Message Handler
+// ============================================================================
+
 // Listen for messages from the UI
 figma.ui.onmessage = async (msg) => {
   if (msg.type === 'ready') {
@@ -1201,46 +1263,6 @@ figma.ui.onmessage = async (msg) => {
       const { brand, variables } = msg.data;
       console.log(`Syncing brand "${brand.name}" with ${variables.length} aliased variables...`);
       
-      // Helper: Find or create collection
-      async function getOrCreateCollection(name: string): Promise<VariableCollection> {
-        const collections = await figma.variables.getLocalVariableCollectionsAsync();
-        let collection = collections.find(c => c.name === name);
-        
-        if (!collection) {
-          console.log(`Creating collection: ${name}`);
-          collection = figma.variables.createVariableCollection(name);
-        }
-        
-        return collection;
-      }
-      
-      // Helper: Find or create mode in collection
-      async function getOrCreateMode(collection: VariableCollection, modeName: string): Promise<{modeId: string; mode: any}> {
-        let mode = collection.modes.find(m => m.name === modeName);
-        
-        if (!mode) {
-          console.log(`Creating mode: ${modeName} in collection ${collection.name}`);
-          const modeId = collection.addMode(modeName);
-          mode = collection.modes.find(m => m.modeId === modeId);
-        }
-        
-        return { modeId: mode!.modeId, mode: mode! };
-      }
-      
-      // Helper: Find variable by name in collection
-      async function findVariableInCollection(collection: VariableCollection, varName: string): Promise<Variable | null> {
-        const allVars = await figma.variables.getLocalVariablesAsync();
-        return allVars.find(v => v.name === varName && v.variableCollectionId === collection.id) || null;
-      }
-      
-      // Helper: Create RGB color from hex
-      function hexToRGB(hex: string): RGB {
-        const r = parseInt(hex.slice(1, 3), 16) / 255;
-        const g = parseInt(hex.slice(3, 5), 16) / 255;
-        const b = parseInt(hex.slice(5, 7), 16) / 255;
-        return { r, g, b };
-      }
-      
       // Step 1: Create/Get RangDe Primitives collection
       console.log('Step 1: Creating/Getting RangDe Primitives collection...');
       const rangdeCollection = await getOrCreateCollection('00_RangDe Primitives');
@@ -1374,14 +1396,6 @@ figma.ui.onmessage = async (msg) => {
         type: 'sync-progress',
         data: { step: 1, total: 5, message: 'Starting multi-layer sync...' }
       });
-      
-      // Helper: Create RGB color from hex
-      function hexToRGB(hex: string): RGB {
-        const r = parseInt(hex.slice(1, 3), 16) / 255;
-        const g = parseInt(hex.slice(3, 5), 16) / 255;
-        const b = parseInt(hex.slice(5, 7), 16) / 255;
-        return { r, g, b };
-      }
       
       // Store created collection and variable references
       const collectionMap = new Map<string, VariableCollection>();
@@ -1774,6 +1788,12 @@ figma.ui.onmessage = async (msg) => {
   
   // Handle other message types here as needed
   if (msg.type === 'close') {
+    // Cleanup: Remove documentchange listener
+    if (documentChangeHandler) {
+      figma.off('documentchange', documentChangeHandler);
+      documentChangeHandler = null;
+      console.log('Document change listener cleaned up');
+    }
     figma.closePlugin();
   }
 };
@@ -1808,7 +1828,8 @@ if (figma.command === 'open') {
       let lastSyncHash: string = '';
       
       // Subscribe to document changes for real-time variable sync
-      figma.on('documentchange', async (event) => {
+      // Store handler for cleanup
+      documentChangeHandler = async (event) => {
         // Debounce: only sync after 500ms of no changes
         if (syncTimeout) {
           clearTimeout(syncTimeout);
@@ -1854,7 +1875,9 @@ if (figma.command === 'open') {
             });
           }
         }, 500); // 500ms debounce
-      });
+      };
+      
+      figma.on('documentchange', documentChangeHandler);
       
       console.log('Real-time variable sync enabled');
     } catch (error) {
