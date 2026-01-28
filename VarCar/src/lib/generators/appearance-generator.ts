@@ -40,25 +40,33 @@ export class AppearanceGenerator extends BaseLayerGenerator {
     const brandName = this.brand.name || 'Brand';
     
     for (const scale of SCALE_NAMES) {
-      // Each appearance has its own set of modes
+      // ONE variable per scale with MULTIPLE appearance modes
       const name = `${brandName}/Default/[appearance] ${scale}`;
       
       modes.forEach((appearance, idx) => {
-        // Map appearance to fill emphasis mode
-        // For simplicity, map most to 'Bold', but can be customized
-        const emphasisMode = appearance === 'Neutral' ? 'Subtle' : 'Bold';
-        const fillEmphasisName = `Grey/[Child] ${scale}`;
+        // Get palette name for this appearance
+        const paletteName = this.getPaletteForAppearance(appearance);
         
-        // Find Fill Emphasis variable with appropriate mode
-        const fillEmphasisVars = this.registry.findByCollection('fill-emphasis')
-          .filter(v => v.name === fillEmphasisName && v.modeName === emphasisMode);
-        
-        if (fillEmphasisVars.length === 0) {
-          this.warn(`Fill Emphasis variable not found: ${fillEmphasisName} (${emphasisMode})`);
+        if (!paletteName) {
+          this.warn(`No palette assigned for appearance: ${appearance}`);
           return;
         }
         
-        const fillEmphasisVar = fillEmphasisVars[0];
+        // Find Interaction State variable for this palette
+        // Use 'Idle' state and 'Bold' emphasis for most, 'Subtle' for Neutral
+        const stateMode = 'Idle';
+        const emphasisMode = appearance === 'Neutral' ? 'Subtle' : 'Bold';
+        const interactionStateName = `${paletteName}/Default/${emphasisMode}/[Interaction state] ${scale}`;
+        
+        const interactionStateVars = this.registry.findByCollection('interaction-state')
+          .filter(v => v.name === interactionStateName && v.modeName === stateMode);
+        
+        if (interactionStateVars.length === 0) {
+          this.warn(`Interaction State variable not found: ${interactionStateName} (${stateMode})`);
+          return;
+        }
+        
+        const interactionStateVar = interactionStateVars[0];
         
         variables.push({
           id: this.generateVariableId(),
@@ -68,14 +76,34 @@ export class AppearanceGenerator extends BaseLayerGenerator {
           layer: this.layer.order,
           modeId: `mode_${idx}`,
           modeName: appearance,
-          aliasToId: fillEmphasisVar.id,
-          aliasToName: fillEmphasisName,
-          metadata: { scale, appearance }
+          aliasToId: interactionStateVar.id,
+          aliasToName: interactionStateName,
+          metadata: { scale, appearance, targetPalette: paletteName }
         });
       });
     }
     
     this.log(`Generated ${variables.length} appearance variables`);
     return variables;
+  }
+  
+  /**
+   * Map appearance context to assigned palette name
+   */
+  private getPaletteForAppearance(appearance: string): string | null {
+    if (!this.brand.colors) return null;
+    
+    switch (appearance) {
+      case 'Neutral': return this.brand.colors.neutral?.paletteName || null;
+      case 'Primary': return this.brand.colors.primary?.paletteName || null;
+      case 'Secondary': return this.brand.colors.secondary?.paletteName || null;
+      case 'Sparkle': return this.brand.colors.sparkle?.paletteName || null;
+      case 'Positive': return this.brand.colors.semantic?.positive?.paletteName || null;
+      case 'Negative': return this.brand.colors.semantic?.negative?.paletteName || null;
+      case 'Warning': return this.brand.colors.semantic?.warning?.paletteName || null;
+      case 'Informative': return this.brand.colors.semantic?.informative?.paletteName || null;
+      case 'Brand BG': return this.brand.colors.sparkle?.paletteName || null;
+      default: return null;
+    }
   }
 }

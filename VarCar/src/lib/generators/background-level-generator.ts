@@ -24,47 +24,65 @@ export class BackgroundLevelGenerator extends BaseLayerGenerator {
     
     this.log(`Generating Background Level variables with ${modes.length} modes`);
     
-    for (const scale of SCALE_NAMES) {
-      const name = `Grey/[Parent] ${scale}`;
-      
-      // Map each level mode to appropriate Colour Mode context
-      const levelContextMap: Record<string, string> = {
-        'Level 0': 'Root',
-        'Level 1': 'Default',
-        'Level 2': 'Default',
-        'Bold': 'Root',
-        'Elevated': 'Default'
-      };
-      
-      modes.forEach((mode, idx) => {
-        const context = levelContextMap[mode] || 'Root';
-        const colourModeName = `Grey/Semi semantics/${context}/[Colour Mode] ${scale}`;
+    const paletteNames = this.getAssignedPaletteNames();
+    
+    for (const paletteName of paletteNames) {
+      for (const scale of SCALE_NAMES) {
+        const name = `${paletteName}/[Parent] ${scale}`;
         
-        // Find the Colour Mode variable (we need to check both Light and Dark modes)
-        // For simplicity, we'll alias to Light mode (mode_0)
-        const colourModeVar = this.registry.findByName(colourModeName, 'colour-mode');
+        // Map each level mode to appropriate Colour Mode context
+        const levelContextMap: Record<string, string> = {
+          'Level 0': 'Root',
+          'Level 1': 'Default',
+          'Level 2': 'Default',
+          'Bold': 'Root',
+          'Elevated': 'Default'
+        };
         
-        if (!colourModeVar) {
-          this.warn(`Colour Mode variable not found: ${colourModeName}`);
-          return;
-        }
-        
-        variables.push({
-          id: this.generateVariableId(),
-          name,
-          collectionId: this.layer.id,
-          collectionName: this.layer.collectionName,
-          layer: this.layer.order,
-          modeId: `mode_${idx}`,
-          modeName: mode,
-          aliasToId: colourModeVar.id,
-          aliasToName: colourModeName,
-          metadata: { scale, level: mode }
+        modes.forEach((mode, idx) => {
+          const context = levelContextMap[mode] || 'Root';
+          const colourModeName = `${paletteName}/Semi semantics/${context}/[Colour Mode] ${scale}`;
+          
+          const colourModeVar = this.registry.findByName(colourModeName, 'colour-mode');
+          
+          if (!colourModeVar) {
+            this.warn(`Colour Mode variable not found: ${colourModeName}`);
+            return;
+          }
+          
+          variables.push({
+            id: this.generateVariableId(),
+            name,
+            collectionId: this.layer.id,
+            collectionName: this.layer.collectionName,
+            layer: this.layer.order,
+            modeId: `mode_${idx}`,
+            modeName: mode,
+            aliasToId: colourModeVar.id,
+            aliasToName: colourModeName,
+            metadata: { scale, level: mode, palette: paletteName }
+          });
         });
-      });
+      }
     }
     
     this.log(`Generated ${variables.length} background level variables`);
     return variables;
+  }
+  
+  private getAssignedPaletteNames(): string[] {
+    if (!this.brand.colors) return [];
+    
+    const names = new Set<string>();
+    if (this.brand.colors.neutral?.paletteName) names.add(this.brand.colors.neutral.paletteName);
+    if (this.brand.colors.primary?.paletteName) names.add(this.brand.colors.primary.paletteName);
+    if (this.brand.colors.secondary?.paletteName) names.add(this.brand.colors.secondary.paletteName);
+    if (this.brand.colors.sparkle?.paletteName) names.add(this.brand.colors.sparkle.paletteName);
+    if (this.brand.colors.semantic?.positive?.paletteName) names.add(this.brand.colors.semantic.positive.paletteName);
+    if (this.brand.colors.semantic?.negative?.paletteName) names.add(this.brand.colors.semantic.negative.paletteName);
+    if (this.brand.colors.semantic?.warning?.paletteName) names.add(this.brand.colors.semantic.warning.paletteName);
+    if (this.brand.colors.semantic?.informative?.paletteName) names.add(this.brand.colors.semantic.informative.paletteName);
+    
+    return Array.from(names);
   }
 }
