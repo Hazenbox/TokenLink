@@ -71,12 +71,14 @@ export function useFigmaMessages() {
           'Theme'
         ];
         
-        const message = `✓ Sync Complete!\n${data.collectionsCreated || 0} collections created\n${data.variablesSynced.toLocaleString()} variables synced\nLayers: ${layers.join(' → ')}`;
+        const message = data.errors.length > 0
+          ? `⚠ Sync Complete with Errors!\n${data.variablesSynced.toLocaleString()} variables synced\n${data.errors.length} error${data.errors.length > 1 ? 's' : ''} occurred\n\nOpen console (bottom) to view details`
+          : `✓ Sync Complete!\n${data.collectionsCreated || 0} collections created\n${data.variablesSynced.toLocaleString()} variables synced\nLayers: ${layers.join(' → ')}`;
         
         setNotification({
-          type: 'success',
+          type: data.errors.length > 0 ? 'error' : 'success',
           message,
-          duration: 6000
+          duration: data.errors.length > 0 ? 10000 : 6000
         });
         
         setProgress(null);

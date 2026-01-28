@@ -18,6 +18,48 @@ import {
 } from './adapters/figmaNativeImporter';
 
 // ============================================================================
+// Console Log Capture for UI Debugging
+// ============================================================================
+
+const originalConsoleLog = console.log;
+const originalConsoleWarn = console.warn;
+const originalConsoleError = console.error;
+
+function sendLogToUI(level: 'log' | 'warn' | 'error', args: any[]) {
+  try {
+    const message = args.map(arg => 
+      typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+    ).join(' ');
+    
+    figma.ui.postMessage({
+      type: 'console-log',
+      data: {
+        level,
+        message,
+        timestamp: Date.now()
+      }
+    });
+  } catch (error) {
+    // Fail silently - don't break the plugin if UI messaging fails
+  }
+}
+
+console.log = function(...args) {
+  originalConsoleLog.apply(console, args);
+  sendLogToUI('log', args);
+};
+
+console.warn = function(...args) {
+  originalConsoleWarn.apply(console, args);
+  sendLogToUI('warn', args);
+};
+
+console.error = function(...args) {
+  originalConsoleError.apply(console, args);
+  sendLogToUI('error', args);
+};
+
+// ============================================================================
 // Module-Level State for Cleanup
 // ============================================================================
 
@@ -1775,7 +1817,7 @@ figma.ui.onmessage = async (msg) => {
           timestamp: Date.now(),
           variablesSynced: totalCreated + totalUpdated,
           collectionsCreated: collectionMap.size,
-          errors: [],
+          errors: errors.map(e => `${e.variable}: ${e.error}`),
           warnings: [],
           graph: serializedGraph
         }

@@ -4,8 +4,12 @@ import { NavigationRail } from "./NavigationRail";
 import { CanvasBackground } from "./CanvasBackground";
 import { ResizeHandle } from "../components/ResizeHandle";
 import { AppSwitcher, AppSwitcherProvider } from "../AppSwitcher";
+import { ConsoleLogViewer } from "../components/ConsoleLogViewer";
+import { useConsoleLogs } from "../hooks/useConsoleLogs";
 
 export function MainLayout() {
+  const { logs, isVisible, clearLogs, closeConsole } = useConsoleLogs();
+
   // Handler for window resize
   const handleResize = (width: number, height: number) => {
     window.parent.postMessage(
@@ -28,6 +32,14 @@ export function MainLayout() {
           
           {/* Resize Handle - available across all views */}
           <ResizeHandle onResize={handleResize} />
+          
+          {/* Console Log Viewer - appears at bottom when visible */}
+          <ConsoleLogViewer
+            logs={logs}
+            isVisible={isVisible}
+            onClose={closeConsole}
+            onClear={clearLogs}
+          />
         </div>
       </AppSwitcherProvider>
     </ThemeProvider>

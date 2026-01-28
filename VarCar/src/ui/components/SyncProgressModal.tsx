@@ -12,6 +12,7 @@ interface ProgressData {
   message: string;
   currentVariables?: number;
   totalVariables?: number;
+  errors?: number;
 }
 
 interface SyncProgressModalProps {
@@ -97,6 +98,14 @@ export function SyncProgressModal({ progress }: SyncProgressModalProps) {
           <div className="text-xs text-foreground-secondary leading-relaxed">
             {progress.message}
           </div>
+
+          {/* Error count (if any errors) */}
+          {progress.errors && progress.errors > 0 && (
+            <div className="flex items-center gap-1 text-xs text-amber-500 bg-amber-950/20 px-2 py-1 rounded">
+              <AlertTriangle className="w-3 h-3" />
+              <span>{progress.errors} error{progress.errors > 1 ? 's' : ''} occurred</span>
+            </div>
+          )}
         </div>
 
         {/* Hint */}
