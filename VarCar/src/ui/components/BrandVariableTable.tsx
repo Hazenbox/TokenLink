@@ -199,8 +199,8 @@ export function BrandVariableTable() {
             <thead className="sticky top-0 z-10 bg-background">
               <tr className="border-b border-border/20">
                 {/* Variable Name Column - Sticky Header + Sticky Column */}
-                <th className="sticky left-0 z-20 bg-background text-left px-3 py-2 border-r border-border/10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)]">
-                  <span className="text-[11px] font-medium text-foreground-secondary">
+                <th className="sticky left-0 z-20 bg-background text-left px-3 py-2 border-r-2 border-border shadow-[2px_0_8px_0px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_8px_0px_rgba(0,0,0,0.4)] before:absolute before:inset-0 before:bg-background before:-z-10">
+                  <span className="text-[11px] font-medium text-foreground-secondary relative z-10">
                     Name
                   </span>
                 </th>
@@ -226,8 +226,8 @@ export function BrandVariableTable() {
                   className="border-b border-border/10 hover:bg-surface/30 transition-colors group"
                 >
                   {/* Variable Name - Sticky Column with hover state */}
-                  <td className="sticky left-0 z-10 bg-background group-hover:bg-surface/30 px-3 py-2 border-r border-border/10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)] transition-colors">
-                    <span className="text-[11px] text-foreground whitespace-nowrap">{variable.name}</span>
+                  <td className="sticky left-0 z-10 bg-background group-hover:bg-surface/30 px-3 py-2 border-r-2 border-border shadow-[2px_0_8px_0px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_8px_0px_rgba(0,0,0,0.4)] transition-colors before:absolute before:inset-0 before:bg-background before:group-hover:bg-surface/30 before:-z-10 before:transition-colors relative">
+                    <span className="text-[11px] text-foreground whitespace-nowrap relative z-10">{variable.name}</span>
                   </td>
                   
                   {/* Mode Values */}
