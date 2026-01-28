@@ -51,8 +51,8 @@ interface PaletteState {
   savePalettes: () => Promise<void>;
 }
 
-function generateId(): string {
-  return `palette_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+function generateUserPaletteId(): string {
+  return `palette_user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
 // Load default palettes from JSON file (Figma plugins always have window)
@@ -116,7 +116,7 @@ export const usePaletteStore = create<PaletteState>()((set, get) => {
 
         createPalette: (name: string) => {
           const newPalette: Palette = {
-            id: generateId(),
+            id: generateUserPaletteId(),
             name,
             steps: createDefaultPalette(),
             primaryStep: 600,
@@ -252,7 +252,7 @@ export const usePaletteStore = create<PaletteState>()((set, get) => {
 
           const newPalette: Palette = {
             ...paletteToDuplicate,
-            id: generateId(),
+            id: generateUserPaletteId(),
             name: `${paletteToDuplicate.name} (Copy)`,
             createdAt: Date.now()
           };
@@ -344,10 +344,17 @@ export const usePaletteStore = create<PaletteState>()((set, get) => {
                     currentMap.has(fp.id) ? { ...currentMap.get(fp.id), ...fp } : fp
                   );
                   
-                  // Add any current palettes not in Figma data
+                  // Create a name-based map to detect duplicates
+                  const palettesByName = new Map(mergedPalettes.map(p => [p.name.toLowerCase(), p]));
+                  
+                  // Add current palettes not in Figma data, but skip duplicates by name
                   currentPalettes.forEach(cp => {
-                    if (!figmaPalettes.find((fp: Palette) => fp.id === cp.id)) {
+                    const existsInFigma = figmaPalettes.find((fp: Palette) => fp.id === cp.id);
+                    const duplicateByName = palettesByName.has(cp.name.toLowerCase());
+                    
+                    if (!existsInFigma && !duplicateByName) {
                       mergedPalettes.push(cp);
+                      palettesByName.set(cp.name.toLowerCase(), cp);
                     }
                   });
                   

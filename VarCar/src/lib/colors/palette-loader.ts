@@ -11,8 +11,10 @@ interface JSONData {
   [paletteName: string]: JSONPalette;
 }
 
-function generateId(): string {
-  return `palette_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+function generateId(paletteName: string): string {
+  // Create stable ID from palette name
+  const normalized = paletteName.toLowerCase().replace(/[^a-z0-9]/g, '_');
+  return `palette_${normalized}`;
 }
 
 /**
@@ -75,7 +77,7 @@ function convertJSONPaletteToPalette(
   const primaryStep = (baseValue ? parseInt(baseValue) : 600) as Step;
 
   return {
-    id: generateId(),
+    id: generateId(name), // Pass name for stable ID generation
     name: capitalize(name.replace(/_/g, " ")), // Convert snake_case to Title Case
     steps: steps as PaletteSteps,
     primaryStep,
