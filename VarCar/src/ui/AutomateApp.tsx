@@ -18,14 +18,20 @@ export function AutomateApp() {
     const loadData = async () => {
       try {
         console.log('[Init] Starting data load...');
+        console.log('[Init] Environment: First load detection in progress');
         
         // Load palettes first (brands reference them)
         await usePaletteStore.getState().loadPalettes();
-        console.log('[Init] Palettes loaded');
+        console.log('[Init] Palettes loaded and initialized');
         
         // Then load brands
         await useBrandStore.getState().loadBrands();
         console.log('[Init] Brands loaded');
+        
+        // Check if this was a first-time initialization
+        const paletteCount = usePaletteStore.getState().palettes.length;
+        const brandCount = useBrandStore.getState().brands.length;
+        console.log(`[Init] State: ${paletteCount} palettes, ${brandCount} brands`);
         
         // Finally refresh UI (now safe - data is loaded)
         useBrandStore.getState().refreshFigmaData();

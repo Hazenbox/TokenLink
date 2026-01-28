@@ -366,7 +366,39 @@ export const usePaletteStore = create<PaletteState>()((set, get) => {
                     console.warn('[Storage] Failed to save to localStorage:', e);
                   }
                 } else {
-                  console.log('[Storage] No palette data in Figma storage, using persisted state');
+                  console.log('[Storage] No palette data in Figma storage, initializing with defaults');
+                  
+                  // First load - save default palettes to storage
+                  const currentState = get();
+                  if (currentState.palettes && currentState.palettes.length > 0) {
+                    console.log('[Storage] Saving default palettes to Figma clientStorage...');
+                    
+                    // Save immediately to ensure persistence
+                    const dataToSave = {
+                      palettes: currentState.palettes,
+                      activePaletteId: currentState.activePaletteId
+                    };
+                    
+                    // Save to Figma clientStorage
+                    parent.postMessage({
+                      pluginMessage: { 
+                        type: 'save-palettes',
+                        data: dataToSave
+                      }
+                    }, '*');
+                    
+                    // Also save to localStorage as backup
+                    try {
+                      safeStorage.setItem('figmap-palettes', JSON.stringify(dataToSave));
+                      console.log('[Storage] Default palettes saved to both storages');
+                    } catch (e) {
+                      console.warn('[Storage] Failed to save to localStorage:', e);
+                    }
+                    
+                    // Wait a bit for save to complete before resolving
+                    setTimeout(() => resolve(), 200);
+                    return;
+                  }
                 }
                 
                 resolve();
