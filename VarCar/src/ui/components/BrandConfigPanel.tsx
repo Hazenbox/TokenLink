@@ -83,8 +83,8 @@ export function BrandConfigPanel() {
   if (!activeBrand) {
     return (
       <div 
-        className="border-l border-border/20 bg-background flex flex-col relative flex-shrink-0 overflow-hidden"
-        style={{ width: `${configPanelWidth}px` }}
+        className="border-l border-border/20 bg-background flex flex-col relative overflow-hidden"
+        style={{ width: `${configPanelWidth}px`, minWidth: '280px', maxWidth: '500px' }}
       >
         {/* Resize Handle */}
         <div
@@ -155,8 +155,8 @@ export function BrandConfigPanel() {
 
   return (
     <div 
-      className="h-full flex flex-col border-l border-border/20 bg-background relative flex-shrink-0 overflow-hidden"
-      style={{ width: `${configPanelWidth}px` }}
+      className="h-full flex flex-col border-l border-border/20 bg-background relative overflow-hidden"
+      style={{ width: `${configPanelWidth}px`, minWidth: '280px', maxWidth: '500px' }}
     >
       {/* Resize Handle */}
       <div
