@@ -49,7 +49,7 @@ export function CompactPaletteSelector({
   };
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-1.5 w-full max-w-full">
       <Label className="text-xs font-medium text-foreground">
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}

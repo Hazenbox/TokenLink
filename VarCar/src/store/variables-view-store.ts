@@ -57,7 +57,7 @@ export const useVariablesViewStore = create<VariablesViewState>()(
       collectionsCollapsed: false,
       groupsCollapsed: false,
       configPanelCollapsed: false,
-      configPanelWidth: 425,
+      configPanelWidth: 300,
       collectionsGroupsSplitRatio: 0.5,
       searchQuery: '',
       expandedGroups: new Set(),
@@ -96,7 +96,7 @@ export const useVariablesViewStore = create<VariablesViewState>()(
       
       // Set config panel width
       setConfigPanelWidth: (width: number) => {
-        const clampedWidth = Math.max(425, Math.min(500, width));
+        const clampedWidth = Math.max(280, Math.min(500, width));
         set({ configPanelWidth: clampedWidth });
       },
       

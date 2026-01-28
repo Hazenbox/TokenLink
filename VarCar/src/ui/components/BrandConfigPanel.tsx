@@ -84,7 +84,7 @@ export function BrandConfigPanel() {
     return (
       <div 
         className="border-l border-border/20 bg-background flex flex-col relative"
-        style={{ width: `${configPanelWidth}px`, minWidth: '425px', maxWidth: '500px' }}
+        style={{ width: `${configPanelWidth}px`, minWidth: '280px', maxWidth: '500px' }}
       >
         {/* Resize Handle */}
         <div
@@ -156,7 +156,7 @@ export function BrandConfigPanel() {
   return (
     <div 
       className="h-full flex flex-col border-l border-border/20 bg-background relative"
-      style={{ width: `${configPanelWidth}px`, minWidth: '425px', maxWidth: '500px' }}
+      style={{ width: `${configPanelWidth}px`, minWidth: '280px', maxWidth: '500px' }}
     >
       {/* Resize Handle */}
       <div
@@ -216,8 +216,8 @@ export function BrandConfigPanel() {
       </div>
 
       {/* Config Content */}
-      <ScrollArea className="flex-1">
-        <div className="pl-4 pt-4 pb-4 pr-6 space-y-6">
+      <ScrollArea className="flex-1 w-full max-w-full">
+        <div className="pl-4 pt-4 pb-4 pr-4 space-y-6 w-full max-w-full overflow-hidden">
           {/* Required Palettes - Single Column */}
           <div>
             <h3 className="text-xs font-semibold text-foreground mb-3">
