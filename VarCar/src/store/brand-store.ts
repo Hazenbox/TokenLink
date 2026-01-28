@@ -996,24 +996,26 @@ export const useBrandStore = create<BrandStoreState>()(
         }
         
         try {
-          // Get collections from brand (use brand's collections directly)
-          const collections = brandToFigmaAdapter.convertBrandToCollections(activeBrand);
-          
-          // Generate variables for all collections
-          const allVariables = brandToFigmaAdapter.getAllVariablesForBrand(activeBrand);
+          // Always use multi-layer generation for preview
+          const { convertMultiLayerToPreview } = require('@/adapters/multi-layer-preview-adapter');
+          const { collections, variablesByCollection } = convertMultiLayerToPreview(activeBrand);
           
           // Store in state
           set({ 
             figmaCollections: collections,
-            figmaVariablesByCollection: allVariables
+            figmaVariablesByCollection: variablesByCollection
           });
           
           // Refresh groups for first collection
           if (collections.length > 0) {
             get().refreshFigmaGroups(collections[0].id);
+            
+            // Auto-select first collection to show variables immediately
+            const { useVariablesViewStore } = require('@/store/variables-view-store');
+            useVariablesViewStore.getState().setActiveCollection(collections[0].id);
           }
           
-          console.log(`[Figma] Refreshed ${collections.length} collections, ${allVariables.size} variable sets`);
+          console.log(`[Multi-Layer Preview] ${collections.length} collections, ${variablesByCollection.size} variable sets`);
         } catch (error) {
           console.error('[Figma] Failed to refresh data:', error);
           set({
