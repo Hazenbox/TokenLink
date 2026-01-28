@@ -4,7 +4,6 @@
  */
 
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
 import { safeStorage } from "@/lib/storage";
 import {
   Brand,
@@ -201,9 +200,7 @@ function deepClone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj));
 }
 
-export const useBrandStore = create<BrandStoreState>()(
-  persist(
-    (set, get) => ({
+export const useBrandStore = create<BrandStoreState>()((set, get) => ({
       // Initial state
       brands: [],
       activeBrandId: null,
@@ -1009,6 +1006,35 @@ export const useBrandStore = create<BrandStoreState>()(
       // Load brands from Figma clientStorage with localStorage fallback
       loadBrands: async () => {
         try {
+          // Helper function to apply migration and set state
+          const applyBrandsWithMigration = (data: any) => {
+            let brands = data.brands || [];
+            
+            // Auto-migrate legacy brands
+            if (brands.length > 0) {
+              console.log('[Migration] Checking for legacy brands...');
+              const hadLegacyBrands = brands.some(needsMigration);
+              
+              if (hadLegacyBrands) {
+                console.log('[Migration] Migrating legacy brands to multi-collection architecture...');
+                brands = migrateAllLegacyBrands(brands);
+                console.log('[Migration] Migration complete!');
+                
+                // Save migrated data back to storage
+                get().saveBrands();
+              } else {
+                console.log('[Migration] All brands are up to date');
+              }
+            }
+            
+            set({
+              brands,
+              activeBrandId: data.activeBrandId || null,
+              backups: data.backups || [],
+              auditLog: data.auditLog || []
+            });
+          };
+          
           // Helper function to load from localStorage
           const loadFromLocalStorage = () => {
             try {
@@ -1016,12 +1042,7 @@ export const useBrandStore = create<BrandStoreState>()(
               if (stored) {
                 const parsed = JSON.parse(stored);
                 console.log('[Storage] Loaded brands from localStorage');
-                set({
-                  brands: parsed.brands || [],
-                  activeBrandId: parsed.activeBrandId || null,
-                  backups: parsed.backups || [],
-                  auditLog: parsed.auditLog || []
-                });
+                applyBrandsWithMigration(parsed);
               } else {
                 console.log('[Storage] No brands found in localStorage');
               }
@@ -1041,15 +1062,15 @@ export const useBrandStore = create<BrandStoreState>()(
               const loadedData = event.data.pluginMessage.data;
               if (loadedData) {
                 console.log('[Storage] Loaded brands from Figma clientStorage');
-                set({
-                  brands: loadedData.brands || [],
-                  activeBrandId: loadedData.activeBrandId || null,
-                  backups: loadedData.backups || [],
-                  auditLog: loadedData.auditLog || []
-                });
+                applyBrandsWithMigration(loadedData);
                 
                 // Also save to localStorage as backup
-                safeStorage.setItem('varcar-brands', JSON.stringify(loadedData));
+                safeStorage.setItem('varcar-brands', JSON.stringify({
+                  brands: get().brands,
+                  activeBrandId: get().activeBrandId,
+                  backups: get().backups,
+                  auditLog: get().auditLog
+                }));
               } else {
                 // Fallback to localStorage
                 console.log('[Storage] No Figma data found, trying localStorage...');
@@ -1435,34 +1456,7 @@ export const useBrandStore = create<BrandStoreState>()(
         get().saveBrands();
       },
       
-    }),
-    {
-      name: 'varcar-brands',
-      storage: createJSONStorage(() => safeStorage),
-      partialize: (state) => ({
-        brands: state.brands,
-        activeBrandId: state.activeBrandId,
-        backups: state.backups,
-        auditLog: state.auditLog
-      }),
-      // Auto-migrate legacy brands on load
-      onRehydrateStorage: () => (state) => {
-        if (state && state.brands) {
-          console.log('[Migration] Checking for legacy brands...');
-          const hadLegacyBrands = state.brands.some(needsMigration);
-          
-          if (hadLegacyBrands) {
-            console.log('[Migration] Migrating legacy brands to multi-collection architecture...');
-            state.brands = migrateAllLegacyBrands(state.brands);
-            console.log('[Migration] Migration complete!');
-          } else {
-            console.log('[Migration] All brands are up to date');
-          }
-        }
-      }
-    }
-  )
-);
+    }));
 
 // Auto-save every 30 seconds
 if (typeof window !== 'undefined') {
