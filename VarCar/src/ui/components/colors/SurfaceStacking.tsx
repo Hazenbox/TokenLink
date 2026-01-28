@@ -5,23 +5,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { usePaletteStore } from "@/store/palette-store";
 import { STEPS, Step, isValidHex, getReadableTextColor, getContrastRatio } from "@colors/color-utils";
+import { getRootOffsetLabel, getStepIndex, getStepFromIndex } from "@colors/root-system";
 import { cn } from "@colors/utils";
-
-/**
- * Calculate root offset label (e.g., "root", "root+1", "root-1")
- */
-function getRootOffsetLabel(rootStep: number, currentStep: number): string {
-    const rootIndex = STEPS.indexOf(rootStep as Step);
-    const currentIndex = STEPS.indexOf(currentStep as Step);
-    
-    if (rootIndex === -1 || currentIndex === -1) return "";
-    
-    const offset = currentIndex - rootIndex;
-    
-    if (offset === 0) return "root";
-    if (offset > 0) return `root+${offset}`;
-    return `root${offset}`; // negative numbers already have minus sign
-}
 
 interface StackingCellProps {
     label: string;
@@ -109,8 +94,9 @@ function StackingSection({ title, isLight, activePalette, baseStep }: StackingSe
     const sectionBg = activePalette.steps[bgStep];
     const textColor = getReadableTextColor(sectionBg);
 
-    const getIndex = (step: number) => STEPS.indexOf(step as any);
-    const getStep = (index: number) => STEPS[Math.max(0, Math.min(STEPS.length - 1, index))];
+    // Use shared Root system utilities
+    const getIndex = getStepIndex;
+    const getStep = getStepFromIndex;
 
     const getBoldStepWithContrast = (surfaceStep: Step, primaryStep: Step) => {
         const surfaceHex = activePalette.steps[surfaceStep];

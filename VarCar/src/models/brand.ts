@@ -295,8 +295,9 @@ export interface FigmaCollection {
   remote: boolean;
   hiddenFromPublishing?: boolean;
   
-  // VarCar-specific: How to generate variables for this collection
-  generationType?: 'primitives' | 'semantic' | 'component';
+  // VarCar-specific: Collection type classification
+  collectionType?: CollectionType;
+  generationType?: 'primitives' | 'semantic' | 'component'; // DEPRECATED: use collectionType
   
   // For primitive collections: palette assignments
   paletteAssignments?: {
@@ -306,9 +307,39 @@ export interface FigmaCollection {
     };
   };
   
-  // For semantic collections: reference to primitive collection
+  // For semantic/contextual collections: reference to source collection
   primitiveCollectionId?: string;
+  sourceCollectionId?: string; // More general - for any collection referencing another
 }
+
+/**
+ * Collection Types - All 16 collection types from Figma architecture
+ */
+export type CollectionType =
+  // Foundation layers (actual color values)
+  | 'primitives'           // 00_Primitives: Base RGB values (25 vars)
+  | 'semi-semantics'       // 00_Semi semantics: Named scales like Grey/2500 (2,688 vars)
+  
+  // Contextual layers (aliases with Root system)
+  | 'color-mode'           // 02 Colour Mode: Light/Dark with Root notation (4,614 vars)
+  | 'interaction-state'    // 4 Interaction state: Idle/Hover/Pressed/Focus (2,280 vars)
+  | 'background-level'     // 3 Background Level: Surface elevation (442 vars)
+  | 'fill-emphasis'        // 2 Fill emphasis: Ghost/Minimal/Subtle/Bold (120 vars)
+  | 'appearance'           // 1 Appearance: Semantic contexts (41 vars)
+  
+  // Theme & Brand layers
+  | 'theme'                // 9 Theme: Multi-brand themes (224 vars)
+  | 'brand'                // 10 Brand: Brand-specific tokens (618 vars)
+  
+  // Cross-cutting concerns
+  | 'platform'             // 7 Platform: Responsive breakpoints (87 vars)
+  | 'density'              // 6 Density: Spacing variants (222 vars)
+  | 'language'             // 8 Language: RTL/LTR (37 vars)
+  | 'motion'               // 11 Motion: Animation intensity (16 vars)
+  | 'disabled'             // 4.5 Disabled: Boolean state (1 var)
+  
+  // Placeholders
+  | 'placeholder';         // X01, X03 placeholders
 
 /**
  * FigmaGroup - Derived from variable names (not a native Figma entity)
