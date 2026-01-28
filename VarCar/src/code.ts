@@ -58,6 +58,36 @@ async function getOrCreateMode(collection: VariableCollection, modeName: string)
 }
 
 /**
+ * Build a cache of all variables in the document for fast lookups
+ * Industry standard: Single API call + Map for O(1) lookups
+ * Reference: Figma Plugin API - getLocalVariablesAsync
+ */
+async function buildVariableCache(): Promise<Map<string, Variable>> {
+  const allVars = await figma.variables.getLocalVariablesAsync();
+  const cache = new Map<string, Variable>();
+  
+  for (const variable of allVars) {
+    const key = `${variable.variableCollectionId}:${variable.name}`;
+    cache.set(key, variable);
+  }
+  
+  return cache;
+}
+
+/**
+ * Find a variable in the cache using O(1) lookup
+ * Replaces expensive repeated API calls
+ */
+function findVariableInCache(
+  cache: Map<string, Variable>, 
+  collectionId: string, 
+  varName: string
+): Variable | null {
+  return cache.get(`${collectionId}:${varName}`) || null;
+}
+
+/**
+ * @deprecated Use buildVariableCache() and findVariableInCache() instead
  * Find a variable by name in a specific collection
  */
 async function findVariableInCollection(collection: VariableCollection, varName: string): Promise<Variable | null> {
@@ -1456,102 +1486,137 @@ figma.ui.onmessage = async (msg) => {
         console.log(`Modes created for ${collectionName}: ${modes.join(', ')}`);
       }
       
-      // Phase 3: Create variables layer by layer
+      // Phase 3: Create variables layer by layer with batching
       figma.ui.postMessage({
         type: 'sync-progress',
         data: { 
           step: 4, 
           total: 5, 
-          message: 'Creating variables and aliases...',
+          message: 'Building variable cache...',
           currentVariables: 0,
           totalVariables: totalVariablesToCreate
         }
       });
       
+      // Build cache once at the start (Industry standard: minimize API calls)
+      console.log('Building variable cache...');
+      const variableCache = await buildVariableCache();
+      console.log(`Cache built: ${variableCache.size} existing variables`);
+      
       let totalCreated = 0;
       let totalUpdated = 0;
-      let lastProgressUpdate = Date.now();
+      
+      // Batch size tuned for balance between responsiveness and throughput
+      const BATCH_SIZE = 50;
+      
+      // Track errors for graceful degradation
+      const errors: Array<{ variable: string; error: string }> = [];
       
       for (const [collectionName, variables] of sortedCollections) {
         const collection = collectionMap.get(collectionName)!;
-        console.log(`\nCreating variables for ${collectionName}...`);
-        
         const varsArray = variables as any[];
         const isLayerZero = varsArray[0]?.layer === 0;
         
-        for (const variable of varsArray) {
-          const varName = variable.name;
+        console.log(`\nCreating variables for ${collectionName}... (${varsArray.length} total)`);
+        
+        // Process in batches with event loop yielding (WICG standard)
+        for (let i = 0; i < varsArray.length; i += BATCH_SIZE) {
+          const batch = varsArray.slice(i, i + BATCH_SIZE);
+          const batchNum = Math.floor(i / BATCH_SIZE) + 1;
+          const totalBatches = Math.ceil(varsArray.length / BATCH_SIZE);
           
-          // Find or create variable
-          let figmaVar = await findVariableInCollection(collection, varName);
-          
-          if (!figmaVar) {
-            figmaVar = figma.variables.createVariable(varName, collection, 'COLOR');
-            totalCreated++;
-          } else {
-            totalUpdated++;
-          }
-          
-          // Send progress update every 100 variables or every second
-          const currentTotal = totalCreated + totalUpdated;
-          const now = Date.now();
-          if (currentTotal % 100 === 0 || now - lastProgressUpdate >= 1000) {
-            figma.ui.postMessage({
-              type: 'sync-progress',
-              data: { 
-                step: 4, 
-                total: 5, 
-                message: 'Creating variables and aliases...',
-                currentVariables: currentTotal,
-                totalVariables: totalVariablesToCreate
+          // Process batch with error handling
+          for (const variable of batch) {
+            try {
+              const varName = variable.name;
+              
+              // Use cached lookup (O(1) vs O(n) API call)
+              let figmaVar = findVariableInCache(variableCache, collection.id, varName);
+              
+              if (!figmaVar) {
+                figmaVar = figma.variables.createVariable(varName, collection, 'COLOR');
+                // Update cache with newly created variable
+                variableCache.set(`${collection.id}:${varName}`, figmaVar);
+                totalCreated++;
+              } else {
+                totalUpdated++;
               }
-            });
-            lastProgressUpdate = now;
-          }
-          
-          // Store variable for later alias resolution
-          const varKey = `${collectionName}:${varName}:${variable.mode}`;
-          variableMap.set(varKey, figmaVar);
-          
-          // Find the mode ID
-          const mode = collection.modes.find(m => m.name === variable.mode);
-          if (!mode) {
-            console.warn(`Mode not found: ${variable.mode} in ${collectionName}`);
-            continue;
-          }
-          
-          // Set value (RGB for Layer 0, ALIAS for others)
-          if (isLayerZero && variable.value) {
-            // Direct RGB value
-            const rgb = hexToRGB(variable.value);
-            figmaVar.setValueForMode(mode.modeId, rgb);
-          } else if (variable.aliasTo) {
-            // Alias to another variable
-            // Try to find the target variable
-            const targetName = variable.aliasTo.paletteName; // This contains the full variable name
-            
-            // Search for target variable in all collections
-            let targetVar: Variable | undefined;
-            for (const [targetCollName, targetColl] of collectionMap.entries()) {
-              const found = await findVariableInCollection(targetColl, targetName);
-              if (found) {
-                targetVar = found;
-                break;
+              
+              // Store variable for later alias resolution
+              const varKey = `${collectionName}:${varName}:${variable.mode}`;
+              variableMap.set(varKey, figmaVar);
+              
+              // Find the mode ID
+              const mode = collection.modes.find(m => m.name === variable.mode);
+              if (!mode) {
+                throw new Error(`Mode not found: ${variable.mode}`);
               }
-            }
-            
-            if (targetVar) {
-              figmaVar.setValueForMode(mode.modeId, {
-                type: 'VARIABLE_ALIAS',
-                id: targetVar.id
+              
+              // Set value (RGB for Layer 0, ALIAS for others)
+              if (isLayerZero && variable.value) {
+                const rgb = hexToRGB(variable.value);
+                figmaVar.setValueForMode(mode.modeId, rgb);
+              } else if (variable.aliasTo) {
+                // Use cached lookup for alias targets (replaces nested async calls)
+                const targetName = variable.aliasTo.paletteName;
+                let targetVar: Variable | undefined;
+                
+                for (const [targetCollName, targetColl] of collectionMap.entries()) {
+                  targetVar = findVariableInCache(variableCache, targetColl.id, targetName);
+                  if (targetVar) break;
+                }
+                
+                if (targetVar) {
+                  figmaVar.setValueForMode(mode.modeId, {
+                    type: 'VARIABLE_ALIAS',
+                    id: targetVar.id
+                  });
+                } else {
+                  throw new Error(`Alias target not found: ${targetName}`);
+                }
+              }
+            } catch (error) {
+              // Collect errors but continue processing
+              errors.push({
+                variable: variable.name,
+                error: error instanceof Error ? error.message : String(error)
               });
-            } else {
-              console.warn(`Alias target not found: ${targetName}`);
+              console.warn(`Error processing variable ${variable.name}:`, error);
             }
           }
+          
+          // Yield to event loop between batches (prevents UI freeze)
+          // setTimeout(0) is the industry standard for task scheduling
+          if (i + BATCH_SIZE < varsArray.length) {
+            await new Promise(resolve => setTimeout(resolve, 0));
+          }
+          
+          // Update progress with detailed information
+          const progress = Math.round(((totalCreated + totalUpdated) / totalVariablesToCreate) * 100);
+          figma.ui.postMessage({
+            type: 'sync-progress',
+            data: {
+              step: 4,
+              total: 5,
+              message: `${collectionName} (batch ${batchNum}/${totalBatches})`,
+              currentVariables: totalCreated + totalUpdated,
+              totalVariables: totalVariablesToCreate,
+              progress,
+              errors: errors.length
+            }
+          });
         }
         
         console.log(`  ✓ Created/updated ${varsArray.length} variables in ${collectionName}`);
+      }
+      
+      // Report any errors encountered
+      if (errors.length > 0) {
+        console.warn(`\n⚠️ ${errors.length} errors occurred during sync:`);
+        errors.slice(0, 10).forEach(e => console.warn(`  - ${e.variable}: ${e.error}`));
+        if (errors.length > 10) {
+          console.warn(`  ... and ${errors.length - 10} more errors`);
+        }
       }
       
       console.log(`\nMulti-layer sync complete: ${totalCreated} created, ${totalUpdated} updated`);
