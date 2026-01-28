@@ -1395,10 +1395,12 @@ const App: React.FC = () => {
         fontFamily: 'var(--font-geist-sans)',
         fontSize: '14px',
         color: 'var(--text-color)',
-        height: '100vh',
+        height: '100%',
+        width: '100%',
         backgroundColor: 'var(--bg-color)',
         display: 'flex',
         flexDirection: 'column',
+        overflow: 'hidden',
       }}
     >
       {/* Header */}
@@ -1498,7 +1500,7 @@ const App: React.FC = () => {
       <div
         style={{
           flex: 1,
-          overflowY: 'auto',
+          overflow: 'auto',
           backgroundColor: 'var(--card-bg)',
         }}
       >
@@ -1693,14 +1695,15 @@ const App: React.FC = () => {
                 top: 0,
                 right: 0,
                 bottom: 0,
-                minWidth: '40%',
-                maxWidth: '50%',
+                width: '600px',
+                maxWidth: '90vw',
                 backgroundColor: 'var(--card-bg)',
                 boxShadow: '-2px 0 8px rgba(0, 0, 0, 0.1)',
                 zIndex: 9001,
                 display: 'flex',
                 flexDirection: 'column',
                 animation: 'slideInFromRight 0.3s ease-out',
+                overflow: 'hidden',
               }}
             >
               {/* Side Sheet Header */}

@@ -20,7 +20,7 @@ export function AutomateApp() {
   }, []);
   
   return (
-    <div className="h-screen w-screen flex bg-background relative">
+    <div className="h-full w-full flex bg-background relative overflow-hidden">
       
       {/* Left: Brand Sidebar */}
       <BrandSidebar />

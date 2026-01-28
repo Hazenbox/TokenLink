@@ -523,7 +523,7 @@ export function VariableGraphView({
 
   return (
     <div 
-      style={{ width: '100%', height: '100vh', position: 'relative', minHeight: '600px', background: '#0D0D0D' }}
+      style={{ width: '100%', height: '100%', position: 'relative', background: '#0D0D0D', overflow: 'hidden' }}
       onMouseMove={handleMouseMove}
     >
       {/* Selection count badge */}
