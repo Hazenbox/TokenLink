@@ -34,7 +34,7 @@ export function ColorApp() {
 
   if (isInitializing) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-background">
+      <div className="flex h-full w-full items-center justify-center bg-background">
         <LoadingState message="Initializing color system..." size="lg" />
       </div>
     );
@@ -42,7 +42,7 @@ export function ColorApp() {
 
   if (error) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-background">
+      <div className="flex h-full w-full items-center justify-center bg-background">
         <ErrorState
           title="Initialization Error"
           message={error}

@@ -17,7 +17,7 @@ export function MainLayout() {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="figmap-theme">
       <AppSwitcherProvider>
-        <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground">
+        <div className="flex h-full w-full overflow-hidden bg-background text-foreground">
           <NavigationRail />
           
           <div className="flex-1 flex flex-col overflow-hidden relative">

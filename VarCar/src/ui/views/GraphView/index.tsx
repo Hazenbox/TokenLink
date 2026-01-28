@@ -1412,10 +1412,12 @@ const App: React.FC = () => {
         fontFamily: 'var(--font-geist-sans)',
         fontSize: '14px',
         color: 'var(--text-color)',
-        height: '100vh',
+        height: '100%',
+        width: '100%',
         backgroundColor: 'var(--bg-color)',
         display: 'flex',
         flexDirection: 'column',
+        overflow: 'hidden',
       }}
     >
       {/* Header */}
