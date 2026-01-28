@@ -69,16 +69,32 @@ export function convertMultiLayerToPreview(
         name: modeName
       })),
       defaultModeId: 'mode_0',
-      variableIds: vars.map(v => `var_${v.name.replace(/[^a-zA-Z0-9]/g, '_')}`),
+      variableIds: [],  // Will be filled after grouping
       remote: false,
       hiddenFromPublishing: false,
       generationType: collectionName.includes('Primitives') ? 'primitives' : 'semantic'
     };
     
-    collections.push(collection);
+    // GROUP variables by name (multiple modes → single variable)
+    const variablesByName = new Map<string, GeneratedVariable[]>();
+    vars.forEach(v => {
+      if (!variablesByName.has(v.name)) {
+        variablesByName.set(v.name, []);
+      }
+      variablesByName.get(v.name)!.push(v);
+    });
     
-    // Convert variables to FigmaVariable format
-    const figmaVars = vars.map(v => convertToFigmaVariable(v, collection));
+    // Convert grouped variables to FigmaVariable format
+    const figmaVars: FigmaVariable[] = [];
+    variablesByName.forEach((modeEntries, varName) => {
+      const figmaVar = convertToFigmaVariableMultiMode(modeEntries, collection);
+      figmaVars.push(figmaVar);
+    });
+    
+    // Update variableIds in collection
+    collection.variableIds = figmaVars.map(v => v.id);
+    
+    collections.push(collection);
     variablesByCollection.set(collection.id, figmaVars);
     
     console.log(`[Preview Adapter] Collection "${collectionName}": ${figmaVars.length} variables, ${modeNames.length} modes`);
@@ -88,53 +104,62 @@ export function convertMultiLayerToPreview(
 }
 
 /**
- * Convert GeneratedVariable to FigmaVariable format
+ * Convert multiple GeneratedVariable entries (same name, different modes) 
+ * into ONE FigmaVariable with multiple valuesByMode entries
  */
-function convertToFigmaVariable(
-  generated: GeneratedVariable,
+function convertToFigmaVariableMultiMode(
+  modeEntries: GeneratedVariable[],
   collection: FigmaCollection
 ): FigmaVariable {
-  // Find mode ID for this variable's mode
-  const mode = collection.modes.find(m => m.name === generated.mode);
-  const modeId = mode?.modeId || collection.defaultModeId;
+  // Use first entry for common properties
+  const first = modeEntries[0];
+  const varId = `var_${first.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
   
-  // Build valuesByMode
+  // Build valuesByMode and resolvedValuesByMode for ALL modes
   const valuesByMode: VariableValueByMode = {};
-  
-  if (generated.isAliased && generated.aliasTo) {
-    // Aliased variable - show alias indicator
-    valuesByMode[modeId] = {
-      type: 'ALIAS',
-      value: generated.aliasTo.paletteName // This contains the source variable name
-    };
-  } else if (generated.value) {
-    // Direct value (RGB color)
-    valuesByMode[modeId] = {
-      type: 'COLOR',
-      value: generated.value
-    };
-  }
-  
-  // Build resolvedValuesByMode (for color preview)
   const resolvedValuesByMode: Record<string, string> = {};
-  if (generated.value) {
-    resolvedValuesByMode[modeId] = generated.value;
-  } else {
-    // For aliases, use a placeholder or try to resolve
-    resolvedValuesByMode[modeId] = '#888888'; // Gray placeholder for aliases
-  }
+  
+  modeEntries.forEach(entry => {
+    // Find mode ID for this entry's mode name
+    const mode = collection.modes.find(m => m.name === entry.mode);
+    if (!mode) {
+      console.warn(`[Preview Adapter] Mode not found: ${entry.mode}`);
+      return;
+    }
+    
+    const modeId = mode.modeId;
+    
+    // Set value for this mode
+    if (entry.isAliased && entry.aliasTo) {
+      // Aliased variable
+      valuesByMode[modeId] = {
+        type: 'ALIAS',
+        aliasId: entry.aliasTo.paletteName || 'unknown',
+        aliasCollectionId: entry.collection
+      };
+      // Use resolved value if available, otherwise placeholder
+      resolvedValuesByMode[modeId] = entry.value || '#888888';
+    } else if (entry.value) {
+      // Direct RGB value
+      valuesByMode[modeId] = {
+        type: 'COLOR',
+        value: entry.value
+      };
+      resolvedValuesByMode[modeId] = entry.value;
+    }
+  });
   
   return {
-    id: `var_${generated.name.replace(/[^a-zA-Z0-9]/g, '_')}`,
-    name: generated.name,
-    key: generated.name,
+    id: varId,
+    name: first.name,
+    key: first.name,
     variableCollectionId: collection.id,
     resolvedType: 'COLOR',
     valuesByMode,
     resolvedValuesByMode,
     scopes: ['ALL_SCOPES'],
     hiddenFromPublishing: false,
-    description: generated.isAliased ? `Aliases to: ${generated.aliasTo?.paletteName || 'unknown'}` : '',
+    description: first.isAliased ? `Aliases to: ${first.aliasTo?.paletteName || 'unknown'}` : '',
     remote: false,
     codeSyntax: {}
   };

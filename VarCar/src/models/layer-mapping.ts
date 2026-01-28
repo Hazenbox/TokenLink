@@ -126,6 +126,7 @@ export const DEFAULT_LAYER_CONFIG: LayerMappingConfig = {
       namingPattern: "{context}/{type}",
       generationType: "contextual",
       aliasesToLayer: "interaction-state",
+      modes: ["Neutral", "Primary", "Secondary", "Sparkle", "Positive", "Negative", "Warning", "Informative", "Brand BG"],
       estimatedVariableCount: 128
     },
     {
@@ -138,6 +139,7 @@ export const DEFAULT_LAYER_CONFIG: LayerMappingConfig = {
       namingPattern: "{emphasis}/{variant}",
       generationType: "hierarchy",
       aliasesToLayer: "background-level",
+      modes: ["Ghost", "Minimal", "Subtle", "Bold"],
       estimatedVariableCount: 96
     },
     {
@@ -150,6 +152,7 @@ export const DEFAULT_LAYER_CONFIG: LayerMappingConfig = {
       namingPattern: "{level}/{surface}",
       generationType: "hierarchy",
       aliasesToLayer: "colour-mode",
+      modes: ["Level 0", "Level 1", "Level 2", "Bold", "Elevated"],
       estimatedVariableCount: 64
     },
     {
@@ -162,6 +165,7 @@ export const DEFAULT_LAYER_CONFIG: LayerMappingConfig = {
       namingPattern: "{state}/{component}",
       generationType: "state",
       aliasesToLayer: "fill-emphasis",
+      modes: ["Idle", "Hover", "Pressed", "Focus"],
       estimatedVariableCount: 192
     },
     {
