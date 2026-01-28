@@ -26,6 +26,8 @@ import { usePaletteStore } from "./palette-store";
 import { BrandGenerator } from "@/lib/brand-generator";
 import { brandToFigmaAdapter } from "@/adapters/brandToFigmaVariables";
 import { migrateAllLegacyBrands, needsMigration } from "@/lib/brand-migration";
+import { convertMultiLayerToPreview } from "@/adapters/multi-layer-preview-adapter";
+import { useVariablesViewStore } from "./variables-view-store";
 
 /**
  * Module-level cache for Figma data (outside Zustand to prevent infinite loops)
@@ -997,7 +999,6 @@ export const useBrandStore = create<BrandStoreState>()(
         
         try {
           // Always use multi-layer generation for preview
-          const { convertMultiLayerToPreview } = require('@/adapters/multi-layer-preview-adapter');
           const { collections, variablesByCollection } = convertMultiLayerToPreview(activeBrand);
           
           // Store in state
@@ -1011,7 +1012,6 @@ export const useBrandStore = create<BrandStoreState>()(
             get().refreshFigmaGroups(collections[0].id);
             
             // Auto-select first collection to show variables immediately
-            const { useVariablesViewStore } = require('@/store/variables-view-store');
             useVariablesViewStore.getState().setActiveCollection(collections[0].id);
           }
           
