@@ -7,6 +7,19 @@ import { Brand, GeneratedVariable, GeneratedBrand, BrandStatistics, ValidationRe
 import { usePaletteStore } from "@/store/palette-store";
 import { generateAllScales } from "@/lib/colors/scale-generator";
 import { Step, STEPS } from "@/lib/colors/color-utils";
+import { VariableRegistry, VariableEntry } from "./variable-registry";
+import { useLayerMappingStore } from "@/store/layer-mapping-store";
+import { getEnabledLayers } from "@/models/layer-mapping";
+import { BaseLayerGenerator } from "./generators/base-layer-generator";
+import { PrimitivesGenerator } from "./generators/primitives-generator";
+import { SemiSemanticsGenerator } from "./generators/semi-semantics-generator";
+import { ColourModeGenerator } from "./generators/colour-mode-generator";
+import { BackgroundLevelGenerator } from "./generators/background-level-generator";
+import { FillEmphasisGenerator } from "./generators/fill-emphasis-generator";
+import { InteractionStateGenerator } from "./generators/interaction-state-generator";
+import { AppearanceGenerator } from "./generators/appearance-generator";
+import { ThemeGenerator } from "./generators/theme-generator";
+import { BrandVariantGenerator } from "./generators/brand-variant-generator";
 
 /**
  * Appearance contexts for variable generation
@@ -315,14 +328,147 @@ export class BrandGenerator {
   }
 
   /**
-   * Generate variables using layer mapping configuration
-   * This method will be used in the future for multi-layer architecture
+   * Generate variables using full multi-layer architecture
    */
   public generateWithLayers(): GeneratedBrand {
-    // For now, use the standard generation
-    // TODO: Implement full multi-layer generation based on layer-mapping config
-    console.log('generateWithLayers: Using standard generation for now');
-    return this.generate();
+    console.log('=== Multi-Layer Variable Generation Started ===');
+    
+    const registry = new VariableRegistry();
+    const layerConfig = useLayerMappingStore.getState().config;
+    const enabledLayers = getEnabledLayers(layerConfig);
+    
+    console.log(`Generating ${enabledLayers.length} enabled layers`);
+    
+    // Generate each layer in order
+    for (const layer of enabledLayers) {
+      console.log(`\nGenerating Layer ${layer.order}: ${layer.displayName}`);
+      
+      try {
+        const generator = this.createLayerGenerator(layer, registry);
+        const layerVariables = generator.generate();
+        
+        // Register all variables in the registry
+        layerVariables.forEach(v => registry.register(v));
+        
+        console.log(`✓ Generated ${layerVariables.length} variables for ${layer.displayName}`);
+      } catch (error) {
+        console.error(`✗ Error generating ${layer.displayName}:`, error);
+        this.validation.errors.push(`Failed to generate ${layer.displayName}: ${error}`);
+      }
+    }
+    
+    // Get statistics from registry
+    const stats = registry.getStatistics();
+    console.log('\n=== Generation Statistics ===');
+    console.log(`Total variables: ${stats.totalVariables}`);
+    console.log(`Max alias depth: ${stats.maxAliasDepth}`);
+    console.log('Variables by layer:', stats.variablesByLayer);
+    
+    // Convert registry entries to GeneratedVariable format
+    const allVariables = this.convertToGeneratedVariables(registry);
+    
+    // Update statistics
+    this.statistics.totalVariables = allVariables.length;
+    this.statistics.aliasDepth = stats.maxAliasDepth;
+    this.statistics.collections = Object.keys(stats.variablesByCollection);
+    this.validation.valid = this.validation.errors.length === 0;
+    
+    this.validation.info.push(`Generated ${allVariables.length} variables across ${enabledLayers.length} layers`);
+    this.validation.info.push(`Maximum alias depth: ${stats.maxAliasDepth}`);
+    
+    console.log('=== Multi-Layer Variable Generation Complete ===\n');
+    
+    return {
+      brand: this.brand,
+      variables: allVariables,
+      statistics: this.statistics,
+      validation: this.validation
+    };
+  }
+  
+  /**
+   * Create appropriate generator for a layer
+   */
+  private createLayerGenerator(layer: any, registry: VariableRegistry): BaseLayerGenerator {
+    switch (layer.generationType) {
+      case 'primitives':
+        return new PrimitivesGenerator(layer, registry, this.brand);
+      case 'semantic':
+        return new SemiSemanticsGenerator(layer, registry, this.brand);
+      case 'mode':
+        return new ColourModeGenerator(layer, registry, this.brand);
+      case 'hierarchy':
+        if (layer.id === 'background-level') {
+          return new BackgroundLevelGenerator(layer, registry, this.brand);
+        }
+        if (layer.id === 'fill-emphasis') {
+          return new FillEmphasisGenerator(layer, registry, this.brand);
+        }
+        throw new Error(`Unknown hierarchy layer: ${layer.id}`);
+      case 'state':
+        return new InteractionStateGenerator(layer, registry, this.brand);
+      case 'contextual':
+        return new AppearanceGenerator(layer, registry, this.brand);
+      case 'theme':
+        return new ThemeGenerator(layer, registry, this.brand);
+      case 'brand':
+        return new BrandVariantGenerator(layer, registry, this.brand);
+      default:
+        throw new Error(`Unknown layer generation type: ${layer.generationType}`);
+    }
+  }
+  
+  /**
+   * Convert VariableEntry to GeneratedVariable format
+   */
+  private convertToGeneratedVariables(registry: VariableRegistry): GeneratedVariable[] {
+    const allEntries = registry.getAllVariables();
+    const converted: GeneratedVariable[] = [];
+    
+    for (const entry of allEntries) {
+      // Determine if this variable has a value or is aliased
+      const isAliased = !!entry.aliasToId;
+      
+      // For preview, we need to resolve the RGB value through the alias chain
+      let previewValue: string | undefined;
+      if (entry.value) {
+        // Direct RGB value - convert to hex
+        const r = Math.round(entry.value.r * 255);
+        const g = Math.round(entry.value.g * 255);
+        const b = Math.round(entry.value.b * 255);
+        previewValue = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+      } else if (isAliased) {
+        // Trace back through alias chain to find RGB value
+        const chain = registry.getAliasChain(entry.id);
+        const primitive = chain[chain.length - 1];
+        if (primitive && primitive.value) {
+          const r = Math.round(primitive.value.r * 255);
+          const g = Math.round(primitive.value.g * 255);
+          const b = Math.round(primitive.value.b * 255);
+          previewValue = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+        }
+      }
+      
+      converted.push({
+        name: entry.name,
+        collection: entry.collectionName,
+        mode: entry.modeName,
+        value: previewValue,
+        aliasTo: entry.aliasToName ? {
+          paletteId: '',  // Not applicable for multi-layer
+          paletteName: entry.aliasToName,
+          step: entry.metadata.step || 600,
+          scale: entry.metadata.scale || 'Bold'
+        } : undefined,
+        type: 'color',
+        scopes: ['ALL_SCOPES'],
+        isAliased,
+        sourceScale: entry.metadata.scale,
+        sourcePalette: entry.collectionName
+      });
+    }
+    
+    return converted;
   }
 
   /**

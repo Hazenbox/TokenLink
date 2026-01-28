@@ -1287,6 +1287,158 @@ figma.ui.onmessage = async (msg) => {
     }
   }
   
+  // Handle multi-layer brand sync
+  if (msg.type === 'sync-brand-with-layers') {
+    try {
+      const { brand, variablesByCollection } = msg.data;
+      console.log(`Syncing brand "${brand.name}" with multi-layer architecture...`);
+      console.log(`Collections to sync: ${Object.keys(variablesByCollection).length}`);
+      
+      // Helper: Create RGB color from hex
+      function hexToRGB(hex: string): RGB {
+        const r = parseInt(hex.slice(1, 3), 16) / 255;
+        const g = parseInt(hex.slice(3, 5), 16) / 255;
+        const b = parseInt(hex.slice(5, 7), 16) / 255;
+        return { r, g, b };
+      }
+      
+      // Store created collection and variable references
+      const collectionMap = new Map<string, VariableCollection>();
+      const variableMap = new Map<string, Variable>();
+      
+      // Sort collections by layer order to ensure dependencies are created first
+      const sortedCollections = Object.entries(variablesByCollection)
+        .sort(([, varsA], [, varsB]) => {
+          const layerA = (varsA as any)[0]?.layer || 0;
+          const layerB = (varsB as any)[0]?.layer || 0;
+          return layerA - layerB;
+        });
+      
+      console.log('Processing collections in order:', sortedCollections.map(([name]) => name));
+      
+      // Phase 1: Create all collections
+      for (const [collectionName, variables] of sortedCollections) {
+        const collection = await getOrCreateCollection(collectionName);
+        collectionMap.set(collectionName, collection);
+        console.log(`Collection ready: ${collectionName}`);
+      }
+      
+      // Phase 2: Create modes for each collection
+      for (const [collectionName, variables] of sortedCollections) {
+        const collection = collectionMap.get(collectionName)!;
+        const modes = [...new Set((variables as any[]).map(v => v.mode))];
+        
+        for (const modeName of modes) {
+          await getOrCreateMode(collection, modeName);
+        }
+        
+        console.log(`Modes created for ${collectionName}: ${modes.join(', ')}`);
+      }
+      
+      // Phase 3: Create variables layer by layer
+      let totalCreated = 0;
+      let totalUpdated = 0;
+      
+      for (const [collectionName, variables] of sortedCollections) {
+        const collection = collectionMap.get(collectionName)!;
+        console.log(`\nCreating variables for ${collectionName}...`);
+        
+        const varsArray = variables as any[];
+        const isLayerZero = varsArray[0]?.layer === 0;
+        
+        for (const variable of varsArray) {
+          const varName = variable.name;
+          
+          // Find or create variable
+          let figmaVar = await findVariableInCollection(collection, varName);
+          
+          if (!figmaVar) {
+            figmaVar = figma.variables.createVariable(varName, collection, 'COLOR');
+            totalCreated++;
+          } else {
+            totalUpdated++;
+          }
+          
+          // Store variable for later alias resolution
+          const varKey = `${collectionName}:${varName}:${variable.mode}`;
+          variableMap.set(varKey, figmaVar);
+          
+          // Find the mode ID
+          const mode = collection.modes.find(m => m.name === variable.mode);
+          if (!mode) {
+            console.warn(`Mode not found: ${variable.mode} in ${collectionName}`);
+            continue;
+          }
+          
+          // Set value (RGB for Layer 0, ALIAS for others)
+          if (isLayerZero && variable.value) {
+            // Direct RGB value
+            const rgb = hexToRGB(variable.value);
+            figmaVar.setValueForMode(mode.modeId, rgb);
+          } else if (variable.aliasTo) {
+            // Alias to another variable
+            // Try to find the target variable
+            const targetName = variable.aliasTo.paletteName; // This contains the full variable name
+            
+            // Search for target variable in all collections
+            let targetVar: Variable | undefined;
+            for (const [targetCollName, targetColl] of collectionMap.entries()) {
+              const found = await findVariableInCollection(targetColl, targetName);
+              if (found) {
+                targetVar = found;
+                break;
+              }
+            }
+            
+            if (targetVar) {
+              figmaVar.setValueForMode(mode.modeId, {
+                type: 'VARIABLE_ALIAS',
+                id: targetVar.id
+              });
+            } else {
+              console.warn(`Alias target not found: ${targetName}`);
+            }
+          }
+        }
+        
+        console.log(`  ✓ Created/updated ${varsArray.length} variables in ${collectionName}`);
+      }
+      
+      console.log(`\nMulti-layer sync complete: ${totalCreated} created, ${totalUpdated} updated`);
+      
+      // Refresh graph
+      const updatedCollections = await figma.variables.getLocalVariableCollectionsAsync();
+      const updatedVariables = await figma.variables.getLocalVariablesAsync();
+      const updatedGraph = figmaToGraph(updatedCollections, updatedVariables);
+      const serializedGraph = serializeGraph(updatedGraph);
+      
+      figma.ui.postMessage({
+        type: 'multi-layer-sync-success',
+        data: {
+          success: true,
+          brandId: brand.id,
+          timestamp: Date.now(),
+          variablesSynced: totalCreated + totalUpdated,
+          collectionsCreated: collectionMap.size,
+          errors: [],
+          warnings: [],
+          graph: serializedGraph
+        }
+      });
+      
+    } catch (error) {
+      console.error('Error syncing multi-layer brand:', error);
+      figma.ui.postMessage({
+        type: 'multi-layer-sync-error',
+        data: {
+          success: false,
+          errors: [error instanceof Error ? error.message : 'Failed to sync multi-layer brand'],
+          warnings: []
+        }
+      });
+    }
+  }
+  
   // Handle layer config get request
   if (msg.type === 'get-layer-config') {
     try {
