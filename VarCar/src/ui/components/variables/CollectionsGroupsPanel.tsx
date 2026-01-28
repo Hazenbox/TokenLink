@@ -54,7 +54,7 @@ export function CollectionsGroupsPanel({
   return (
     <div 
       ref={containerRef}
-      className="w-[200px] h-full flex flex-col border-r border-border/20 bg-background"
+      className="w-[200px] h-full flex flex-col border-r border-border/20 bg-background flex-shrink-0"
     >
       {/* Collections Section */}
       <div 
