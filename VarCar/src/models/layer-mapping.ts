@@ -118,14 +118,14 @@ export const DEFAULT_LAYER_CONFIG: LayerMappingConfig = {
     },
     {
       id: "appearance",
-      order: 3,
+      order: 6,
       collectionName: "1 Appearance",
       displayName: "Appearance",
       description: "Contextual naming patterns",
       enabled: true,
       namingPattern: "{context}/{type}",
       generationType: "contextual",
-      aliasesToLayer: "colour-mode",
+      aliasesToLayer: "interaction-state",
       estimatedVariableCount: 128
     },
     {
@@ -137,31 +137,31 @@ export const DEFAULT_LAYER_CONFIG: LayerMappingConfig = {
       enabled: true,
       namingPattern: "{emphasis}/{variant}",
       generationType: "hierarchy",
-      aliasesToLayer: "appearance",
+      aliasesToLayer: "background-level",
       estimatedVariableCount: 96
     },
     {
       id: "background-level",
-      order: 5,
+      order: 3,
       collectionName: "3 Background Level",
       displayName: "Background Level",
       description: "Surface stacking system",
       enabled: true,
       namingPattern: "{level}/{surface}",
       generationType: "hierarchy",
-      aliasesToLayer: "fill-emphasis",
+      aliasesToLayer: "colour-mode",
       estimatedVariableCount: 64
     },
     {
       id: "interaction-state",
-      order: 6,
+      order: 5,
       collectionName: "4 Interaction state",
       displayName: "Interaction State",
       description: "Interactive states (Hover/Press/Focus)",
       enabled: true,
       namingPattern: "{state}/{component}",
       generationType: "state",
-      aliasesToLayer: "background-level",
+      aliasesToLayer: "fill-emphasis",
       estimatedVariableCount: 192
     },
     {
@@ -173,7 +173,7 @@ export const DEFAULT_LAYER_CONFIG: LayerMappingConfig = {
       enabled: true,
       namingPattern: "{brand}/{appearance}",
       generationType: "theme",
-      aliasesToLayer: "interaction-state",
+      aliasesToLayer: "appearance",
       modes: ["MyJio", "JioFinance", "JioHome"],
       estimatedVariableCount: 384 // 128 × 3 brands
     },
