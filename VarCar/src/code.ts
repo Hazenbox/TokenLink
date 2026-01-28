@@ -1540,9 +1540,12 @@ figma.ui.onmessage = async (msg) => {
       for (const [collectionName, variables] of sortedCollections) {
         const collection = collectionMap.get(collectionName)!;
         const varsArray = variables as any[];
-        const isLayerZero = varsArray[0]?.layer === 0;
+        // Layer 0 (Primitives) has collection name "00_Primitives"
+        // GeneratedVariable interface does not have a 'layer' property
+        const isLayerZero = collectionName === '00_Primitives';
         
         console.log(`\nCreating variables for ${collectionName}... (${varsArray.length} total)`);
+        console.log(`  isLayerZero: ${isLayerZero}`);
         
         // Process in batches with event loop yielding (WICG standard)
         for (let i = 0; i < varsArray.length; i += BATCH_SIZE) {
@@ -1579,7 +1582,9 @@ figma.ui.onmessage = async (msg) => {
               
               // Set value (RGB for Layer 0, ALIAS for others)
               if (isLayerZero && variable.value) {
+                console.log(`  [Layer 0] Setting color for ${varName}: ${variable.value}`);
                 const rgb = hexToRGB(variable.value);
+                console.log(`  [Layer 0] RGB result: r=${rgb.r.toFixed(3)}, g=${rgb.g.toFixed(3)}, b=${rgb.b.toFixed(3)}`);
                 figmaVar.setValueForMode(mode.modeId, rgb);
               } else if (variable.aliasTo) {
                 // Use cached lookup for alias targets (replaces nested async calls)
