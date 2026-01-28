@@ -15,9 +15,16 @@ FigZig provides complete export and import functionality for variable graphs, en
 ### Import
 
 1. Click **Import** button in the header toolbar
-2. Select a `.json` file exported from FigZig
-3. Review import results (created/skipped entities)
-4. Variables appear in Figma immediately
+2. Select a `.json` file (FigZig export OR Figma native export)
+3. VarCar automatically detects the format
+4. Review import results (created/skipped entities)
+5. Variables appear in Figma immediately
+
+**Supported Formats:**
+- ✅ FigZig exports (from VarCar)
+- ✅ Figma native exports (from Figma → Export → Variables)
+
+See [Figma Native Import Guide](FIGMA_NATIVE_IMPORT.md) for details on importing Figma's native export format.
 
 ## Export Details
 
@@ -58,14 +65,25 @@ Exports are automatically named with timestamp:
 
 ## Import Details
 
+### Supported Import Formats
+
+VarCar supports two JSON formats:
+
+1. **FigZig Format** - VarCar's internal export format with enhanced metadata
+2. **Figma Native Format** - Figma's native variable export format
+
+VarCar **automatically detects** which format you're importing and handles it appropriately.
+
 ### How Import Works
 
-1. **Validation** - Checks JSON structure and schema version
-2. **Version Check** - Ensures compatibility with current schema
-3. **Collection Matching** - Reuses existing collections by name
-4. **Variable Creation** - Creates missing variables with full paths
-5. **Alias Recreation** - Restores all alias relationships
-6. **Statistics** - Reports created/skipped entities
+1. **Format Detection** - Automatically detects FigZig or Figma native format
+2. **Validation** - Checks JSON structure and schema version
+3. **Version Check** - Ensures compatibility with current schema (FigZig only)
+4. **Format Conversion** - Converts Figma native to internal format (if needed)
+5. **Collection Matching** - Reuses existing collections by name
+6. **Variable Creation** - Creates missing variables with full paths
+7. **Alias Recreation** - Restores all alias relationships
+8. **Statistics** - Reports created/skipped entities
 
 ### Import Behavior
 

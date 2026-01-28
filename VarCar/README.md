@@ -6,6 +6,8 @@ A Figma plugin built with TypeScript, React, and Vite for automating Figma Varia
 
 - **[Quick Start Guide](./docs/QUICK_START.md)** - Get coding in 5 minutes ⚡
 - **[Complete Beginner's Guide](./docs/GUIDE.md)** - Understand every file 🎓
+- **[Export & Import Guide](./docs/EXPORT_IMPORT_GUIDE.md)** - Round-trip workflows & backup 💾
+- **[Figma Native Import](./docs/FIGMA_NATIVE_IMPORT.md)** - Import Figma's variable exports 📥
 - **[Project Structure](./PROJECT_STRUCTURE.md)** - Visual file organization 📂
 - **[Product Requirements (PRD)](./docs/PRD_Figma_Variables_Automation.md)** - Master plan 📋
 - **[Documentation Hub](./docs/README.md)** - All docs organized 🗺️

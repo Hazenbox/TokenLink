@@ -679,17 +679,25 @@ const App: React.FC = () => {
         setTimeout(() => setNotification(null), 5000);
       }
       
+      if (msg.type === 'import-progress') {
+        // Import progress update
+        const { step, total, message } = msg.data;
+        console.log(`[Import Progress] ${step}/${total}: ${message}`);
+        // Could show progress bar or update notification here if desired
+      }
+      
       if (msg.type === 'graph-imported') {
         // Graph imported successfully
         setIsImporting(false);
-        const { result, graph } = msg.data;
+        const { result, graph, format } = msg.data;
         
         // Update graph data
         setGraphData(graph);
         
-        // Show detailed notification
+        // Show detailed notification with format info
+        const formatLabel = format === 'figma-native' ? 'Figma native' : 'FigZig';
         const message = result.success
-          ? `Import successful! Created ${result.stats.collectionsCreated} collection(s), ${result.stats.variablesCreated} variable(s), ${result.stats.aliasesCreated} alias(es)`
+          ? `Import successful! (${formatLabel} format) Created ${result.stats.collectionsCreated} collection(s), ${result.stats.variablesCreated} variable(s), ${result.stats.aliasesCreated} alias(es)`
           : 'Import completed with errors';
         
         setNotification({ 

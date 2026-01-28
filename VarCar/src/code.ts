@@ -10,6 +10,12 @@ import { AliasOperation } from './engine/types';
 import { exportGraphToJSON, parseImportJSON, isCompatibleVersion, ImportResult } from './models/export';
 import { validateAliasDirection } from './utils/aliasValidation';
 import { CollectionType } from './models/types';
+import { 
+  detectImportFormat, 
+  parseFigmaNativeJSON, 
+  figmaNativeToGraph,
+  getFigmaNativeStats 
+} from './adapters/figmaNativeImporter';
 
 // Listen for messages from the UI
 figma.ui.onmessage = async (msg) => {
@@ -467,23 +473,77 @@ figma.ui.onmessage = async (msg) => {
       
       console.log('Importing variable graph from JSON...');
       
-      // Parse and validate JSON
-      const parseResult = parseImportJSON(jsonString);
+      // Detect format
+      const format = detectImportFormat(jsonString);
+      console.log(`Detected import format: ${format}`);
       
-      if (!parseResult.valid || !parseResult.data) {
-        throw new Error(`Invalid JSON: ${parseResult.errors.join(', ')}`);
+      figma.ui.postMessage({
+        type: 'import-progress',
+        data: { step: 1, total: 5, message: `Detected ${format === 'figma-native' ? 'Figma native' : format === 'figzig' ? 'FigZig' : 'unknown'} format` }
+      });
+      
+      if (format === 'unknown') {
+        throw new Error('Unrecognized JSON format. Expected FigZig export or Figma native export.');
       }
       
-      const importData = parseResult.data;
+      // Parse based on format
+      let internalGraph;
+      let stats;
       
-      // Check schema version compatibility
-      const versionCheck = isCompatibleVersion(importData.schemaVersion);
-      if (!versionCheck.compatible) {
-        throw new Error(versionCheck.message || 'Incompatible schema version');
-      }
-      
-      if (versionCheck.message) {
-        console.warn(versionCheck.message);
+      if (format === 'figma-native') {
+        // Parse Figma native format
+        const parseResult = parseFigmaNativeJSON(jsonString);
+        
+        if (!parseResult.valid || !parseResult.data) {
+          throw new Error(`Invalid Figma native JSON: ${parseResult.errors.join(', ')}`);
+        }
+        
+        if (parseResult.warnings.length > 0) {
+          console.warn('Parse warnings:', parseResult.warnings);
+        }
+        
+        figma.ui.postMessage({
+          type: 'import-progress',
+          data: { step: 2, total: 5, message: 'Converting to internal format...' }
+        });
+        
+        // Get stats for reporting
+        stats = getFigmaNativeStats(parseResult.data);
+        console.log('Import stats:', stats);
+        
+        // Convert to internal graph format
+        internalGraph = figmaNativeToGraph(parseResult.data);
+        
+      } else {
+        // Parse FigZig format
+        const parseResult = parseImportJSON(jsonString);
+        
+        if (!parseResult.valid || !parseResult.data) {
+          throw new Error(`Invalid FigZig JSON: ${parseResult.errors.join(', ')}`);
+        }
+        
+        // Check schema version compatibility
+        const versionCheck = isCompatibleVersion(parseResult.data.schemaVersion);
+        if (!versionCheck.compatible) {
+          throw new Error(versionCheck.message || 'Incompatible schema version');
+        }
+        
+        if (versionCheck.message) {
+          console.warn(versionCheck.message);
+        }
+        
+        figma.ui.postMessage({
+          type: 'import-progress',
+          data: { step: 2, total: 5, message: 'Loading FigZig data...' }
+        });
+        
+        // FigZig format already has internal graph structure
+        internalGraph = {
+          collections: new Map(parseResult.data.graph.collections.map(c => [c.id, c])),
+          groups: new Map(parseResult.data.graph.groups.map(g => [g.id, g])),
+          variables: new Map(parseResult.data.graph.variables.map(v => [v.id, v])),
+          aliases: parseResult.data.graph.aliases,
+        };
       }
       
       // Initialize result
@@ -500,6 +560,11 @@ figma.ui.onmessage = async (msg) => {
         },
       };
       
+      figma.ui.postMessage({
+        type: 'import-progress',
+        data: { step: 3, total: 5, message: 'Creating collections and variables...' }
+      });
+      
       // Get existing collections to avoid duplicates
       const existingCollections = await figma.variables.getLocalVariableCollectionsAsync();
       const existingCollectionsByName = new Map(
@@ -511,9 +576,10 @@ figma.ui.onmessage = async (msg) => {
       const variableMap = new Map<string, Variable>();
       
       // Step 1: Create collections
-      console.log(`Creating ${importData.graph.collections.length} collections...`);
+      const collections = Array.from(internalGraph.collections.values());
+      console.log(`Creating ${collections.length} collections...`);
       
-      for (const col of importData.graph.collections) {
+      for (const col of collections) {
         // Check if collection already exists
         const existing = existingCollectionsByName.get(col.name);
         
@@ -531,12 +597,13 @@ figma.ui.onmessage = async (msg) => {
       }
       
       // Step 2: Create variables (grouped by collection)
-      console.log(`Creating ${importData.graph.variables.length} variables...`);
+      const variables = Array.from(internalGraph.variables.values());
+      console.log(`Creating ${variables.length} variables...`);
       
-      for (const variable of importData.graph.variables) {
+      for (const variable of variables) {
         try {
           // Find the group for this variable
-          const group = importData.graph.groups.find((g) => g.id === variable.groupId);
+          const group = internalGraph.groups.get(variable.groupId);
           if (!group) {
             result.errors.push(`Variable "${variable.name}": group not found`);
             continue;
@@ -588,7 +655,18 @@ figma.ui.onmessage = async (msg) => {
               
               // Set the value
               try {
-                newVariable.setValueForMode(figmaModeId, mode.value.value);
+                // Handle color values (convert hex to RGB if needed)
+                let valueToSet = mode.value.value;
+                if (varType === 'COLOR' && typeof valueToSet === 'string' && valueToSet.startsWith('#')) {
+                  // Convert hex to RGB object for Figma
+                  const hex = valueToSet.replace('#', '');
+                  const r = parseInt(hex.substring(0, 2), 16) / 255;
+                  const g = parseInt(hex.substring(2, 4), 16) / 255;
+                  const b = parseInt(hex.substring(4, 6), 16) / 255;
+                  valueToSet = { r, g, b, a: 1 };
+                }
+                
+                newVariable.setValueForMode(figmaModeId, valueToSet);
               } catch (error) {
                 result.warnings.push(
                   `Failed to set value for "${fullName}".${mode.name}: ${
@@ -609,13 +687,18 @@ figma.ui.onmessage = async (msg) => {
         }
       }
       
-      // Step 3: Create aliases
-      console.log(`Creating ${importData.graph.aliases.length} aliases...`);
+      figma.ui.postMessage({
+        type: 'import-progress',
+        data: { step: 4, total: 5, message: 'Creating aliases...' }
+      });
       
-      for (const alias of importData.graph.aliases) {
+      // Step 3: Create aliases
+      console.log(`Creating ${internalGraph.aliases.length} aliases...`);
+      
+      for (const alias of internalGraph.aliases) {
         try {
-          const sourceVar = variableMap.get(alias.fromVariableId);
-          const targetVar = variableMap.get(alias.toVariableId);
+          const sourceVar = variableMap.get(alias.sourceVariableId);
+          const targetVar = variableMap.get(alias.targetVariableId);
           
           if (!sourceVar || !targetVar) {
             result.warnings.push(`Alias skipped: source or target variable not found`);
@@ -623,14 +706,14 @@ figma.ui.onmessage = async (msg) => {
           }
           
           // Find the source variable to get its collection
-          const sourceVariable = importData.graph.variables.find((v) => v.id === alias.fromVariableId);
+          const sourceVariable = internalGraph.variables.get(alias.sourceVariableId);
           if (!sourceVariable) {
             result.warnings.push(`Alias skipped: source variable data not found`);
             continue;
           }
           
           // Find the group for this variable
-          const sourceGroup = importData.graph.groups.find((g) => g.id === sourceVariable.groupId);
+          const sourceGroup = internalGraph.groups.get(sourceVariable.groupId);
           if (!sourceGroup) {
             result.warnings.push(`Alias skipped: source variable group not found`);
             continue;
@@ -643,39 +726,26 @@ figma.ui.onmessage = async (msg) => {
             continue;
           }
           
-          // Create alias for each mode mapping
-          for (const [sourceModeId, targetModeId] of Object.entries(alias.modeMap)) {
-            try {
-              // Map import mode IDs to Figma mode IDs
-              const sourceVariable = importData.graph.variables.find(
-                (v) => v.id === alias.fromVariableId
-              );
-              const sourceModeIndex = sourceVariable?.modes.findIndex(
-                (m) => m.id === sourceModeId
-              );
-              
-              if (sourceModeIndex === undefined || sourceModeIndex === -1) {
-                continue;
-              }
-              
-              const figmaModeId =
-                sourceCollection.modes[
-                  Math.min(sourceModeIndex, sourceCollection.modes.length - 1)
-                ].modeId;
-              
-              // Create the alias
-              const aliasValue = figma.variables.createVariableAlias(targetVar);
-              sourceVar.setValueForMode(figmaModeId, aliasValue);
-              
-              result.stats.aliasesCreated++;
-            } catch (error) {
-              result.warnings.push(
-                `Failed to create alias mode mapping: ${
-                  error instanceof Error ? error.message : 'Unknown error'
-                }`
-              );
-            }
+          // Create alias for the source mode pointing to target
+          const sourceModeIndex = sourceVariable.modes.findIndex(
+            (m) => m.id === alias.sourceModeId
+          );
+          
+          if (sourceModeIndex === -1) {
+            result.warnings.push(`Alias skipped: source mode not found`);
+            continue;
           }
+          
+          const figmaModeId =
+            sourceCollection.modes[
+              Math.min(sourceModeIndex, sourceCollection.modes.length - 1)
+            ].modeId;
+          
+          // Create the alias
+          const aliasValue = figma.variables.createVariableAlias(targetVar);
+          sourceVar.setValueForMode(figmaModeId, aliasValue);
+          
+          result.stats.aliasesCreated++;
           
           console.log(`Created alias: ${sourceVar.name} → ${targetVar.name}`);
         } catch (error) {
@@ -690,6 +760,11 @@ figma.ui.onmessage = async (msg) => {
       
       console.log('Import completed:', result);
       
+      figma.ui.postMessage({
+        type: 'import-progress',
+        data: { step: 5, total: 5, message: 'Refreshing graph...' }
+      });
+      
       // Refresh graph after import
       const updatedCollections = await figma.variables.getLocalVariableCollectionsAsync();
       const updatedVariables = await figma.variables.getLocalVariablesAsync();
@@ -698,7 +773,7 @@ figma.ui.onmessage = async (msg) => {
       
       figma.ui.postMessage({
         type: 'graph-imported',
-        data: { result, graph: serializedGraph },
+        data: { result, graph: serializedGraph, format },
       });
     } catch (error) {
       console.error('Error importing graph:', error);

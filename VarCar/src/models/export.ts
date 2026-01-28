@@ -319,3 +319,88 @@ export function isCompatibleVersion(importVersion: string): {
     compatible: true,
   };
 }
+
+// ============================================================================
+// Figma Native Export Format Types
+// ============================================================================
+
+/**
+ * RGB color value in Figma's native format
+ */
+export interface FigmaNativeRGBA {
+  r: number;  // 0-1
+  g: number;  // 0-1
+  b: number;  // 0-1
+  a: number;  // 0-1
+}
+
+/**
+ * Variable alias reference in Figma's native format
+ */
+export interface FigmaNativeAlias {
+  type: 'VARIABLE_ALIAS';
+  id: string;
+}
+
+/**
+ * Value type for a variable mode - can be a direct value or an alias
+ */
+export type FigmaNativeValue = FigmaNativeRGBA | FigmaNativeAlias | string | number | boolean;
+
+/**
+ * Mode definition in a Figma collection
+ */
+export interface FigmaNativeMode {
+  name: string;
+  modeId: string;
+}
+
+/**
+ * Variable in Figma's native export format
+ */
+export interface FigmaNativeVariable {
+  id: string;
+  name: string;
+  description?: string;
+  key: string;
+  resolvedType: 'COLOR' | 'FLOAT' | 'STRING' | 'BOOLEAN';
+  valuesByMode: Record<string, FigmaNativeValue>;
+  scopes: string[];
+  hiddenFromPublishing: boolean;
+  codeSyntax: Record<string, any>;
+  variableCollectionId: string;
+}
+
+/**
+ * Collection in Figma's native export format
+ */
+export interface FigmaNativeCollection {
+  id: string;
+  name: string;
+  key: string;
+  hiddenFromPublishing: boolean;
+  defaultModeId: string;
+  modes: FigmaNativeMode[];
+  remote: boolean;
+  variableIds: string[];
+  variables: FigmaNativeVariable[];
+}
+
+/**
+ * Complete Figma native export structure
+ */
+export interface FigmaNativeExport {
+  schemaVersion: number;
+  lastModified: string;
+  collections: FigmaNativeCollection[];
+}
+
+/**
+ * Result of parsing a Figma native JSON import
+ */
+export interface FigmaNativeParseResult {
+  valid: boolean;
+  data?: FigmaNativeExport;
+  errors: string[];
+  warnings: string[];
+}
