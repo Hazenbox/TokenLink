@@ -96,12 +96,37 @@ async function findVariableInCollection(collection: VariableCollection, varName:
 }
 
 /**
- * Convert hex color to RGB object for Figma
+ * Convert hex color to RGB object for Figma with validation
  */
 function hexToRGB(hex: string): RGB {
+  // Validate input
+  if (!hex || typeof hex !== 'string') {
+    console.error('[code.ts hexToRGB] Invalid input:', hex);
+    return { r: 1, g: 1, b: 1 }; // White fallback
+  }
+  
+  // Detect rgba strings (should not happen, but defensive)
+  if (hex.startsWith('rgba') || hex.startsWith('rgb')) {
+    console.error('[code.ts hexToRGB] RGBA/RGB string passed, expected hex:', hex);
+    return { r: 1, g: 1, b: 1 }; // White fallback
+  }
+  
+  // Validate hex format
+  if (!hex.startsWith('#') || hex.length !== 7) {
+    console.error('[code.ts hexToRGB] Invalid hex format (expected #RRGGBB):', hex);
+    return { r: 1, g: 1, b: 1 }; // White fallback
+  }
+  
   const r = parseInt(hex.slice(1, 3), 16) / 255;
   const g = parseInt(hex.slice(3, 5), 16) / 255;
   const b = parseInt(hex.slice(5, 7), 16) / 255;
+  
+  // Validate parsed values
+  if (isNaN(r) || isNaN(g) || isNaN(b)) {
+    console.error('[code.ts hexToRGB] Failed to parse hex:', hex);
+    return { r: 1, g: 1, b: 1 }; // White fallback
+  }
+  
   return { r, g, b };
 }
 

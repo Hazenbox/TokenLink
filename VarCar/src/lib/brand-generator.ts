@@ -432,11 +432,20 @@ export class BrandGenerator {
       // For preview, we need to resolve the RGB value through the alias chain
       let previewValue: string | undefined;
       if (entry.value) {
-        // Direct RGB value - convert to hex
+        // Direct RGB value - convert to hex with validation
         const r = Math.round(entry.value.r * 255);
         const g = Math.round(entry.value.g * 255);
         const b = Math.round(entry.value.b * 255);
-        previewValue = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+        
+        // Validate RGB values
+        if (isNaN(r) || isNaN(g) || isNaN(b)) {
+          console.error(`[brand-generator convertToGeneratedVariables] Invalid RGB for ${entry.name}:`, entry.value);
+          console.error(`  r=${entry.value.r} (${r}), g=${entry.value.g} (${g}), b=${entry.value.b} (${b})`);
+          // Skip this variable or use fallback
+          previewValue = undefined;
+        } else {
+          previewValue = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+        }
       } else if (isAliased) {
         // Trace back through alias chain to find RGB value
         const chain = registry.getAliasChain(entry.id);
@@ -445,7 +454,14 @@ export class BrandGenerator {
           const r = Math.round(primitive.value.r * 255);
           const g = Math.round(primitive.value.g * 255);
           const b = Math.round(primitive.value.b * 255);
-          previewValue = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+          
+          // Validate RGB values
+          if (isNaN(r) || isNaN(g) || isNaN(b)) {
+            console.error(`[brand-generator convertToGeneratedVariables] Invalid RGB in alias chain for ${entry.name}:`, primitive.value);
+            previewValue = undefined;
+          } else {
+            previewValue = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+          }
         }
       }
       

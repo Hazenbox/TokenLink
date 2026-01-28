@@ -32,12 +32,37 @@ const SCALE_KEY_MAP = {
 } as const;
 
 /**
- * Convert hex color to RGB object
+ * Convert hex color to RGB object with validation
  */
 function hexToRGB(hex: string): { r: number; g: number; b: number; a: number } {
+  // Validate input
+  if (!hex || typeof hex !== 'string') {
+    console.error('[primitives-generator hexToRGB] Invalid input:', hex);
+    return { r: 1, g: 1, b: 1, a: 1 }; // White fallback
+  }
+  
+  // Detect rgba strings (should not happen after fix, but defensive)
+  if (hex.startsWith('rgba') || hex.startsWith('rgb')) {
+    console.error('[primitives-generator hexToRGB] RGBA/RGB string passed, expected hex:', hex);
+    return { r: 1, g: 1, b: 1, a: 1 }; // White fallback
+  }
+  
+  // Validate hex format
+  if (!hex.startsWith('#') || hex.length !== 7) {
+    console.error('[primitives-generator hexToRGB] Invalid hex format (expected #RRGGBB):', hex);
+    return { r: 1, g: 1, b: 1, a: 1 }; // White fallback
+  }
+  
   const r = parseInt(hex.slice(1, 3), 16) / 255;
   const g = parseInt(hex.slice(3, 5), 16) / 255;
   const b = parseInt(hex.slice(5, 7), 16) / 255;
+  
+  // Validate parsed values
+  if (isNaN(r) || isNaN(g) || isNaN(b)) {
+    console.error('[primitives-generator hexToRGB] Failed to parse hex:', hex);
+    return { r: 1, g: 1, b: 1, a: 1 }; // White fallback
+  }
+  
   return { r, g, b, a: 1 };
 }
 

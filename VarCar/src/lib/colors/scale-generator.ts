@@ -85,9 +85,9 @@ function generateLow(
   const alpha = findAlphaForContrast(ccHex, surfaceHex, 4.5, true);
   const blendedHex = blendWithAlpha(ccHex, surfaceHex, alpha);
 
-  // Store rgba for display, but keep blendedHex for contrast calculation
-  const rgbaDisplay = hexToRgba(ccHex, alpha);
-  return createScaleResult(rgbaDisplay, surfaceHex, alpha, targetStep, blendedHex);
+  // Use blendedHex for primitives (solid color), store alpha for metadata
+  // Note: rgba display format is for UI only, primitives need solid hex values
+  return createScaleResult(blendedHex, surfaceHex, alpha, targetStep, blendedHex);
 }
 
 /**
@@ -109,9 +109,9 @@ function generateMedium(
   const alpha = Math.round(((1.0 + lowAlpha) / 2) * 100) / 100;
   const blendedHex = blendWithAlpha(ccHex, surfaceHex, alpha);
 
-  // Store rgba for display, but keep blendedHex for contrast calculation
-  const rgbaDisplay = hexToRgba(ccHex, alpha);
-  return createScaleResult(rgbaDisplay, surfaceHex, alpha, targetStep, blendedHex);
+  // Use blendedHex for primitives (solid color), store alpha for metadata
+  // Note: rgba display format is for UI only, primitives need solid hex values
+  return createScaleResult(blendedHex, surfaceHex, alpha, targetStep, blendedHex);
 }
 
 /**
