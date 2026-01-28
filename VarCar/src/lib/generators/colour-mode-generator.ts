@@ -26,7 +26,59 @@ const SCALE_NAMES = [
 // Generate Root, Root +1, Root +2, ..., Root +6
 const ROOT_OFFSETS = [0, 1, 2, 3, 4, 5, 6] as const;
 
+// Contexts for Semantics hierarchy (surface elevation levels)
+const SEMANTICS_CONTEXTS = ['Default', 'Minimal', 'Subtle', 'Bold', 'Elevated'] as const;
+
+// Emphasis levels for each context
+const EMPHASIS_LEVELS = ['Ghost', 'Minimal', 'Subtle', 'Bold'] as const;
+
+// Interaction states
+const INTERACTION_STATES = ['Idle', 'Hover', 'Pressed'] as const;
+
 export class ColourModeGenerator extends BaseLayerGenerator {
+  /**
+   * Get surface step for a semantic context (from stacking logic)
+   */
+  private getContextSurfaceStep(context: string, isLight: boolean): Step {
+    const surfaceMap = {
+      'Default': isLight ? 2500 : 200,
+      'Minimal': isLight ? 2400 : 300,
+      'Subtle': isLight ? 2300 : 400,
+      'Bold': 0,  // Calculate separately with contrast (simplified for now)
+      'Elevated': isLight ? 2500 : 300
+    };
+    return surfaceMap[context as keyof typeof surfaceMap] as Step;
+  }
+
+  /**
+   * Get emphasis root step from context surface (from stacking logic)
+   */
+  private getEmphasisRoot(contextSurface: Step, emphasis: string, isLight: boolean): Step {
+    const dir = isLight ? -1 : 1;
+    const emphasisMap = {
+      'Ghost': 0,      // +0 from context surface
+      'Minimal': 1,    // +1 from context surface
+      'Subtle': 2,     // +2 from context surface
+      'Bold': 0        // Calculate separately with contrast (simplified for now)
+    };
+    const offset = emphasisMap[emphasis as keyof typeof emphasisMap];
+    return getStepFromIndex(getStepIndex(contextSurface) + (offset * dir));
+  }
+
+  /**
+   * Get state step from emphasis root (from stacking logic)
+   */
+  private getStateStep(emphasisRoot: Step, state: string, isLight: boolean): Step {
+    const dir = isLight ? -1 : 1;
+    const stateMap = {
+      'Idle': 0,       // +0 from emphasis root
+      'Hover': 1,      // +1 from emphasis root
+      'Pressed': 2     // +2 from emphasis root
+    };
+    const offset = stateMap[state as keyof typeof stateMap];
+    return getStepFromIndex(getStepIndex(emphasisRoot) + (offset * dir));
+  }
+
   generate(): VariableEntry[] {
     const variables: VariableEntry[] = [];
     const modes = this.layer.modes || ['Light', 'Dark'];
@@ -83,7 +135,66 @@ export class ColourModeGenerator extends BaseLayerGenerator {
       }
     }
     
-    this.log(`Generated ${variables.length} colour mode variables`);
+    this.log(`Generated ${variables.length} Root variables`);
+    
+    // === Generate Semantics Variables ===
+    // Pattern: {palette}/Semantics/{context}/{emphasis}/{state}/[Colour Mode] {scale}
+    this.log('Generating Semantics variables with full hierarchy...');
+    
+    const semanticsStartCount = variables.length;
+    
+    for (const paletteName of paletteNames) {
+      for (const context of SEMANTICS_CONTEXTS) {
+        for (const emphasis of EMPHASIS_LEVELS) {
+          for (const state of INTERACTION_STATES) {
+            for (const scale of SCALE_NAMES) {
+              const name = `${paletteName}/Semantics/${context}/${emphasis}/${state}/[Colour Mode] ${scale}`;
+              
+              // Create entries for each mode (Light and Dark)
+              modes.forEach((mode, idx) => {
+                const isLight = mode === 'Light';
+                
+                // Step 1: Get context surface step
+                const contextSurface = this.getContextSurfaceStep(context, isLight);
+                
+                // Step 2: Get emphasis root from context surface
+                const emphasisRoot = this.getEmphasisRoot(contextSurface, emphasis, isLight);
+                
+                // Step 3: Get state step from emphasis root
+                const targetStep = this.getStateStep(emphasisRoot, state, isLight);
+                
+                // Target semi-semantic variable
+                const semiSemanticName = `${paletteName}/${targetStep}/[Semi semantics] ${scale}`;
+                const semiSemanticVar = this.resolveAliasTarget(semiSemanticName, 'semi-semantics');
+                
+                if (!semiSemanticVar) {
+                  this.warn(`Semi-semantic not found: ${semiSemanticName} (for ${name} in ${mode})`);
+                  return;
+                }
+                
+                variables.push({
+                  id: this.generateVariableId(),
+                  name,
+                  collectionId: this.layer.id,
+                  collectionName: this.layer.collectionName,
+                  layer: this.layer.order,
+                  modeId: `mode_${idx}`,
+                  modeName: mode,
+                  aliasToId: semiSemanticVar.id,
+                  aliasToName: semiSemanticName,
+                  metadata: { context, emphasis, state, scale, palette: paletteName, mode }
+                });
+              });
+            }
+          }
+        }
+      }
+    }
+    
+    const semanticsCount = variables.length - semanticsStartCount;
+    this.log(`Generated ${semanticsCount} Semantics variables`);
+    this.log(`Generated ${variables.length} total colour mode variables (Root + Semantics)`);
+    
     return variables;
   }
   
