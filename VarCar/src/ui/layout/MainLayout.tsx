@@ -20,7 +20,7 @@ export function MainLayout() {
         <div className="flex h-full w-full overflow-hidden bg-background text-foreground">
           <NavigationRail />
           
-          <div className="flex-1 flex flex-col overflow-hidden relative">
+          <div className="flex-1 flex flex-col overflow-hidden relative min-w-0">
             <CanvasBackground />
             
             <AppSwitcher />

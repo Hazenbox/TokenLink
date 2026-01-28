@@ -26,7 +26,7 @@ export function AutomateApp() {
       <BrandSidebar />
       
       {/* Middle: Figma-style Variables UI */}
-      <div className="flex-1 bg-background overflow-hidden flex max-w-full">
+      <div className="flex-1 bg-background overflow-hidden flex max-w-full min-w-0">
         {/* Collections & Groups Combined Panel */}
         <VariablesErrorBoundary>
           <CollectionsGroupsPanel />
