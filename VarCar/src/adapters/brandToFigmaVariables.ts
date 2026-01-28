@@ -9,11 +9,14 @@ import {
   FigmaCollection,
   FigmaGroup,
   FigmaVariable,
-  VariableValueByMode
+  VariableValueByMode,
+  CollectionType
 } from '@/models/brand';
 import { usePaletteStore } from '@/store/palette-store';
 import { generateAllScales } from '@/lib/colors/scale-generator';
 import { STEPS } from '@/lib/colors/color-utils';
+import { generateColorModeCollection, getColorFamiliesFromPaletteAssignments } from './colorModeGenerator';
+import { generateInteractionStateCollection } from './interactionStateGenerator';
 
 /**
  * Scale types (emphasis levels) - part of variable names, NOT modes
@@ -270,30 +273,132 @@ export class BrandToFigmaAdapter {
     
     let variables: FigmaVariable[] = [];
     
-    if (collection.generationType === 'primitives') {
-      variables = this.generatePrimitivesCollectionVariables(collection);
-    } else if (collection.generationType === 'semantic') {
-      // Need primitives collection to create aliases
-      const primitivesCollection = brand.collections?.find(c => 
-        c.id === collection.primitiveCollectionId || c.generationType === 'primitives'
-      );
+    // Use new collectionType field, fallback to deprecated generationType
+    const type = collection.collectionType || collection.generationType;
+    
+    switch (type) {
+      case 'primitives': {
+        variables = this.generatePrimitivesCollectionVariables(collection);
+        break;
+      }
       
-      if (primitivesCollection) {
-        const primitivesVariables = this.getVariablesForCollection(
+      case 'semi-semantics': {
+        // Semi-semantics is same generation as primitives but with different naming
+        variables = this.generatePrimitivesCollectionVariables(collection);
+        break;
+      }
+      
+      case 'semantic': {
+        // DEPRECATED: Old semantic type, treat as appearances
+        const primitivesCollection = brand.collections?.find(c => 
+          c.id === collection.primitiveCollectionId || 
+          c.collectionType === 'primitives' ||
+          c.generationType === 'primitives'
+        );
+        
+        if (primitivesCollection) {
+          const primitivesVariables = this.getVariablesForCollection(
+            brand,
+            primitivesCollection,
+            allVariablesCache
+          );
+          variables = this.generateSemanticCollectionVariables(
+            collection,
+            primitivesCollection,
+            primitivesVariables
+          );
+        } else {
+          console.warn('[Adapter] Semantic collection has no primitives collection to reference');
+        }
+        break;
+      }
+      
+      case 'color-mode': {
+        // Generate Color Mode collection with Root variables
+        const semiSemanticCollection = brand.collections?.find(c => 
+          c.collectionType === 'semi-semantics'
+        );
+        
+        if (!semiSemanticCollection) {
+          console.warn('[Adapter] Color Mode requires Semi-semantics collection');
+          break;
+        }
+        
+        const semiSemanticVariables = this.getVariablesForCollection(
           brand,
-          primitivesCollection,
+          semiSemanticCollection,
           allVariablesCache
         );
-        variables = this.generateSemanticCollectionVariables(
-          collection,
-          primitivesCollection,
-          primitivesVariables
+        
+        // Get color families from primitive collection's palette assignments
+        const primitivesCollection = brand.collections?.find(c => 
+          c.collectionType === 'primitives'
         );
-      } else {
-        console.warn('[Adapter] Semantic collection has no primitives collection to reference');
+        
+        if (!primitivesCollection?.paletteAssignments) {
+          console.warn('[Adapter] Color Mode requires palette assignments');
+          break;
+        }
+        
+        const colorFamilies = getColorFamiliesFromPaletteAssignments(
+          primitivesCollection.paletteAssignments
+        );
+        
+        const result = generateColorModeCollection(
+          brand.id,
+          semiSemanticCollection,
+          semiSemanticVariables,
+          colorFamilies
+        );
+        
+        variables = result.variables;
+        break;
       }
-    } else {
-      console.warn(`[Adapter] Unknown collection type: ${collection.generationType}`);
+      
+      case 'interaction-state': {
+        // Generate Interaction State collection
+        const colorModeCollection = brand.collections?.find(c => 
+          c.collectionType === 'color-mode'
+        );
+        
+        if (!colorModeCollection) {
+          console.warn('[Adapter] Interaction State requires Color Mode collection');
+          break;
+        }
+        
+        const colorModeVariables = this.getVariablesForCollection(
+          brand,
+          colorModeCollection,
+          allVariablesCache
+        );
+        
+        // Get color families
+        const primitivesCollection = brand.collections?.find(c => 
+          c.collectionType === 'primitives'
+        );
+        
+        if (!primitivesCollection?.paletteAssignments) {
+          console.warn('[Adapter] Interaction State requires palette assignments');
+          break;
+        }
+        
+        const colorFamilies = getColorFamiliesFromPaletteAssignments(
+          primitivesCollection.paletteAssignments
+        );
+        
+        const result = generateInteractionStateCollection(
+          brand.id,
+          colorModeCollection,
+          colorModeVariables,
+          colorFamilies
+        );
+        
+        variables = result.variables;
+        break;
+      }
+      
+      default:
+        console.warn(`[Adapter] Unsupported collection type: ${type}`);
     }
     
     // Cache the result
