@@ -95,7 +95,7 @@ export function BrandConfigPanel() {
         />
         
         {/* Collapse Button */}
-        <div className="pl-4 pr-6 py-2 border-b border-border/20 flex items-center justify-between flex-shrink-0">
+        <div className="pl-4 pr-4 py-2 border-b border-border/20 flex items-center justify-between flex-shrink-0">
           <h2 className="text-sm font-semibold text-foreground">Configuration</h2>
           <button
             onClick={toggleConfigPanel}
@@ -167,7 +167,7 @@ export function BrandConfigPanel() {
       />
       
       {/* Header with Sync Button */}
-      <div className="pl-4 pr-6 py-3 border-b border-border flex-shrink-0">
+      <div className="pl-4 pr-4 py-3 border-b border-border flex-shrink-0">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold text-foreground">
             {activeBrand.name}
@@ -217,7 +217,7 @@ export function BrandConfigPanel() {
 
       {/* Config Content */}
       <ScrollArea className="flex-1 w-full max-w-full">
-        <div className="pl-4 pt-4 pb-4 pr-4 space-y-6 w-full max-w-full overflow-hidden">
+        <div className="pl-4 pt-4 pb-4 pr-4 space-y-6 w-full max-w-full">
           {/* Required Palettes - Single Column */}
           <div>
             <h3 className="text-xs font-semibold text-foreground mb-3">

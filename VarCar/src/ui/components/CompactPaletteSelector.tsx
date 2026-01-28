@@ -81,7 +81,7 @@ export function CompactPaletteSelector({
         </PopoverTrigger>
         
         <PopoverContent 
-          className="w-[280px] p-0" 
+          className="w-[260px] p-0" 
           align="start"
           side="left"
           sideOffset={4}
