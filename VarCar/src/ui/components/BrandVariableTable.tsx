@@ -1,7 +1,7 @@
 /**
  * Brand Variable Table
  * Flat table showing variables with mode columns (no accordion)
- * Filtering handled by Groups sidebar (group + step selection)
+ * Filtering handled by hierarchical Groups sidebar
  */
 
 import React, { useMemo, useEffect } from 'react';
@@ -14,12 +14,12 @@ import { Button } from '@/components/ui/button';
 import { Search, Download } from 'lucide-react';
 import { ModeCell } from './variables/ModeCell';
 import { brandToFigmaAdapter } from '@/adapters/brandToFigmaVariables';
+import { HierarchyParser } from '@/lib/hierarchy-parser';
 
 export function BrandVariableTable() {
   const activeBrand = useBrandStore((state) => state.getActiveBrand());
   const activeCollectionId = useVariablesViewStore((state) => state.activeCollectionId);
-  const activeGroupId = useVariablesViewStore((state) => state.activeGroupId);
-  const selectedStep = useVariablesViewStore((state) => state.selectedStep);
+  const hierarchyPath = useVariablesViewStore((state) => state.hierarchyPath);
   const searchQuery = useVariablesViewStore((state) => state.searchQuery);
   const setSearchQuery = useVariablesViewStore((state) => state.setSearchQuery);
   
@@ -27,12 +27,13 @@ export function BrandVariableTable() {
   const collections = useBrandStore((state) => state.figmaCollections, shallow);
   const allVariablesMap = useBrandStore((state) => state.figmaVariablesByCollection, shallow);
   
-  // Refresh variables when collection or group changes
+  // Refresh variables when collection or hierarchy path changes
   useEffect(() => {
     if (activeCollectionId) {
-      useBrandStore.getState().refreshFigmaVariables(activeCollectionId, activeGroupId || 'all');
+      const groupId = hierarchyPath.length > 0 ? hierarchyPath[0] : 'all';
+      useBrandStore.getState().refreshFigmaVariables(activeCollectionId, groupId);
     }
-  }, [activeCollectionId, activeGroupId]);
+  }, [activeCollectionId, hierarchyPath]);
   
   // Get active collection
   const activeCollection = useMemo(() => 
@@ -45,18 +46,13 @@ export function BrandVariableTable() {
   // Get all variables for active collection
   const allVariables = allVariablesMap.get(activeCollectionId || '') || [];
   
-  // Apply flat filtering: group + step + search
+  // Apply hierarchical filtering: hierarchy path + search
   const filteredVariables = useMemo(() => {
     let filtered = allVariables;
     
-    // Filter by group
-    if (activeGroupId && activeGroupId !== 'all') {
-      filtered = brandToFigmaAdapter.filterVariablesByGroup(filtered, activeGroupId);
-    }
-    
-    // Filter by step
-    if (selectedStep && selectedStep !== 'all') {
-      filtered = brandToFigmaAdapter.filterVariablesByStep(filtered, selectedStep);
+    // Filter by hierarchy path
+    if (hierarchyPath.length > 0) {
+      filtered = brandToFigmaAdapter.filterVariablesByHierarchyPath(filtered, hierarchyPath);
     }
     
     // Filter by search query
@@ -66,7 +62,7 @@ export function BrandVariableTable() {
     }
     
     return filtered;
-  }, [allVariables, activeGroupId, selectedStep, searchQuery]);
+  }, [allVariables, hierarchyPath, searchQuery]);
   
   // Validate brand
   const validation = useMemo(() => {
@@ -78,21 +74,29 @@ export function BrandVariableTable() {
   const handleExport = () => {
     if (!activeBrand) return;
     
-    // Export to CSV with Group, Step, and mode columns
-    const headers = ['Group', 'Step', 'Type', ...modes.map(m => m.name)];
+    // Determine max hierarchy depth for CSV columns
+    const maxDepth = Math.max(
+      ...filteredVariables.map(v => HierarchyParser.parseVariableName(v.name).length),
+      0
+    );
+    
+    // Create dynamic hierarchy column headers
+    const hierarchyHeaders = Array.from({ length: maxDepth }, (_, i) => `Level ${i + 1}`);
+    const headers = [...hierarchyHeaders, ...modes.map(m => m.name)];
     const rows: string[] = [];
     
     filteredVariables.forEach((variable) => {
-      // Parse name: "Grey/2500/Surface" → ["Grey", "2500", "Surface"]
-      const parts = variable.name.split('/');
-      const group = parts[0] || '';
-      const step = parts[1] || '';
-      const type = parts[2] || '';
+      // Parse name into segments
+      const segments = HierarchyParser.parseVariableName(variable.name);
+      
+      // Pad segments to max depth
+      const paddedSegments = [
+        ...segments,
+        ...Array(maxDepth - segments.length).fill('')
+      ];
       
       const row = [
-        group,
-        step,
-        type,
+        ...paddedSegments,
         ...modes.map((mode) => variable.resolvedValuesByMode[mode.modeId] || '')
       ];
       rows.push(row.join(','));
@@ -227,7 +231,9 @@ export function BrandVariableTable() {
                 >
                   {/* Variable Name - Sticky Column with hover state */}
                   <td className="sticky left-0 z-10 bg-background group-hover:bg-surface/30 px-3 py-2 border-r-2 border-border shadow-[2px_0_8px_0px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_8px_0px_rgba(0,0,0,0.4)] transition-colors before:absolute before:inset-0 before:bg-background before:group-hover:bg-surface/30 before:-z-10 before:transition-colors relative">
-                    <span className="text-[11px] text-foreground whitespace-nowrap relative z-10">{variable.name}</span>
+                    <span className="text-[11px] text-foreground whitespace-nowrap relative z-10" title={variable.name}>
+                      {HierarchyParser.getLastSegment(variable.name)}
+                    </span>
                   </td>
                   
                   {/* Mode Values */}

@@ -458,6 +458,30 @@ export class BrandToFigmaAdapter {
       return parts.length >= 2 && parts[1] === step;
     });
   }
+  
+  /**
+   * Filter variables by hierarchy path
+   * @param variables - Variables to filter
+   * @param pathSegments - Path segments to match (e.g., ["Grey", "Semi semantics", "Root"])
+   * @returns Filtered variables
+   */
+  filterVariablesByHierarchyPath(
+    variables: FigmaVariable[],
+    pathSegments: string[]
+  ): FigmaVariable[] {
+    if (!pathSegments || pathSegments.length === 0) {
+      return variables;
+    }
+    
+    // Build the path string
+    const pathString = pathSegments.join('/');
+    
+    // Filter variables that start with this path
+    return variables.filter(v => {
+      // Variable name must start with path + "/" OR be exactly the path
+      return v.name.startsWith(`${pathString}/`) || v.name === pathString;
+    });
+  }
 }
 
 /**

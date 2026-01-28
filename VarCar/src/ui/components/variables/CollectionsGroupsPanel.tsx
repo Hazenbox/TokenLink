@@ -6,7 +6,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useVariablesViewStore } from '@/store/variables-view-store';
 import { CollectionsSidebar } from './CollectionsSidebar';
-import { GroupsSidebar } from './GroupsSidebar';
+import { HierarchicalGroupsSidebar } from './HierarchicalGroupsSidebar';
 
 interface CollectionsGroupsPanelProps {
   onCreateCollection?: () => void;
@@ -86,7 +86,7 @@ export function CollectionsGroupsPanel({
         }} 
         className="flex flex-col overflow-hidden"
       >
-        <GroupsSidebar onCreateGroup={onCreateGroup} />
+        <HierarchicalGroupsSidebar onCreateGroup={onCreateGroup} />
       </div>
     </div>
   );
