@@ -1369,6 +1369,12 @@ figma.ui.onmessage = async (msg) => {
       console.log(`Syncing brand "${brand.name}" with multi-layer architecture...`);
       console.log(`Collections to sync: ${Object.keys(variablesByCollection).length}`);
       
+      // Send initial progress
+      figma.ui.postMessage({
+        type: 'sync-progress',
+        data: { step: 1, total: 5, message: 'Starting multi-layer sync...' }
+      });
+      
       // Helper: Create RGB color from hex
       function hexToRGB(hex: string): RGB {
         const r = parseInt(hex.slice(1, 3), 16) / 255;
@@ -1392,6 +1398,11 @@ figma.ui.onmessage = async (msg) => {
       console.log('Processing collections in order:', sortedCollections.map(([name]) => name));
       
       // Phase 1: Create all collections
+      figma.ui.postMessage({
+        type: 'sync-progress',
+        data: { step: 2, total: 5, message: `Creating ${sortedCollections.length} collections...` }
+      });
+      
       for (const [collectionName, variables] of sortedCollections) {
         const collection = await getOrCreateCollection(collectionName);
         collectionMap.set(collectionName, collection);
@@ -1399,6 +1410,11 @@ figma.ui.onmessage = async (msg) => {
       }
       
       // Phase 2: Create modes for each collection
+      figma.ui.postMessage({
+        type: 'sync-progress',
+        data: { step: 3, total: 5, message: 'Creating modes for collections...' }
+      });
+      
       for (const [collectionName, variables] of sortedCollections) {
         const collection = collectionMap.get(collectionName)!;
         const modes = [...new Set((variables as any[]).map(v => v.mode))];
@@ -1411,6 +1427,11 @@ figma.ui.onmessage = async (msg) => {
       }
       
       // Phase 3: Create variables layer by layer
+      figma.ui.postMessage({
+        type: 'sync-progress',
+        data: { step: 4, total: 5, message: 'Creating variables and aliases...' }
+      });
+      
       let totalCreated = 0;
       let totalUpdated = 0;
       
@@ -1482,6 +1503,11 @@ figma.ui.onmessage = async (msg) => {
       console.log(`\nMulti-layer sync complete: ${totalCreated} created, ${totalUpdated} updated`);
       
       // Refresh graph
+      figma.ui.postMessage({
+        type: 'sync-progress',
+        data: { step: 5, total: 5, message: 'Finalizing sync...' }
+      });
+      
       const updatedCollections = await figma.variables.getLocalVariableCollectionsAsync();
       const updatedVariables = await figma.variables.getLocalVariablesAsync();
       const updatedGraph = figmaToGraph(updatedCollections, updatedVariables);

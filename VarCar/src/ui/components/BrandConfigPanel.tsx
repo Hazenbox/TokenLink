@@ -11,7 +11,7 @@ import { LayerMappingVisualizer } from './LayerMappingVisualizer';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { CompactButton } from './common/CompactButton';
-import { Info, ChevronDown, ChevronUp, Upload, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
+import { Info, ChevronDown, ChevronUp, Upload, ChevronLeft, ChevronRight, Settings, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { BrandGenerator } from '@/lib/brand-generator';
 
 export function BrandConfigPanel() {
@@ -137,21 +137,60 @@ export function BrandConfigPanel() {
   };
 
   const handleSync = async () => {
-    if (!validation.valid) {
-      alert('Cannot sync: Brand has validation errors. Please fix them first.');
-      return;
-    }
-
-    if (!canSync) {
-      alert('Rate limit exceeded. Please wait before syncing again.');
-      return;
-    }
-
-    // Always use multi-layer sync
+    // Validation happens in the store before syncing
+    // User will see error toast via useFigmaMessages hook
     await syncBrandWithLayers(activeBrand.id);
   };
 
   const canSyncBrand = validation.valid && canSync && syncStatus === 'idle';
+  
+  // Get sync button content based on status
+  const getSyncButtonContent = () => {
+    switch (syncStatus) {
+      case 'validating':
+        return (
+          <>
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            <span>Validating...</span>
+          </>
+        );
+      case 'previewing':
+        return (
+          <>
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            <span>Generating...</span>
+          </>
+        );
+      case 'syncing':
+        return (
+          <>
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            <span>Syncing...</span>
+          </>
+        );
+      case 'success':
+        return (
+          <>
+            <CheckCircle className="w-3.5 h-3.5" />
+            <span>Synced!</span>
+          </>
+        );
+      case 'error':
+        return (
+          <>
+            <AlertCircle className="w-3.5 h-3.5" />
+            <span>Failed</span>
+          </>
+        );
+      default:
+        return (
+          <>
+            <Upload className="w-3.5 h-3.5" />
+            <span>Sync to Figma</span>
+          </>
+        );
+    }
+  };
 
   return (
     <div 
@@ -181,14 +220,30 @@ export function BrandConfigPanel() {
           </button>
         </div>
         
-        <CompactButton
-          icon={Upload}
-          label="Sync to Figma"
-          variant="secondary"
+        <button
           onClick={handleSync}
           disabled={!canSyncBrand}
-          className="w-full"
-        />
+          className={`
+            w-full h-8 px-3 rounded-md text-xs font-medium
+            flex items-center justify-center gap-2
+            transition-all duration-200
+            ${canSyncBrand 
+              ? 'bg-blue-500 hover:bg-blue-600 text-white' 
+              : 'bg-surface border border-border text-foreground-tertiary cursor-not-allowed'}
+            ${syncStatus === 'success' ? 'bg-green-500 hover:bg-green-600' : ''}
+            ${syncStatus === 'error' ? 'bg-red-500 hover:bg-red-600' : ''}
+          `}
+        >
+          {getSyncButtonContent()}
+        </button>
+        
+        {/* Sync status message */}
+        {!canSyncBrand && syncStatus === 'idle' && (
+          <div className="mt-2 text-xs text-orange-500">
+            {!validation.valid && '⚠ Fix validation errors first'}
+            {validation.valid && !canSync && '⚠ Rate limit: Wait before syncing again'}
+          </div>
+        )}
 
         {/* Collapsible info banner */}
         <div className="mt-2">

@@ -120,6 +120,7 @@ interface BrandStoreState {
   syncBrand: (brandId: string) => Promise<SyncResult>;
   syncBrandWithLayers: (brandId: string) => Promise<SyncResult>;
   canSync: () => boolean;
+  updateSyncStatusFromPlugin: (status: 'success' | 'error', data?: any) => void;
   
   // History operations
   undo: () => void;
@@ -624,14 +625,8 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
             brandName: brand.name
           });
 
-          set({ syncStatus: 'success' });
-
-          // Reset to idle after 3 seconds
-          setTimeout(() => {
-            if (get().syncStatus === 'success') {
-              set({ syncStatus: 'idle' });
-            }
-          }, 3000);
+          // NOTE: Don't set success status here - wait for plugin response
+          // Status will be updated via updateSyncStatusFromPlugin when plugin responds
 
           return {
             success: true,
@@ -766,14 +761,8 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
             }
           });
 
-          set({ syncStatus: 'success' });
-
-          // Reset to idle after 3 seconds
-          setTimeout(() => {
-            if (get().syncStatus === 'success') {
-              set({ syncStatus: 'idle' });
-            }
-          }, 3000);
+          // NOTE: Don't set success status here - wait for plugin response
+          // Status will be updated via updateSyncStatusFromPlugin when plugin responds
 
           return {
             success: true,
@@ -806,6 +795,37 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
           (a) => a.timestamp > oneMinuteAgo
         );
         return recentAttempts.length < 5;
+      },
+
+      // Update sync status from plugin response
+      updateSyncStatusFromPlugin: (status: 'success' | 'error', data?: any) => {
+        console.log('[Brand Store] Updating sync status from plugin:', status, data);
+        
+        if (status === 'success') {
+          set({ syncStatus: 'success' });
+          
+          // Reset to idle after 3 seconds
+          setTimeout(() => {
+            if (get().syncStatus === 'success') {
+              set({ syncStatus: 'idle' });
+            }
+          }, 3000);
+          
+          // If graph data is included, refresh Figma data
+          if (data?.graph) {
+            console.log('[Brand Store] Refreshing Figma data after sync');
+            get().refreshFigmaData();
+          }
+        } else {
+          set({ syncStatus: 'error' });
+          
+          // Reset to idle after 5 seconds
+          setTimeout(() => {
+            if (get().syncStatus === 'error') {
+              set({ syncStatus: 'idle' });
+            }
+          }, 5000);
+        }
       },
 
       // Undo

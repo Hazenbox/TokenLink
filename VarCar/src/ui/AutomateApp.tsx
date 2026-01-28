@@ -9,10 +9,14 @@ import { BrandConfigPanel } from './components/BrandConfigPanel';
 import { BrandVariableTable } from './components/BrandVariableTable';
 import { CollectionsGroupsPanel } from './components/variables/CollectionsGroupsPanel';
 import { VariablesErrorBoundary } from './components/variables/VariablesErrorBoundary';
+import { Toast } from './components/Toast';
 import { useBrandStore } from '@/store/brand-store';
 import { usePaletteStore } from '@/store/palette-store';
+import { useFigmaMessages } from './hooks/useFigmaMessages';
 
 export function AutomateApp() {
+  // Handle Figma plugin messages for sync responses
+  const { notification, clearNotification } = useFigmaMessages();
   // Initialize palettes and brands on mount (order matters!)
   useEffect(() => {
     const loadData = async () => {
@@ -73,6 +77,15 @@ export function AutomateApp() {
       <VariablesErrorBoundary>
         <BrandConfigPanel />
       </VariablesErrorBoundary>
+      
+      {/* Toast Notification */}
+      {notification && (
+        <Toast
+          type={notification.type}
+          message={notification.message}
+          onClose={clearNotification}
+        />
+      )}
     </div>
   );
 }

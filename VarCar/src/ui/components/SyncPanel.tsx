@@ -36,24 +36,9 @@ export function SyncPanel() {
   const handleSync = async () => {
     if (!activeBrand) return;
 
-    const validation = BrandGenerator.validate(activeBrand);
-    if (!validation.valid) {
-      alert('Cannot sync: Brand has validation errors. Please fix them first.');
-      return;
-    }
-
-    if (!canSync) {
-      alert('Rate limit exceeded. Please wait before syncing again.');
-      return;
-    }
-
-    const result = await syncBrand(activeBrand.id);
-    
-    if (result.success) {
-      console.log('Sync successful:', result);
-    } else {
-      alert(`Sync failed: ${result.errors.join(', ')}`);
-    }
+    // Validation happens in the store before syncing
+    // User will see error/success toast via useFigmaMessages hook
+    await syncBrand(activeBrand.id);
   };
 
   const handleExport = () => {
