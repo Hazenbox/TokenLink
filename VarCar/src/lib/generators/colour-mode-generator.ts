@@ -1,10 +1,16 @@
 /**
  * Colour Mode Generator (Layer 2)
- * Generates Light/Dark mode variables that alias to semi-semantics
+ * Generates Light/Dark mode variables with Root system that alias to semi-semantics
+ * 
+ * Uses proven stacking logic from SurfaceStacking.tsx
+ * - Light mode: Root = 2500, Root +1 = 2400 (going darker, direction = -1)
+ * - Dark mode: Root = 200, Root +1 = 300 (going lighter, direction = +1)
  */
 
 import { BaseLayerGenerator } from './base-layer-generator';
 import { VariableEntry } from '@/lib/variable-registry';
+import { getStepIndex, getStepFromIndex } from '@/lib/colors/root-system';
+import { Step } from '@/lib/colors/color-utils';
 
 const SCALE_NAMES = [
   'Surface',
@@ -17,7 +23,8 @@ const SCALE_NAMES = [
   'Minimal'
 ] as const;
 
-const CONTEXTS = ['Root', 'Default'] as const;
+// Generate Root, Root +1, Root +2, ..., Root +6
+const ROOT_OFFSETS = [0, 1, 2, 3, 4, 5, 6] as const;
 
 export class ColourModeGenerator extends BaseLayerGenerator {
   generate(): VariableEntry[] {
@@ -29,29 +36,35 @@ export class ColourModeGenerator extends BaseLayerGenerator {
     const paletteNames = this.getAssignedPaletteNames();
     
     for (const paletteName of paletteNames) {
-      for (const context of CONTEXTS) {
+      for (const offset of ROOT_OFFSETS) {
         for (const scale of SCALE_NAMES) {
-          const name = `${paletteName}/Semi semantics/${context}/[Colour Mode] ${scale}`;
-          
-          // Light mode uses high steps (2500), Dark mode uses low steps (200)
-          const lightStep = 2500;
-          const darkStep = 200;
-          
-          const lightSource = `${paletteName}/${lightStep}/[Semi semantics] ${scale}`;
-          const darkSource = `${paletteName}/${darkStep}/[Semi semantics] ${scale}`;
-          
-          const lightVar = this.resolveAliasTarget(lightSource, 'semi-semantics');
-          const darkVar = this.resolveAliasTarget(darkSource, 'semi-semantics');
-          
-          if (!lightVar || !darkVar) {
-            this.warn(`Source variables not found for ${name}`);
-            continue;
-          }
+          // Generate Root-based variable name (Root, Root +1, Root +2, etc.)
+          const rootLabel = offset === 0 ? 'Root' : `Root +${offset}`;
+          const name = `${paletteName}/Semi semantics/${rootLabel}/[Colour Mode] ${scale}`;
           
           // Create entries for each mode (Light and Dark)
           modes.forEach((mode, idx) => {
-            const aliasTarget = idx === 0 ? lightVar : darkVar;
-            const aliasSourceName = idx === 0 ? lightSource : darkSource;
+            const isLight = mode === 'Light';
+            
+            // Use proven stacking logic from SurfaceStacking.tsx (lines 191, 223-227)
+            // Base step for each mode
+            const surfaceStep: Step = isLight ? 2500 : 200;
+            
+            // Direction: -1 for light (darker = lower numbers), +1 for dark (darker = higher numbers)
+            const dir = isLight ? -1 : 1;
+            
+            // Calculate target step using getStepIndex/getStepFromIndex (same as SurfaceStacking.tsx)
+            // Formula: targetStep = getStepFromIndex(getStepIndex(surfaceStep) + (offset * dir))
+            const targetStep = getStepFromIndex(getStepIndex(surfaceStep) + (offset * dir));
+            
+            // Target semi-semantic variable name
+            const semiSemanticName = `${paletteName}/${targetStep}/[Semi semantics] ${scale}`;
+            const semiSemanticVar = this.resolveAliasTarget(semiSemanticName, 'semi-semantics');
+            
+            if (!semiSemanticVar) {
+              this.warn(`Semi-semantic variable not found: ${semiSemanticName} (for ${name} in ${mode} mode)`);
+              return;
+            }
             
             variables.push({
               id: this.generateVariableId(),
@@ -61,9 +74,9 @@ export class ColourModeGenerator extends BaseLayerGenerator {
               layer: this.layer.order,
               modeId: `mode_${idx}`,
               modeName: mode,
-              aliasToId: aliasTarget.id,
-              aliasToName: aliasSourceName,
-              metadata: { context, scale, palette: paletteName }
+              aliasToId: semiSemanticVar.id,
+              aliasToName: semiSemanticName,
+              metadata: { rootOffset: offset, scale, palette: paletteName, mode }
             });
           });
         }
