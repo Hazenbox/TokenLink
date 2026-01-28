@@ -112,6 +112,7 @@ interface BrandStoreState {
   
   // Sync operations
   syncBrand: (brandId: string) => Promise<SyncResult>;
+  syncBrandWithLayers: (brandId: string) => Promise<SyncResult>;
   canSync: () => boolean;
   
   // History operations
@@ -614,6 +615,148 @@ export const useBrandStore = create<BrandStoreState>()(
             timestamp: Date.now(),
             variablesSynced: generatedBrand.variables.length,
             modesAdded: [brand.name],
+            errors: [],
+            warnings: validation.warnings
+          };
+        } catch (error) {
+          set({ syncStatus: 'error' });
+          return {
+            success: false,
+            brandId,
+            timestamp: Date.now(),
+            variablesSynced: 0,
+            modesAdded: [],
+            errors: [error instanceof Error ? error.message : 'Unknown error'],
+            warnings: []
+          };
+        }
+      },
+
+      // Sync brand with multi-layer architecture
+      syncBrandWithLayers: async (brandId: string) => {
+        const state = get();
+        
+        // Rate limiting check (max 5 syncs per minute)
+        const oneMinuteAgo = Date.now() - 60000;
+        const recentAttempts = state.syncAttempts.filter(
+          (a) => a.timestamp > oneMinuteAgo
+        );
+        
+        if (recentAttempts.length >= 5) {
+          return {
+            success: false,
+            brandId,
+            timestamp: Date.now(),
+            variablesSynced: 0,
+            modesAdded: [],
+            errors: ['Rate limit exceeded. Maximum 5 syncs per minute.'],
+            warnings: []
+          };
+        }
+
+        const brand = state.brands.find((b) => b.id === brandId);
+        if (!brand) {
+          return {
+            success: false,
+            brandId,
+            timestamp: Date.now(),
+            variablesSynced: 0,
+            modesAdded: [],
+            errors: ['Brand not found'],
+            warnings: []
+          };
+        }
+
+        // Validate before sync
+        set({ syncStatus: 'validating' });
+        const validation = get().validateBrand(brandId);
+        
+        if (!validation.valid) {
+          set({ syncStatus: 'error' });
+          return {
+            success: false,
+            brandId,
+            timestamp: Date.now(),
+            variablesSynced: 0,
+            modesAdded: [],
+            errors: validation.errors,
+            warnings: validation.warnings
+          };
+        }
+
+        // Create backup before sync
+        get().createBackup(brand, 'Before multi-layer sync operation', false);
+
+        // Generate variables with multi-layer architecture
+        set({ syncStatus: 'previewing' });
+        console.log('Generating with multi-layer architecture...');
+        const { BrandGenerator } = await import('@/lib/brand-generator');
+        const generatedBrand = BrandGenerator.generateBrandWithLayers(brand);
+        
+        console.log(`Generated ${generatedBrand.variables.length} variables across ${generatedBrand.statistics.collections.length} collections`);
+        
+        // Group variables by collection
+        const variablesByCollection: Record<string, any[]> = {};
+        for (const variable of generatedBrand.variables) {
+          if (!variablesByCollection[variable.collection]) {
+            variablesByCollection[variable.collection] = [];
+          }
+          variablesByCollection[variable.collection].push(variable);
+        }
+        
+        // Update sync status
+        set({ syncStatus: 'syncing' });
+
+        try {
+          // Send message to plugin code with multi-layer structure
+          window.parent.postMessage(
+            {
+              pluginMessage: {
+                type: 'sync-brand-with-layers',
+                data: { 
+                  brand,
+                  variablesByCollection
+                }
+              }
+            },
+            '*'
+          );
+
+          // Record sync attempt
+          set((state) => ({
+            syncAttempts: [...state.syncAttempts, { timestamp: Date.now() }]
+          }));
+
+          // Update brand sync timestamp
+          get().updateBrand(brandId, { syncedAt: Date.now() });
+
+          // Add audit log
+          get().addAuditEntry({
+            action: 'sync',
+            brandId,
+            brandName: brand.name,
+            metadata: { 
+              type: 'multi-layer',
+              layers: generatedBrand.statistics.collections.length,
+              totalVariables: generatedBrand.variables.length
+            }
+          });
+
+          set({ syncStatus: 'success' });
+
+          // Reset to idle after 3 seconds
+          setTimeout(() => {
+            if (get().syncStatus === 'success') {
+              set({ syncStatus: 'idle' });
+            }
+          }, 3000);
+
+          return {
+            success: true,
+            brandId,
+            timestamp: Date.now(),
+            variablesSynced: generatedBrand.variables.length,
+            modesAdded: generatedBrand.statistics.modes,
             errors: [],
             warnings: validation.warnings
           };

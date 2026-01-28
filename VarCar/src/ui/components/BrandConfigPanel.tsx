@@ -18,6 +18,7 @@ export function BrandConfigPanel() {
   const activeBrand = useBrandStore((state) => state.getActiveBrand());
   const updateBrandPalette = useBrandStore((state) => state.updateBrandPalette);
   const syncBrand = useBrandStore((state) => state.syncBrand);
+  const syncBrandWithLayers = useBrandStore((state) => state.syncBrandWithLayers);
   const syncStatus = useBrandStore((state) => state.syncStatus);
   const canSync = useBrandStore((state) => state.canSync());
   
@@ -28,6 +29,7 @@ export function BrandConfigPanel() {
   
   const [showInfo, setShowInfo] = useState(false);
   const [showLayerConfig, setShowLayerConfig] = useState(false);
+  const [useMultiLayer, setUseMultiLayer] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
 
   // Move useMemo BEFORE any early returns to comply with Rules of Hooks
@@ -146,7 +148,12 @@ export function BrandConfigPanel() {
       return;
     }
 
-    await syncBrand(activeBrand.id);
+    // Use multi-layer sync if enabled
+    if (useMultiLayer) {
+      await syncBrandWithLayers(activeBrand.id);
+    } else {
+      await syncBrand(activeBrand.id);
+    }
   };
 
   const canSyncBrand = validation.valid && canSync && syncStatus === 'idle';
@@ -181,12 +188,23 @@ export function BrandConfigPanel() {
         
         <CompactButton
           icon={Upload}
-          label="Sync to Figma"
+          label={useMultiLayer ? "Sync (Multi-Layer)" : "Sync to Figma"}
           variant="secondary"
           onClick={handleSync}
           disabled={!canSyncBrand}
           className="w-full"
         />
+        
+        {/* Multi-Layer Toggle */}
+        <label className="flex items-center gap-2 mt-2 text-xs text-foreground-secondary cursor-pointer">
+          <input
+            type="checkbox"
+            checked={useMultiLayer}
+            onChange={(e) => setUseMultiLayer(e.target.checked)}
+            className="w-3 h-3"
+          />
+          <span>Use 9-layer architecture</span>
+        </label>
 
         {/* Collapsible info banner */}
         <div className="mt-2">
@@ -199,9 +217,22 @@ export function BrandConfigPanel() {
             <span>How it works</span>
           </button>
           {showInfo && (
-            <div className="mt-2 bg-surface-elevated border-l-2 border-l-blue-500 rounded pl-2 pr-1.5 py-2 text-xs text-foreground-secondary">
-              Select palettes from RangDe (Colors tab). The system generates 224 variables
-              using 8 scale types (Surface, High, Medium, Low, Heavy, Bold, Bold A11Y, Minimal).
+            <div className="mt-2 bg-surface-elevated border-l-2 border-l-blue-500 rounded pl-2 pr-1.5 py-2 text-xs text-foreground-secondary space-y-2">
+              {useMultiLayer ? (
+                <>
+                  <p>Multi-layer architecture generates 2,600+ variables across 9 collections:</p>
+                  <ul className="text-[10px] space-y-0.5 ml-2">
+                    <li>• Layer 0: Primitives (RGB from RangDe)</li>
+                    <li>• Layer 1: Semi semantics (Grey scale)</li>
+                    <li>• Layer 2: Colour Mode (Light/Dark)</li>
+                    <li>• Layer 3-8: Hierarchy, states, themes</li>
+                  </ul>
+                  <p className="text-[10px] text-foreground-tertiary">Variables use VARIABLE_ALIAS chains for dynamic updates</p>
+                </>
+              ) : (
+                <p>Select palettes from RangDe (Colors tab). The system generates 224 variables
+                using 8 scale types (Surface, High, Medium, Low, Heavy, Bold, Bold A11Y, Minimal).</p>
+              )}
             </div>
           )}
         </div>
