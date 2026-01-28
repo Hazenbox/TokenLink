@@ -1539,6 +1539,56 @@ figma.ui.onmessage = async (msg) => {
     }
   }
   
+  // Handle palette storage get request
+  if (msg.type === 'get-palettes') {
+    try {
+      console.log('Loading palettes from Figma clientStorage...');
+      const palettesData = await figma.clientStorage.getAsync('varcar-palettes');
+      
+      figma.ui.postMessage({
+        type: 'palettes-loaded',
+        data: palettesData || null
+      });
+      
+      if (palettesData) {
+        console.log('Palettes loaded successfully from Figma clientStorage');
+      } else {
+        console.log('No palettes found in Figma storage');
+      }
+    } catch (error) {
+      console.error('Error loading palettes:', error);
+      figma.ui.postMessage({
+        type: 'palettes-error',
+        data: { message: error instanceof Error ? error.message : 'Failed to load palettes' }
+      });
+    }
+  }
+  
+  // Handle palette storage save request
+  if (msg.type === 'save-palettes') {
+    try {
+      console.log('Saving palettes to Figma clientStorage...');
+      const palettesData = msg.data;
+      
+      await figma.clientStorage.setAsync('varcar-palettes', palettesData);
+      
+      console.log('Palettes saved successfully to Figma clientStorage');
+      figma.ui.postMessage({
+        type: 'palettes-saved',
+        data: { success: true, timestamp: Date.now() }
+      });
+    } catch (error) {
+      console.error('Error saving palettes:', error);
+      figma.ui.postMessage({
+        type: 'palettes-save-error',
+        data: { 
+          success: false,
+          message: error instanceof Error ? error.message : 'Failed to save palettes' 
+        }
+      });
+    }
+  }
+  
   // Handle window resize
   if (msg.type === 'resize') {
     try {

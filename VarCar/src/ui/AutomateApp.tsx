@@ -10,13 +10,23 @@ import { BrandVariableTable } from './components/BrandVariableTable';
 import { CollectionsGroupsPanel } from './components/variables/CollectionsGroupsPanel';
 import { VariablesErrorBoundary } from './components/variables/VariablesErrorBoundary';
 import { useBrandStore } from '@/store/brand-store';
+import { usePaletteStore } from '@/store/palette-store';
 
 export function AutomateApp() {
-  // Initialize brands and Figma data on mount
+  // Initialize palettes and brands on mount (order matters!)
   useEffect(() => {
-    const store = useBrandStore.getState();
-    store.loadBrands(); // Load from Figma clientStorage with localStorage fallback
-    store.refreshFigmaData(); // Refresh Figma UI data
+    const loadData = async () => {
+      // Load palettes first (brands reference them)
+      await usePaletteStore.getState().loadPalettes();
+      
+      // Then load brands
+      await useBrandStore.getState().loadBrands();
+      
+      // Finally refresh UI
+      useBrandStore.getState().refreshFigmaData();
+    };
+    
+    loadData();
   }, []);
   
   return (

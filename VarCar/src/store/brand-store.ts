@@ -1009,6 +1009,7 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
           // Helper function to apply migration and set state
           const applyBrandsWithMigration = (data: any) => {
             let brands = data.brands || [];
+            let needsSave = false;
             
             // Auto-migrate legacy brands
             if (brands.length > 0) {
@@ -1019,20 +1020,27 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
                 console.log('[Migration] Migrating legacy brands to multi-collection architecture...');
                 brands = migrateAllLegacyBrands(brands);
                 console.log('[Migration] Migration complete!');
-                
-                // Save migrated data back to storage
-                get().saveBrands();
+                needsSave = true;
               } else {
                 console.log('[Migration] All brands are up to date');
               }
             }
             
+            // Set state FIRST with migrated data
             set({
               brands,
               activeBrandId: data.activeBrandId || null,
               backups: data.backups || [],
               auditLog: data.auditLog || []
             });
+            
+            // Then save if migration occurred - use setTimeout to ensure set() completes
+            if (needsSave) {
+              setTimeout(() => {
+                console.log('[Migration] Saving migrated brands to storage...');
+                get().saveBrands();
+              }, 100);
+            }
           };
           
           // Helper function to load from localStorage
