@@ -4,10 +4,14 @@
  */
 
 import React from 'react';
-import { FigmaVariableValue } from '@/models/brand';
 
 interface ModeCellProps {
-  value: FigmaVariableValue;
+  value: {
+    type: 'COLOR' | 'ALIAS';
+    value?: string;
+    aliasId?: string;
+    aliasCollectionId?: string;
+  };
   color: string; // Resolved hex color
 }
 
@@ -21,7 +25,7 @@ export function ModeCell({ value, color }: ModeCellProps) {
     );
   }
   
-  const isAlias = value.aliasTo !== undefined;
+  const isAlias = value.type === 'ALIAS' && value.aliasId;
   
   return (
     <div className="flex items-center gap-2 px-3 py-2">
@@ -35,11 +39,19 @@ export function ModeCell({ value, color }: ModeCellProps) {
       {/* Value/Alias Display */}
       <div className="flex-1 min-w-0">
         {isAlias ? (
-          <div 
-            className="text-[10px] text-foreground-tertiary font-mono truncate"
-            title={`Alias: ${value.aliasTo?.variableId || 'unknown'} (${value.aliasTo?.modeId || 'unknown'})`}
-          >
-            .../[Colour Mode]
+          <div className="flex flex-col gap-0.5">
+            <div 
+              className="text-[10px] text-brand font-mono truncate"
+              title={`Aliases to: ${value.aliasId}`}
+            >
+              → {value.aliasId}
+            </div>
+            <div 
+              className="text-[9px] text-foreground-tertiary/60 font-mono"
+              title={`Resolves to: ${color}`}
+            >
+              {color}
+            </div>
           </div>
         ) : (
           <div 
