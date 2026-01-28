@@ -9,7 +9,6 @@ import { shallow } from 'zustand/shallow';
 import { useBrandStore } from '@/store/brand-store';
 import { useVariablesViewStore } from '@/store/variables-view-store';
 import { BrandGenerator } from '@/lib/brand-generator';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Download } from 'lucide-react';
@@ -189,76 +188,74 @@ export function BrandVariableTable() {
         </div>
       </div>
 
-      {/* Flat Variables Table (NO ACCORDION) */}
-      <ScrollArea className="flex-1">
-        <div className="overflow-x-auto">
-          {filteredVariables.length === 0 ? (
-            <div className="text-center py-12 text-foreground-secondary text-xs">
-              {searchQuery ? 'No variables match your search' : 'No variables in this collection'}
-            </div>
-          ) : (
-            <table className="w-full border-collapse text-xs">
-              <thead className="sticky top-0 z-10 bg-background">
-                <tr className="border-b border-border/20">
-                  {/* Variable Name Column */}
-                  <th className="sticky left-0 z-20 bg-background text-left px-3 py-2 border-r border-border/10">
+      {/* Flat Variables Table (NO ACCORDION) - Native Scrolling for Horizontal + Vertical */}
+      <div className="flex-1 overflow-x-auto overflow-y-auto relative">
+        {filteredVariables.length === 0 ? (
+          <div className="text-center py-12 text-foreground-secondary text-xs">
+            {searchQuery ? 'No variables match your search' : 'No variables in this collection'}
+          </div>
+        ) : (
+          <table className="w-full border-collapse text-xs">
+            <thead className="sticky top-0 z-10 bg-background">
+              <tr className="border-b border-border/20">
+                {/* Variable Name Column - Sticky Header + Sticky Column */}
+                <th className="sticky left-0 z-20 bg-background text-left px-3 py-2 border-r border-border/10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)]">
+                  <span className="text-[11px] font-medium text-foreground-secondary">
+                    Name
+                  </span>
+                </th>
+                
+                {/* Mode Columns */}
+                {modes.map((mode) => (
+                  <th 
+                    key={mode.modeId} 
+                    className="text-center px-3 py-2 min-w-[180px] border-r border-border/10 whitespace-nowrap"
+                  >
                     <span className="text-[11px] font-medium text-foreground-secondary">
-                      Name
+                      {mode.name}
                     </span>
                   </th>
-                  
-                  {/* Mode Columns */}
-                  {modes.map((mode) => (
-                    <th 
-                      key={mode.modeId} 
-                      className="text-center px-3 py-2 min-w-[140px] border-r border-border/10"
-                    >
-                      <span className="text-[11px] font-medium text-foreground-secondary">
-                        {mode.name}
-                      </span>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              
-              <tbody>
-                {filteredVariables.map((variable) => (
-                  <tr 
-                    key={variable.id} 
-                    className="border-b border-border/10 hover:bg-surface/30 transition-colors"
-                  >
-                    {/* Variable Name */}
-                    <td className="sticky left-0 z-10 bg-background px-3 py-2 border-r border-border/10">
-                      <span className="text-[11px] text-foreground">{variable.name}</span>
-                    </td>
-                    
-                    {/* Mode Values */}
-                    {modes.map((mode) => {
-                      const value = variable.valuesByMode[mode.modeId];
-                      const resolvedColor = variable.resolvedValuesByMode[mode.modeId];
-                      
-                      return (
-                        <td 
-                          key={mode.modeId} 
-                          className="border-r border-border/10 align-middle"
-                        >
-                          {value ? (
-                            <ModeCell value={value} color={resolvedColor} />
-                          ) : (
-                            <div className="px-3 py-2 text-center text-foreground-tertiary/30">
-                              —
-                            </div>
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
                 ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </ScrollArea>
+              </tr>
+            </thead>
+            
+            <tbody>
+              {filteredVariables.map((variable) => (
+                <tr 
+                  key={variable.id} 
+                  className="border-b border-border/10 hover:bg-surface/30 transition-colors group"
+                >
+                  {/* Variable Name - Sticky Column with hover state */}
+                  <td className="sticky left-0 z-10 bg-background group-hover:bg-surface/30 px-3 py-2 border-r border-border/10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)] transition-colors">
+                    <span className="text-[11px] text-foreground whitespace-nowrap">{variable.name}</span>
+                  </td>
+                  
+                  {/* Mode Values */}
+                  {modes.map((mode) => {
+                    const value = variable.valuesByMode[mode.modeId];
+                    const resolvedColor = variable.resolvedValuesByMode[mode.modeId];
+                    
+                    return (
+                      <td 
+                        key={mode.modeId} 
+                        className="border-r border-border/10 align-middle min-w-[180px]"
+                      >
+                        {value ? (
+                          <ModeCell value={value} color={resolvedColor} />
+                        ) : (
+                          <div className="px-3 py-2 text-center text-foreground-tertiary/30">
+                            —
+                          </div>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
 
       {/* Footer Stats */}
       <div className="p-3 border-t border-border flex-shrink-0">
