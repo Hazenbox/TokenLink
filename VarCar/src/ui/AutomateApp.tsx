@@ -12,9 +12,11 @@ import { VariablesErrorBoundary } from './components/variables/VariablesErrorBou
 import { useBrandStore } from '@/store/brand-store';
 
 export function AutomateApp() {
-  // Initialize Figma data on mount
+  // Initialize brands and Figma data on mount
   useEffect(() => {
-    useBrandStore.getState().refreshFigmaData();
+    const store = useBrandStore.getState();
+    store.loadBrands(); // Load from Figma clientStorage with localStorage fallback
+    store.refreshFigmaData(); // Refresh Figma UI data
   }, []);
   
   return (

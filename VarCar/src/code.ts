@@ -1489,6 +1489,56 @@ figma.ui.onmessage = async (msg) => {
     }
   }
   
+  // Handle brand storage get request
+  if (msg.type === 'get-brands') {
+    try {
+      console.log('Loading brands from Figma clientStorage...');
+      const brandsData = await figma.clientStorage.getAsync('varcar-brands');
+      
+      figma.ui.postMessage({
+        type: 'brands-loaded',
+        data: brandsData || null
+      });
+      
+      if (brandsData) {
+        console.log('Brands loaded successfully from Figma clientStorage');
+      } else {
+        console.log('No brands found in Figma storage');
+      }
+    } catch (error) {
+      console.error('Error loading brands:', error);
+      figma.ui.postMessage({
+        type: 'brands-error',
+        data: { message: error instanceof Error ? error.message : 'Failed to load brands' }
+      });
+    }
+  }
+  
+  // Handle brand storage save request
+  if (msg.type === 'save-brands') {
+    try {
+      console.log('Saving brands to Figma clientStorage...');
+      const brandsData = msg.data;
+      
+      await figma.clientStorage.setAsync('varcar-brands', brandsData);
+      
+      console.log('Brands saved successfully to Figma clientStorage');
+      figma.ui.postMessage({
+        type: 'brands-saved',
+        data: { success: true, timestamp: Date.now() }
+      });
+    } catch (error) {
+      console.error('Error saving brands:', error);
+      figma.ui.postMessage({
+        type: 'brands-save-error',
+        data: { 
+          success: false,
+          message: error instanceof Error ? error.message : 'Failed to save brands' 
+        }
+      });
+    }
+  }
+  
   // Handle window resize
   if (msg.type === 'resize') {
     try {

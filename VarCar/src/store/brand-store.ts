@@ -144,6 +144,10 @@ interface BrandStoreState {
   markDirty: () => void;
   autoSave: () => void;
   
+  // Storage operations
+  loadBrands: () => Promise<void>;
+  saveBrands: () => Promise<void>;
+  
   // Figma data refresh actions
   refreshFigmaData: () => void;
   refreshFigmaGroups: (collectionId: string) => void;
@@ -258,6 +262,9 @@ export const useBrandStore = create<BrandStoreState>()(
         
         // Refresh Figma data for new brand
         get().refreshFigmaData();
+        
+        // Save to storage
+        get().saveBrands();
       },
 
       // Duplicate brand
@@ -304,6 +311,9 @@ export const useBrandStore = create<BrandStoreState>()(
         
         // Refresh Figma data for duplicated brand
         get().refreshFigmaData();
+        
+        // Save to storage
+        get().saveBrands();
       },
 
       // Delete brand
@@ -342,6 +352,9 @@ export const useBrandStore = create<BrandStoreState>()(
         
         // Refresh Figma data after delete
         get().refreshFigmaData();
+        
+        // Save to storage
+        get().saveBrands();
       },
 
       // Update brand
@@ -380,6 +393,9 @@ export const useBrandStore = create<BrandStoreState>()(
           
           // Refresh Figma data after update
           get().refreshFigmaData();
+          
+          // Save to storage
+          get().saveBrands();
         }
       },
 
@@ -392,6 +408,7 @@ export const useBrandStore = create<BrandStoreState>()(
       setActiveBrand: (id: string | null) => {
         set({ activeBrandId: id });
         get().refreshFigmaData(); // Refresh Figma data when brand changes
+        get().saveBrands(); // Save active brand selection
       },
 
       // Get active brand
@@ -918,6 +935,9 @@ export const useBrandStore = create<BrandStoreState>()(
               isDirty: true
             };
           });
+          
+          // Save to storage after import
+          get().saveBrands();
         } catch (error) {
           console.error('Failed to import brands:', error);
         }
@@ -981,6 +1001,108 @@ export const useBrandStore = create<BrandStoreState>()(
         }
 
         set({ isDirty: false, lastAutoSave: Date.now() });
+        
+        // Save to storage after auto-save
+        state.saveBrands();
+      },
+      
+      // Load brands from Figma clientStorage with localStorage fallback
+      loadBrands: async () => {
+        try {
+          // Helper function to load from localStorage
+          const loadFromLocalStorage = () => {
+            try {
+              const stored = safeStorage.getItem('varcar-brands');
+              if (stored) {
+                const parsed = JSON.parse(stored);
+                console.log('[Storage] Loaded brands from localStorage');
+                set({
+                  brands: parsed.brands || [],
+                  activeBrandId: parsed.activeBrandId || null,
+                  backups: parsed.backups || [],
+                  auditLog: parsed.auditLog || []
+                });
+              } else {
+                console.log('[Storage] No brands found in localStorage');
+              }
+            } catch (error) {
+              console.error('[Storage] Error loading from localStorage:', error);
+            }
+          };
+
+          // Request from Figma clientStorage (via plugin message)
+          parent.postMessage({
+            pluginMessage: { type: 'get-brands' }
+          }, '*');
+          
+          // Set up message listener for response
+          const handleMessage = (event: MessageEvent) => {
+            if (event.data.pluginMessage?.type === 'brands-loaded') {
+              const loadedData = event.data.pluginMessage.data;
+              if (loadedData) {
+                console.log('[Storage] Loaded brands from Figma clientStorage');
+                set({
+                  brands: loadedData.brands || [],
+                  activeBrandId: loadedData.activeBrandId || null,
+                  backups: loadedData.backups || [],
+                  auditLog: loadedData.auditLog || []
+                });
+                
+                // Also save to localStorage as backup
+                safeStorage.setItem('varcar-brands', JSON.stringify(loadedData));
+              } else {
+                // Fallback to localStorage
+                console.log('[Storage] No Figma data found, trying localStorage...');
+                loadFromLocalStorage();
+              }
+              window.removeEventListener('message', handleMessage);
+            } else if (event.data.pluginMessage?.type === 'brands-error') {
+              console.warn('[Storage] Error loading from Figma storage, falling back to localStorage');
+              loadFromLocalStorage();
+              window.removeEventListener('message', handleMessage);
+            }
+          };
+          
+          window.addEventListener('message', handleMessage);
+          
+          // Timeout fallback to localStorage after 1 second
+          setTimeout(() => {
+            window.removeEventListener('message', handleMessage);
+            console.log('[Storage] Figma storage timeout, using localStorage');
+            loadFromLocalStorage();
+          }, 1000);
+          
+        } catch (error) {
+          console.error('[Storage] Error loading brands:', error);
+        }
+      },
+      
+      // Save brands to both Figma clientStorage and localStorage
+      saveBrands: async () => {
+        try {
+          const state = get();
+          const dataToSave = {
+            brands: state.brands,
+            activeBrandId: state.activeBrandId,
+            backups: state.backups,
+            auditLog: state.auditLog
+          };
+          
+          // Save to Figma clientStorage (primary)
+          parent.postMessage({
+            pluginMessage: { 
+              type: 'save-brands',
+              data: dataToSave
+            }
+          }, '*');
+          
+          // Save to localStorage (backup)
+          safeStorage.setItem('varcar-brands', JSON.stringify(dataToSave));
+          
+          console.log('[Storage] Brands saved to both Figma clientStorage and localStorage');
+        } catch (error) {
+          console.error('[Storage] Error saving brands:', error);
+        }
       },
       
       // Figma data refresh actions
@@ -1090,6 +1212,7 @@ export const useBrandStore = create<BrandStoreState>()(
         
         invalidateBrandCache(brandId);
         get().refreshFigmaData();
+        get().saveBrands();
       },
       
       // Update collection
@@ -1114,6 +1237,7 @@ export const useBrandStore = create<BrandStoreState>()(
         
         invalidateBrandCache(brandId);
         get().refreshFigmaData();
+        get().saveBrands();
       },
       
       // Delete collection
@@ -1143,6 +1267,7 @@ export const useBrandStore = create<BrandStoreState>()(
         
         invalidateBrandCache(brandId);
         get().refreshFigmaData();
+        get().saveBrands();
       },
       
       // Duplicate collection
@@ -1175,6 +1300,7 @@ export const useBrandStore = create<BrandStoreState>()(
         
         invalidateBrandCache(brandId);
         get().refreshFigmaData();
+        get().saveBrands();
       },
       
       // Add mode to collection
@@ -1206,6 +1332,7 @@ export const useBrandStore = create<BrandStoreState>()(
         
         invalidateBrandCache(brandId);
         get().refreshFigmaData();
+        get().saveBrands();
       },
       
       // Remove mode from collection
@@ -1239,6 +1366,7 @@ export const useBrandStore = create<BrandStoreState>()(
         
         invalidateBrandCache(brandId);
         get().refreshFigmaData();
+        get().saveBrands();
       },
       
       // Rename mode in collection
@@ -1270,6 +1398,7 @@ export const useBrandStore = create<BrandStoreState>()(
         
         invalidateBrandCache(brandId);
         get().refreshFigmaData();
+        get().saveBrands();
       },
       
       // Assign palette to group in collection
@@ -1303,6 +1432,7 @@ export const useBrandStore = create<BrandStoreState>()(
         
         invalidateBrandCache(brandId);
         get().refreshFigmaData();
+        get().saveBrands();
       },
       
     }),
