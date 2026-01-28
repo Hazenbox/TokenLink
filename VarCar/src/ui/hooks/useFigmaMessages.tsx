@@ -34,6 +34,8 @@ interface ProgressData {
   step: number;
   total: number;
   message: string;
+  currentVariables?: number;
+  totalVariables?: number;
 }
 
 export function useFigmaMessages() {

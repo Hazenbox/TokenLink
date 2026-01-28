@@ -1397,10 +1397,20 @@ figma.ui.onmessage = async (msg) => {
       
       console.log('Processing collections in order:', sortedCollections.map(([name]) => name));
       
+      // Calculate total variables to create
+      const totalVariablesToCreate = sortedCollections.reduce((sum, [, vars]) => sum + (vars as any[]).length, 0);
+      console.log(`Total variables to create: ${totalVariablesToCreate}`);
+      
       // Phase 1: Create all collections
       figma.ui.postMessage({
         type: 'sync-progress',
-        data: { step: 2, total: 5, message: `Creating ${sortedCollections.length} collections...` }
+        data: { 
+          step: 2, 
+          total: 5, 
+          message: `Creating ${sortedCollections.length} collections...`,
+          currentVariables: 0,
+          totalVariables: totalVariablesToCreate
+        }
       });
       
       for (const [collectionName, variables] of sortedCollections) {
@@ -1412,7 +1422,13 @@ figma.ui.onmessage = async (msg) => {
       // Phase 2: Create modes for each collection
       figma.ui.postMessage({
         type: 'sync-progress',
-        data: { step: 3, total: 5, message: 'Creating modes for collections...' }
+        data: { 
+          step: 3, 
+          total: 5, 
+          message: 'Creating modes for collections...',
+          currentVariables: 0,
+          totalVariables: totalVariablesToCreate
+        }
       });
       
       for (const [collectionName, variables] of sortedCollections) {
@@ -1429,11 +1445,18 @@ figma.ui.onmessage = async (msg) => {
       // Phase 3: Create variables layer by layer
       figma.ui.postMessage({
         type: 'sync-progress',
-        data: { step: 4, total: 5, message: 'Creating variables and aliases...' }
+        data: { 
+          step: 4, 
+          total: 5, 
+          message: 'Creating variables and aliases...',
+          currentVariables: 0,
+          totalVariables: totalVariablesToCreate
+        }
       });
       
       let totalCreated = 0;
       let totalUpdated = 0;
+      let lastProgressUpdate = Date.now();
       
       for (const [collectionName, variables] of sortedCollections) {
         const collection = collectionMap.get(collectionName)!;
@@ -1453,6 +1476,23 @@ figma.ui.onmessage = async (msg) => {
             totalCreated++;
           } else {
             totalUpdated++;
+          }
+          
+          // Send progress update every 100 variables or every second
+          const currentTotal = totalCreated + totalUpdated;
+          const now = Date.now();
+          if (currentTotal % 100 === 0 || now - lastProgressUpdate >= 1000) {
+            figma.ui.postMessage({
+              type: 'sync-progress',
+              data: { 
+                step: 4, 
+                total: 5, 
+                message: 'Creating variables and aliases...',
+                currentVariables: currentTotal,
+                totalVariables: totalVariablesToCreate
+              }
+            });
+            lastProgressUpdate = now;
           }
           
           // Store variable for later alias resolution
@@ -1503,9 +1543,16 @@ figma.ui.onmessage = async (msg) => {
       console.log(`\nMulti-layer sync complete: ${totalCreated} created, ${totalUpdated} updated`);
       
       // Refresh graph
+      const finalVariableCount = totalCreated + totalUpdated;
       figma.ui.postMessage({
         type: 'sync-progress',
-        data: { step: 5, total: 5, message: 'Finalizing sync...' }
+        data: { 
+          step: 5, 
+          total: 5, 
+          message: 'Finalizing sync...',
+          currentVariables: finalVariableCount,
+          totalVariables: totalVariablesToCreate
+        }
       });
       
       const updatedCollections = await figma.variables.getLocalVariableCollectionsAsync();

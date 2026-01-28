@@ -589,7 +589,6 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
 
         // Generate variables with aliases
         set({ syncStatus: 'previewing' });
-        const { BrandGenerator } = await import('@/lib/brand-generator');
         const generatedBrand = BrandGenerator.generateBrand(brand);
         
         // Update sync status
@@ -709,7 +708,6 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
         // Generate variables with multi-layer architecture
         set({ syncStatus: 'previewing' });
         console.log('Generating with multi-layer architecture...');
-        const { BrandGenerator } = await import('@/lib/brand-generator');
         const generatedBrand = BrandGenerator.generateBrandWithLayers(brand);
         
         console.log(`Generated ${generatedBrand.variables.length} variables across ${generatedBrand.statistics.collections.length} collections`);
