@@ -139,24 +139,29 @@ async function findVariableInCollection(collection: VariableCollection, varName:
 
 /**
  * Convert hex color to RGB object for Figma with validation
+ * @param hex - Hex color string (e.g., "#282829")
+ * @param context - Optional context for debugging (e.g., variable name)
+ * @returns RGB object or transparent black on error (makes errors visible)
  */
-function hexToRGB(hex: string): RGB {
+function hexToRGB(hex: string, context?: string): RGB {
+  const contextMsg = context ? ` (context: ${context})` : '';
+  
   // Validate input
   if (!hex || typeof hex !== 'string') {
-    console.error('[code.ts hexToRGB] Invalid input:', hex);
-    return { r: 1, g: 1, b: 1 }; // White fallback
+    console.error(`[code.ts hexToRGB] Invalid input${contextMsg}:`, hex);
+    return { r: 0, g: 0, b: 0 }; // Transparent black - more visible than white!
   }
   
   // Detect rgba strings (should not happen, but defensive)
   if (hex.startsWith('rgba') || hex.startsWith('rgb')) {
-    console.error('[code.ts hexToRGB] RGBA/RGB string passed, expected hex:', hex);
-    return { r: 1, g: 1, b: 1 }; // White fallback
+    console.error(`[code.ts hexToRGB] RGBA/RGB string passed, expected hex${contextMsg}:`, hex);
+    return { r: 0, g: 0, b: 0 }; // Transparent black
   }
   
   // Validate hex format
   if (!hex.startsWith('#') || hex.length !== 7) {
-    console.error('[code.ts hexToRGB] Invalid hex format (expected #RRGGBB):', hex);
-    return { r: 1, g: 1, b: 1 }; // White fallback
+    console.error(`[code.ts hexToRGB] Invalid hex format (expected #RRGGBB)${contextMsg}:`, hex);
+    return { r: 0, g: 0, b: 0 }; // Transparent black
   }
   
   const r = parseInt(hex.slice(1, 3), 16) / 255;
@@ -165,8 +170,8 @@ function hexToRGB(hex: string): RGB {
   
   // Validate parsed values
   if (isNaN(r) || isNaN(g) || isNaN(b)) {
-    console.error('[code.ts hexToRGB] Failed to parse hex:', hex);
-    return { r: 1, g: 1, b: 1 }; // White fallback
+    console.error(`[code.ts hexToRGB] Failed to parse hex${contextMsg}:`, hex);
+    return { r: 0, g: 0, b: 0 }; // Transparent black
   }
   
   return { r, g, b };
@@ -1525,8 +1530,31 @@ figma.ui.onmessage = async (msg) => {
             v.aliasTo.scale === aliasInfo.scale);
           
           if (sourceVar && sourceVar.value) {
-            const rgb = hexToRGB(sourceVar.value);
+            // Validate value type
+            if (typeof sourceVar.value !== 'string') {
+              console.error(`[Sync] Invalid value type for ${primitiveName}:`, typeof sourceVar.value, sourceVar.value);
+              continue;
+            }
+            
+            // Validate hex format
+            if (!sourceVar.value.startsWith('#') || sourceVar.value.length !== 7) {
+              console.error(`[Sync] Invalid hex format for ${primitiveName}:`, sourceVar.value);
+              continue;
+            }
+            
+            // Convert hex to RGB with context for better debugging
+            const rgb = hexToRGB(sourceVar.value, `variable: ${primitiveName}`);
+            
+            // Check if conversion failed (returned black/transparent)
+            if (rgb.r === 0 && rgb.g === 0 && rgb.b === 0) {
+              console.error(`[Sync] hexToRGB returned black for ${primitiveName}, skipping`);
+              continue;
+            }
+            
             primitiveVar.setValueForMode(rangdeCollection.defaultModeId, rgb);
+            console.log(`[Sync] ✓ Set color for ${primitiveName}: ${sourceVar.value}`);
+          } else {
+            console.warn(`[Sync] No source variable found for ${primitiveName}`);
           }
         }
         
