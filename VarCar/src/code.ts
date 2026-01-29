@@ -86,14 +86,35 @@ async function getOrCreateCollection(name: string): Promise<VariableCollection> 
 
 /**
  * Find or create a mode in a collection
+ * @param isFirstMode - If true and collection has default "Mode 1", rename it instead of adding
  */
-async function getOrCreateMode(collection: VariableCollection, modeName: string): Promise<{modeId: string; mode: any}> {
+async function getOrCreateMode(
+  collection: VariableCollection, 
+  modeName: string,
+  isFirstMode: boolean = false
+): Promise<{modeId: string; mode: any}> {
+  
   let mode = collection.modes.find(m => m.name === modeName);
   
   if (!mode) {
-    console.log(`Creating mode: ${modeName} in collection ${collection.name}`);
-    const modeId = collection.addMode(modeName);
-    mode = collection.modes.find(m => m.modeId === modeId);
+    // Check if this is the first mode AND collection has default "Mode 1"
+    const hasDefaultMode = collection.modes.length === 1 && 
+                          collection.modes[0].name === 'Mode 1';
+    
+    if (isFirstMode && hasDefaultMode) {
+      // ✅ RENAME default mode instead of adding
+      console.log(`[Mode Fix] Renaming default "Mode 1" to: ${modeName} in ${collection.name}`);
+      const defaultModeId = collection.modes[0].modeId;
+      collection.renameMode(defaultModeId, modeName);
+      mode = collection.modes.find(m => m.name === modeName);
+    } else {
+      // Add new mode as usual
+      console.log(`[Mode Fix] Adding mode: ${modeName} in ${collection.name}`);
+      const modeId = collection.addMode(modeName);
+      mode = collection.modes.find(m => m.modeId === modeId);
+    }
+  } else {
+    console.log(`[Mode Fix] Mode already exists: ${modeName} in ${collection.name}`);
   }
   
   return { modeId: mode!.modeId, mode: mode! };
