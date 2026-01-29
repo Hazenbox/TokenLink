@@ -42,6 +42,11 @@ interface PaletteState {
   setViewMode: (mode: ViewMode) => void;
   toggleFullscreen: () => void;
   
+  // Palette lookup helpers
+  getPaletteById: (id: string) => Palette | undefined;
+  getAllPalettes: () => Palette[];
+  isPaletteLoaded: (id: string) => boolean;
+  
   // New actions for Figma sync
   syncToFigmaVariables: () => Promise<void>;
   importFromFigmaVariables: (collectionId: string) => Promise<void>;
@@ -270,6 +275,19 @@ export const usePaletteStore = create<PaletteState>()((set, get) => {
         getActivePalette: () => {
           const state = get();
           return state.palettes.find((p) => p.id === state.activePaletteId) || null;
+        },
+
+        getPaletteById: (id: string) => {
+          const state = get();
+          return state.palettes.find((p) => p.id === id);
+        },
+
+        getAllPalettes: () => {
+          return get().palettes;
+        },
+
+        isPaletteLoaded: (id: string) => {
+          return get().palettes.some((p) => p.id === id);
         },
 
         setViewMode: (mode: ViewMode) => {
