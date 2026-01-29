@@ -266,7 +266,7 @@ export function BrandVariableTable() {
                     {/* Sticky left column for group name */}
                     <td className="sticky left-0 z-20 bg-surface px-3 py-1.5 border-b border-border/50 border-r border-border/20">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-semibold text-foreground uppercase tracking-wide">
+                        <span className="text-[10px] font-semibold text-foreground uppercase tracking-wide whitespace-nowrap">
                           {groupName}
                         </span>
                         <span className="text-[9px] text-foreground-tertiary">
