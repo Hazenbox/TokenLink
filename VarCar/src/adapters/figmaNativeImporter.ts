@@ -42,8 +42,8 @@ export function detectImportFormat(jsonString: string): 'figzig' | 'figma-native
   try {
     const data = JSON.parse(jsonString);
     
-    // FigZig format has $schema and metadata.exporter fields
-    if (data.$schema && data.metadata?.exporter === 'FigZig') {
+    // Token Link format has $schema and metadata.exporter fields
+    if (data.$schema && (data.metadata?.exporter === 'Token Link' || data.metadata?.exporter === 'FigZig')) {
       return 'figzig';
     }
     

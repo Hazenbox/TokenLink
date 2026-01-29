@@ -245,14 +245,14 @@ export function VariableGraphView({
       const target = parseHandle(params.targetHandle);
 
       if (!source || !target) {
-        console.error('[FigZig] Failed to parse handle IDs:', params);
+        console.error('[Token Link] Failed to parse handle IDs:', params);
         return;
       }
 
       // Validate connection before creating
       const validation = validateConnection(params.sourceHandle, params.targetHandle, graph);
       if (!validation.isValid) {
-        console.warn('[FigZig] Connection validation failed:', validation.reason);
+        console.warn('[Token Link] Connection validation failed:', validation.reason);
         // The visual feedback during drag already showed this was invalid
         return;
       }
@@ -277,7 +277,7 @@ export function VariableGraphView({
       removeChanges.forEach(change => {
         const edge = edges.find(e => e.id === change.id);
         if (edge?.data && onDeleteAlias) {
-          console.log('[FigZig] Edge deletion detected:', edge.id);
+          console.log('[Token Link] Edge deletion detected:', edge.id);
           
           // Extract alias info from edge data
           const { fromVariableId, toVariableId, sourceModeId, targetModeId,
@@ -339,7 +339,7 @@ export function VariableGraphView({
   
   const onEdgeClickHandler = useCallback(
     (event: React.MouseEvent, edge: any) => {
-      console.log('[FigZig] Edge clicked:', edge.id);
+      console.log('[Token Link] Edge clicked:', edge.id);
       onEdgeClick?.(edge.id);
     },
     [onEdgeClick]

@@ -245,24 +245,24 @@ export function figmaToGraph(
                   modeId: targetMode.modeId,
                 };
                 
-                console.log(`[FigZig] Resolved alias: ${figmaVariable.name}.${modeName} → ${targetVariable.name}.${targetMode.name} (mode ID: ${targetMode.modeId})`);
+                console.log(`[Token Link] Resolved alias: ${figmaVariable.name}.${modeName} → ${targetVariable.name}.${targetMode.name} (mode ID: ${targetMode.modeId})`);
               } else {
                 // Fallback: if no matching mode name found, use the first mode of target collection
-                console.warn(`[FigZig] No matching mode "${modeName}" found in target collection "${targetCollection.name}", using first mode`);
+                console.warn(`[Token Link] No matching mode "${modeName}" found in target collection "${targetCollection.name}", using first mode`);
                 modeValue = {
                   ...modeValue,
                   modeId: targetCollection.modes[0]?.modeId || modeId,
                 };
               }
             } else {
-              console.warn(`[FigZig] Target collection not found for variable ${targetVariable.name}`);
+              console.warn(`[Token Link] Target collection not found for variable ${targetVariable.name}`);
               modeValue = {
                 ...modeValue,
                 modeId: modeId,
               };
             }
           } else {
-            console.warn(`[FigZig] Target variable not found for alias in ${figmaVariable.name}.${modeName}`);
+            console.warn(`[Token Link] Target variable not found for alias in ${figmaVariable.name}.${modeName}`);
             modeValue = {
               ...modeValue,
               modeId: modeId,

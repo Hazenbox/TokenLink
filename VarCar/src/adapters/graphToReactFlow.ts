@@ -117,7 +117,7 @@ export function graphToReactFlow(graph: VariableGraph): {
   const { positionedNodes, positionedHeaders } = layoutGraph(variableNodes, collectionHeaders);
   
   // Convert aliases to mode-level edges with validation
-  console.log('[FigZig] Creating mode-level edges, total aliases:', graph.aliases.length);
+  console.log('[Token Link] Creating mode-level edges, total aliases:', graph.aliases.length);
   let validEdgesCreated = 0;
   let skippedEdges = 0;
   
@@ -130,7 +130,7 @@ export function graphToReactFlow(graph: VariableGraph): {
     const toVariable = graph.variables.get(alias.toVariableId);
     
     if (!fromVariable || !toVariable) {
-      console.warn(`[FigZig] Alias ${aliasIndex}: Skipping - variables not found in graph`, {
+      console.warn(`[Token Link] Alias ${aliasIndex}: Skipping - variables not found in graph`, {
         fromVariableId: alias.fromVariableId,
         toVariableId: alias.toVariableId,
         fromExists: !!fromVariable,
@@ -142,7 +142,7 @@ export function graphToReactFlow(graph: VariableGraph): {
     
     // Validate that nodes are rendered for both variables
     if (!renderedNodeIds.has(alias.fromVariableId)) {
-      console.warn(`[FigZig] Alias ${aliasIndex}: Skipping - source node not rendered`, {
+      console.warn(`[Token Link] Alias ${aliasIndex}: Skipping - source node not rendered`, {
         fromVariable: fromVariable.name,
         fromVariableId: alias.fromVariableId
       });
@@ -151,7 +151,7 @@ export function graphToReactFlow(graph: VariableGraph): {
     }
     
     if (!renderedNodeIds.has(alias.toVariableId)) {
-      console.warn(`[FigZig] Alias ${aliasIndex}: Skipping - target node not rendered`, {
+      console.warn(`[Token Link] Alias ${aliasIndex}: Skipping - target node not rendered`, {
         toVariable: toVariable.name,
         toVariableId: alias.toVariableId
       });
@@ -168,7 +168,7 @@ export function graphToReactFlow(graph: VariableGraph): {
       // Validate source mode exists
       if (!fromModeIds.has(sourceModeId)) {
         const fromModeName = fromVariable.modes.find(m => m.id === sourceModeId)?.name || 'unknown';
-        console.warn(`[FigZig] Alias ${aliasIndex}: Skipping edge - source mode "${sourceModeId}" (${fromModeName}) not found in variable "${fromVariable.name}"`);
+        console.warn(`[Token Link] Alias ${aliasIndex}: Skipping edge - source mode "${sourceModeId}" (${fromModeName}) not found in variable "${fromVariable.name}"`);
         skippedEdges++;
         return;
       }
@@ -176,7 +176,7 @@ export function graphToReactFlow(graph: VariableGraph): {
       // Validate target mode exists
       if (!toModeIds.has(targetModeId)) {
         const availableModes = toVariable.modes.map(m => `${m.name} (${m.id})`).join(', ');
-        console.warn(`[FigZig] Alias ${aliasIndex}: Skipping edge - target mode "${targetModeId}" not found in variable "${toVariable.name}". Available modes: ${availableModes}`);
+        console.warn(`[Token Link] Alias ${aliasIndex}: Skipping edge - target mode "${targetModeId}" not found in variable "${toVariable.name}". Available modes: ${availableModes}`);
         skippedEdges++;
         return;
       }
@@ -230,13 +230,13 @@ export function graphToReactFlow(graph: VariableGraph): {
         },
       };
       
-      console.log(`[FigZig] ✓ Created edge: ${fromVariable.name}.${sourceModeName} → ${toVariable.name}.${targetModeName}`);
+      console.log(`[Token Link] ✓ Created edge: ${fromVariable.name}.${sourceModeName} → ${toVariable.name}.${targetModeName}`);
       edges.push(edge);
       validEdgesCreated++;
     });
   });
   
-  console.log(`[FigZig] Edge creation complete: ${validEdgesCreated} valid edges, ${skippedEdges} skipped`);
+  console.log(`[Token Link] Edge creation complete: ${validEdgesCreated} valid edges, ${skippedEdges} skipped`);
   
   // Combine all nodes (headers + variables)
   const allNodes = [...positionedHeaders, ...positionedNodes];

@@ -61,7 +61,7 @@ Token Link/
 Open your terminal (Terminal on Mac, Command Prompt or PowerShell on Windows) and navigate to the project folder:
 
 ```bash
-cd /Users/upendranath.kaki/Desktop/Codes/FigZig
+cd /Users/upendranath.kaki/Desktop/Codes/Token Link
 ```
 
 Install all required dependencies:
@@ -115,11 +115,11 @@ You should see output indicating successful compilation. The `dist/` folder will
 ### Step 4: Run the Plugin
 
 1. With your Figma file still open, go to:
-   - `Plugins` → `Development` → `FigZig` → `Open FigZig`
+   - `Plugins` → `Development` → `Token Link` → `Open Token Link`
 
 2. A sidebar will appear on the right side of your Figma window
 
-3. You should see the text: **"FigZig – Plugin Loaded"**
+3. You should see the text: **"Token Link – Plugin Loaded"**
    - With a subtitle: "Ready to automate your Figma variables"
 
 🎉 **Congratulations!** Your plugin is now running in Figma!
@@ -136,7 +136,7 @@ npm run build
 
 After rebuilding:
 1. In Figma, close the plugin sidebar if it's open
-2. Re-run the plugin from the menu: `Plugins` → `Development` → `FigZig`
+2. Re-run the plugin from the menu: `Plugins` → `Development` → `Token Link`
 3. Your changes will be reflected
 
 ### Development Mode (Watch Mode)
@@ -263,6 +263,6 @@ If you encounter any issues:
 
 **Plugin Status**: ✅ Ready for Development
 
-**Plugin Name**: FigZig
+**Plugin Name**: Token Link
 
 **Next Phase**: Implement Phase 0 (System Design & Schema Definition) from the PRD

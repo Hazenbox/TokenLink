@@ -23,12 +23,12 @@ export const SCHEMA_VERSION = '1.0.0';
 /**
  * Schema URL for validation (can be hosted in the future)
  */
-export const SCHEMA_URL = 'https://figzig.dev/schemas/variable-graph/v1.0';
+export const SCHEMA_URL = 'https://tokenlink.dev/schemas/variable-graph/v1.0';
 
 /**
  * Exporter name
  */
-export const EXPORTER_NAME = 'FigZig';
+export const EXPORTER_NAME = 'Token Link';
 
 /**
  * Exporter version

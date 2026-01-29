@@ -687,7 +687,7 @@ const App: React.FC = () => {
         setGraphData(graph);
         
         // Show detailed notification with format info
-        const formatLabel = format === 'figma-native' ? 'Figma native' : 'FigZig';
+        const formatLabel = format === 'figma-native' ? 'Figma native' : 'Token Link';
         const message = result.success
           ? `Import successful! (${formatLabel} format) Created ${result.stats.collectionsCreated} collection(s), ${result.stats.variablesCreated} variable(s), ${result.stats.aliasesCreated} alias(es)`
           : 'Import completed with errors';
@@ -717,7 +717,7 @@ const App: React.FC = () => {
       
       // Collection creation handlers
       if (msg.type === 'collection-created') {
-        console.log('[FigZig] Collection created, updating graph:', {
+        console.log('[Token Link] Collection created, updating graph:', {
           collections: msg.data.graph.collections.length,
           groups: msg.data.graph.groups.length,
           variables: msg.data.graph.variables.length,
@@ -728,7 +728,7 @@ const App: React.FC = () => {
       }
       
       if (msg.type === 'collection-creation-error') {
-        console.error('[FigZig] Collection creation error:', msg.data.message);
+        console.error('[Token Link] Collection creation error:', msg.data.message);
         setNotification({ type: 'error', message: msg.data.message });
         setTimeout(() => setNotification(null), 5000);
       }
@@ -967,7 +967,7 @@ const App: React.FC = () => {
     targetGroupName: string;
     targetCollectionName: string;
   }) => {
-    console.log('[FigZig] Deleting alias:', data);
+    console.log('[Token Link] Deleting alias:', data);
     window.parent.postMessage(
       { pluginMessage: { type: 'delete-alias', data } },
       '*'

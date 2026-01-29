@@ -22,11 +22,11 @@ export function formatDateForFilename(date: Date = new Date()): string {
 
 /**
  * Generates a filename for the JSON export with timestamp
- * @returns Filename in format: figzig-export-YYYY-MM-DD-HHMMSS.json
+ * @returns Filename in format: token-link-export-YYYY-MM-DD-HHMMSS.json
  */
 export function generateExportFilename(): string {
   const timestamp = formatDateForFilename();
-  return `figzig-export-${timestamp}.json`;
+  return `token-link-export-${timestamp}.json`;
 }
 
 // ============================================================================

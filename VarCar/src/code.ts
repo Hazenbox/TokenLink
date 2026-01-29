@@ -546,7 +546,7 @@ figma.ui.onmessage = async (msg) => {
       }
       
       console.log(`Executing ${applyResult.operations.length} alias operations...`);
-      console.log('[FigZig] All operations have been validated for circular dependencies and backwards aliases');
+      console.log('[Token Link] All operations have been validated for circular dependencies and backwards aliases');
       
       // Execute each alias operation
       // Note: Operations have already been validated by the rule engine to ensure:
@@ -664,11 +664,11 @@ figma.ui.onmessage = async (msg) => {
       
       figma.ui.postMessage({
         type: 'import-progress',
-        data: { step: 1, total: 5, message: `Detected ${format === 'figma-native' ? 'Figma native' : format === 'figzig' ? 'FigZig' : 'unknown'} format` }
+        data: { step: 1, total: 5, message: `Detected ${format === 'figma-native' ? 'Figma native' : format === 'figzig' ? 'Token Link' : 'unknown'} format` }
       });
       
       if (format === 'unknown') {
-        throw new Error('Unrecognized JSON format. Expected FigZig export or Figma native export.');
+        throw new Error('Unrecognized JSON format. Expected Token Link export or Figma native export.');
       }
       
       // Parse based on format
@@ -700,11 +700,11 @@ figma.ui.onmessage = async (msg) => {
         internalGraph = figmaNativeToGraph(parseResult.data);
         
       } else {
-        // Parse FigZig format
+        // Parse Token Link format
         const parseResult = parseImportJSON(jsonString);
         
         if (!parseResult.valid || !parseResult.data) {
-          throw new Error(`Invalid FigZig JSON: ${parseResult.errors.join(', ')}`);
+          throw new Error(`Invalid Token Link JSON: ${parseResult.errors.join(', ')}`);
         }
         
         // Check schema version compatibility
@@ -719,10 +719,10 @@ figma.ui.onmessage = async (msg) => {
         
         figma.ui.postMessage({
           type: 'import-progress',
-          data: { step: 2, total: 5, message: 'Loading FigZig data...' }
+          data: { step: 2, total: 5, message: 'Loading Token Link data...' }
         });
         
-        // FigZig format already has internal graph structure
+        // Token Link format already has internal graph structure
         internalGraph = {
           collections: new Map(parseResult.data.graph.collections.map(c => [c.id, c])),
           groups: new Map(parseResult.data.graph.groups.map(g => [g.id, g])),
@@ -2299,7 +2299,7 @@ if (figma.command === 'open') {
     figma.showUI(__html__, {
       width,
       height,
-      title: 'FigMap',
+      title: 'Token Link',
       themeColors: true
     });
   })();
