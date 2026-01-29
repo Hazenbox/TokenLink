@@ -1829,10 +1829,25 @@ figma.ui.onmessage = async (msg) => {
         variableCache.clear();
         updatedCache.forEach((v, k) => variableCache.set(k, v));
         console.log(`Cache rebuilt: ${variableCache.size} variables`);
+        
+        // Debug: Show variable map contents
+        console.log('\n=== Variable Map Contents After Primitives ===');
+        console.log(`Total entries: ${variableMap.size}`);
+        const sampleEntries = Array.from(variableMap.entries()).slice(0, 10);
+        sampleEntries.forEach(([key]) => console.log(`  - ${key}`));
       }
       
       // === PHASE 2: Process Aliased Variables (All Other Layers) ===
       console.log('\n=== Phase 2: Creating Aliased Variables (Layers 1-8) ===');
+      
+      // Validate required layers are present
+      const presentCollections = otherCollections.map(([name]) => name);
+      const requiredLayers = ['00_Semi semantics', '4 Interaction state', '1 Appearance'];
+      const missingRequired = requiredLayers.filter(req => !presentCollections.includes(req));
+      if (missingRequired.length > 0) {
+        console.warn(`⚠️ Missing required collections: ${missingRequired.join(', ')}`);
+      }
+      console.log(`Processing ${otherCollections.length} aliased collections`);
       
       for (const [collectionName, variables] of otherCollections) {
         const collection = collectionMap.get(collectionName)!;
@@ -1875,16 +1890,35 @@ figma.ui.onmessage = async (msg) => {
               
               // Set alias (all non-primitive layers use aliases)
               if (variable.aliasTo) {
-                // Use cached lookup for alias targets (replaces nested async calls)
                 const targetName = variable.aliasTo.paletteName;
+                
+                // Debug: Show what we're looking for
+                console.log(`  [Alias] Current: ${varName} (collection: ${collectionName}, mode: ${variable.mode})`);
                 console.log(`  [Alias] Looking for target: "${targetName}"`);
+                console.log(`  [Alias] variableMap size: ${variableMap.size}, cache size: ${variableCache.size}`);
                 
                 let targetVar: Variable | undefined;
-                for (const [targetCollName, targetColl] of collectionMap.entries()) {
-                  targetVar = findVariableInCache(variableCache, targetColl.id, targetName);
-                  if (targetVar) {
-                    console.log(`  [Alias] Found in collection: ${targetCollName}`);
+                let foundInMap = false;
+                
+                // Strategy 1: Try variableMap first (includes recently created variables)
+                for (const [key, fVar] of variableMap.entries()) {
+                  const [collName, vName, modeName] = key.split(':');
+                  if (vName === targetName) {
+                    targetVar = fVar;
+                    foundInMap = true;
+                    console.log(`  [Alias] ✓ Found in variableMap: ${collName} (mode: ${modeName})`);
                     break;
+                  }
+                }
+                
+                // Strategy 2: Fallback to cache search (existing variables)
+                if (!targetVar) {
+                  for (const [targetCollName, targetColl] of collectionMap.entries()) {
+                    targetVar = findVariableInCache(variableCache, targetColl.id, targetName);
+                    if (targetVar) {
+                      console.log(`  [Alias] ✓ Found in cache: ${targetCollName}`);
+                      break;
+                    }
                   }
                 }
                 
@@ -1893,12 +1927,21 @@ figma.ui.onmessage = async (msg) => {
                     type: 'VARIABLE_ALIAS',
                     id: targetVar.id
                   });
+                  console.log(`  [Alias] ✓ Success: ${varName} → ${targetName}`);
                 } else {
-                  console.error(`  [Alias] NOT FOUND: "${targetName}"`);
-                  console.error(`  [Alias] Cache size: ${variableCache.size} variables`);
-                  const sampleKeys = Array.from(variableCache.keys()).slice(0, 5);
-                  console.error(`  [Alias] Sample cache keys: ${sampleKeys.join(', ')}`);
-                  throw new Error(`Alias target not found: ${targetName}`);
+                  console.warn(`  [Alias] ⚠️ Target not found: "${targetName}" - skipping`);
+                  console.warn(`  [Alias] Available in variableMap (first 5):`);
+                  const sampleMapKeys = Array.from(variableMap.keys()).slice(0, 5);
+                  sampleMapKeys.forEach(k => console.warn(`    - ${k}`));
+                  console.warn(`  [Alias] Available in cache (first 5):`);
+                  const sampleCacheKeys = Array.from(variableCache.keys()).slice(0, 5);
+                  sampleCacheKeys.forEach(k => console.warn(`    - ${k}`));
+                  
+                  // Don't throw - just skip this variable to allow sync to continue
+                  errors.push({
+                    variable: varName,
+                    error: `Alias target not found: ${targetName}`
+                  });
                 }
               }
             } catch (error) {
