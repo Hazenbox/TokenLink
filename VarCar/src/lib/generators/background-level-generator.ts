@@ -1,6 +1,6 @@
 /**
- * Background Level Generator (Layer 3)
- * Generates surface stacking levels that alias to Colour Mode
+ * Background Level Generator (Layer 4)
+ * Generates surface stacking levels that alias to Interaction State
  */
 
 import { BaseLayerGenerator } from './base-layer-generator';
@@ -30,25 +30,28 @@ export class BackgroundLevelGenerator extends BaseLayerGenerator {
       for (const scale of SCALE_NAMES) {
         const name = `${paletteName}/[Parent] ${scale}`;
         
-        // Map each level mode to appropriate Colour Mode context
-        const levelContextMap: Record<string, string> = {
-          'Level 0': 'Root',
-          'Level 1': 'Default',
-          'Level 2': 'Default',
-          'Bold': 'Root',
-          'Elevated': 'Default'
+        // Map each level mode to appropriate Interaction State
+        const levelStateMap: Record<string, { state: string, emphasis: string }> = {
+          'Level 0': { state: 'Idle', emphasis: 'Ghost' },
+          'Level 1': { state: 'Hover', emphasis: 'Minimal' },
+          'Level 2': { state: 'Pressed', emphasis: 'Subtle' },
+          'Bold': { state: 'Idle', emphasis: 'Bold' },
+          'Elevated': { state: 'Focus', emphasis: 'Subtle' }
         };
         
         modes.forEach((mode, idx) => {
-          const context = levelContextMap[mode] || 'Root';
-          const colourModeName = `${paletteName}/Semi semantics/${context}/[Colour Mode] ${scale}`;
+          const stateConfig = levelStateMap[mode] || { state: 'Idle', emphasis: 'Ghost' };
+          const interactionStateName = `${paletteName}/Default/${stateConfig.emphasis}/[Interaction state] ${scale}`;
           
-          const colourModeVar = this.registry.findByName(colourModeName, 'colour-mode');
+          const interactionStateVars = this.registry.findByCollection('interaction-state')
+            .filter(v => v.name === interactionStateName && v.modeName === stateConfig.state);
           
-          if (!colourModeVar) {
-            this.warn(`Colour Mode variable not found: ${colourModeName}`);
+          if (interactionStateVars.length === 0) {
+            this.warn(`Interaction State variable not found: ${interactionStateName} (${stateConfig.state})`);
             return;
           }
+          
+          const interactionStateVar = interactionStateVars[0];
           
           variables.push({
             id: this.generateVariableId(),
@@ -58,8 +61,8 @@ export class BackgroundLevelGenerator extends BaseLayerGenerator {
             layer: this.layer.order,
             modeId: `mode_${idx}`,
             modeName: mode,
-            aliasToId: colourModeVar.id,
-            aliasToName: colourModeName,
+            aliasToId: interactionStateVar.id,
+            aliasToName: interactionStateName,
             metadata: { scale, level: mode, palette: paletteName }
           });
         });
