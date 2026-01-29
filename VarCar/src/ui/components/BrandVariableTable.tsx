@@ -28,13 +28,16 @@ export function BrandVariableTable() {
   const collections = useBrandStore((state) => state.figmaCollections, shallow);
   const allVariablesMap = useBrandStore((state) => state.figmaVariablesByCollection, shallow);
   
+  // Create stable dependency for hierarchyPath to avoid infinite re-renders
+  const hierarchyPathKey = useMemo(() => hierarchyPath.join('/'), [hierarchyPath]);
+  
   // Refresh variables when collection or hierarchy path changes
   useEffect(() => {
     if (activeCollectionId) {
       const groupId = hierarchyPath.length > 0 ? hierarchyPath[0] : 'all';
       useBrandStore.getState().refreshFigmaVariables(activeCollectionId, groupId);
     }
-  }, [activeCollectionId, hierarchyPath]);
+  }, [activeCollectionId, hierarchyPathKey]);
   
   // Get active collection
   const activeCollection = useMemo(() => 
