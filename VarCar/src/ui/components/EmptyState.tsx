@@ -19,11 +19,11 @@ export function EmptyState({
   className 
 }: EmptyStateProps) {
   return (
-    <div className={cn("flex flex-col items-center justify-center gap-2 p-6 text-center", className)}>
-      <div className="space-y-1">
-        <h3 className="text-sm text-muted-foreground">{title}</h3>
+    <div className={cn("flex flex-col items-center justify-center gap-1 p-4 text-center", className)}>
+      <div className="space-y-0.5">
+        <h3 className="text-xs text-muted-foreground">{title}</h3>
         {description && (
-          <p className="text-sm text-muted-foreground/70 max-w-md">{description}</p>
+          <p className="text-xs text-muted-foreground/60 max-w-md">{description}</p>
         )}
       </div>
       {action && (
@@ -43,10 +43,10 @@ interface SearchEmptyStateProps {
 
 export function SearchEmptyState({ searchQuery, onClear, className }: SearchEmptyStateProps) {
   return (
-    <div className={cn("flex flex-col items-center justify-center gap-2 p-4 text-center", className)}>
-      <div className="space-y-1">
-        <h3 className="text-sm text-muted-foreground">No results found</h3>
-        <p className="text-xs text-muted-foreground/70 max-w-md">
+    <div className={cn("flex flex-col items-center justify-center gap-1 p-3 text-center", className)}>
+      <div className="space-y-0.5">
+        <h3 className="text-xs text-muted-foreground">No results found</h3>
+        <p className="text-xs text-muted-foreground/60 max-w-md">
           No results for &quot;{searchQuery}&quot;. Try adjusting your search.
         </p>
       </div>

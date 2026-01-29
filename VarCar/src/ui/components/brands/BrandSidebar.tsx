@@ -282,13 +282,13 @@ export function BrandSidebar() {
             <EmptyState
               title="No brands yet"
               description="Click + to create one"
-              className="py-6"
+              className="py-3"
             />
           ) : filteredBrands.length === 0 ? (
             <SearchEmptyState
               searchQuery={searchQuery}
               onClear={() => setSearchQuery("")}
-              className="py-6"
+              className="py-3"
             />
           ) : (
             <div className="space-y-0">

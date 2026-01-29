@@ -127,13 +127,13 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
           <EmptyState
             title="No collections"
             description="Create a brand to start"
-            className="py-8"
+            className="py-4"
           />
         ) : filteredCollections.length === 0 ? (
           <SearchEmptyState
             searchQuery={searchQuery}
             onClear={() => setSearchQuery("")}
-            className="py-8"
+            className="py-4"
           />
         ) : (
           <div className="py-1">

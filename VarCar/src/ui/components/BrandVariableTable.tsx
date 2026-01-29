@@ -120,7 +120,7 @@ export function BrandVariableTable() {
       <div className="h-full flex items-center justify-center bg-background">
         <EmptyState
           title="Select a brand to view variables"
-          className="py-8"
+          className="py-4"
         />
       </div>
     );
