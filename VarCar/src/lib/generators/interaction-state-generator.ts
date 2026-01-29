@@ -1,5 +1,5 @@
 /**
- * Interaction State Generator (Layer 5)
+ * Interaction State Generator (Layer 3)
  * Generates interactive states (Idle, Hover, Pressed, Focus) that alias to Colour Mode
  */
 
@@ -30,25 +30,34 @@ export class InteractionStateGenerator extends BaseLayerGenerator {
     
     // Generate for each palette
     for (const paletteName of paletteNames) {
-      // Generate for each fill emphasis type
+      // Generate for each fill emphasis type (for variable naming structure)
       for (const emphasisType of FILL_EMPHASIS_TYPES) {
         for (const scale of SCALE_NAMES) {
           const name = `${paletteName}/Default/${emphasisType}/[Interaction state] ${scale}`;
           
-          // Alias to Fill Emphasis layer
-          const fillEmphasisName = `${paletteName}/[Child] ${scale}`;
+          // Alias to Colour Mode layer (Root variables)
+          // Map interaction state to Root offset
+          const stateRootMap: Record<string, string> = {
+            'Idle': 'Root',
+            'Hover': 'Root +1',
+            'Pressed': 'Root +2',
+            'Focus': 'Root +3'
+          };
           
           modes.forEach((mode, idx) => {
-            // Find Fill Emphasis variable with appropriate emphasis mode
-            const fillEmphasisVars = this.registry.findByCollection('fill-emphasis')
-              .filter(v => v.name === fillEmphasisName && v.modeName === emphasisType);
+            const rootOffset = stateRootMap[mode] || 'Root';
+            const colourModeName = `${paletteName}/Semi semantics/${rootOffset}/[Colour Mode] ${scale}`;
             
-            if (fillEmphasisVars.length === 0) {
-              this.warn(`Fill Emphasis variable not found: ${fillEmphasisName} (${emphasisType})`);
+            // Find Colour Mode variable
+            const colourModeVars = this.registry.findByCollection('colour-mode')
+              .filter(v => v.name === colourModeName && v.modeName === 'Light');
+            
+            if (colourModeVars.length === 0) {
+              this.warn(`Colour Mode variable not found: ${colourModeName} (Light)`);
               return;
             }
             
-            const fillEmphasisVar = fillEmphasisVars[0];
+            const colourModeVar = colourModeVars[0];
             
             variables.push({
               id: this.generateVariableId(),
@@ -58,8 +67,8 @@ export class InteractionStateGenerator extends BaseLayerGenerator {
               layer: this.layer.order,
               modeId: `mode_${idx}`,
               modeName: mode,
-              aliasToId: fillEmphasisVar.id,
-              aliasToName: fillEmphasisName,
+              aliasToId: colourModeVar.id,
+              aliasToName: colourModeName,
               metadata: { scale, state: mode, context: emphasisType, palette: paletteName }
             });
           });
