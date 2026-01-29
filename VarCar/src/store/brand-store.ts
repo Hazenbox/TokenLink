@@ -628,6 +628,36 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
 
         // Generate variables with aliases
         set({ syncStatus: 'previewing' });
+        
+        // Validate all palettes exist before generation
+        const paletteStore = usePaletteStore.getState();
+        const missingPalettes: string[] = [];
+        
+        Object.entries(brand.colors).forEach(([appearance, ref]) => {
+          if (ref && typeof ref === 'object' && 'paletteId' in ref) {
+            const palette = paletteStore.palettes.find(p => p.id === ref.paletteId);
+            if (!palette) {
+              missingPalettes.push(`${ref.paletteName} (${ref.paletteId}) for ${appearance}`);
+            }
+          }
+        });
+        
+        if (missingPalettes.length > 0) {
+          set({ syncStatus: 'error' });
+          return {
+            success: false,
+            brandId,
+            timestamp: Date.now(),
+            variablesSynced: 0,
+            modesAdded: [],
+            errors: [
+              `Missing palettes: ${missingPalettes.join(', ')}`,
+              `Available palettes: ${paletteStore.palettes.map(p => `${p.name} (${p.id})`).join(', ')}`
+            ],
+            warnings: []
+          };
+        }
+        
         const generatedBrand = BrandGenerator.generateBrand(brand);
         
         // Update sync status
