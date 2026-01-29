@@ -233,11 +233,11 @@ export function BrandVariableTable() {
           </div>
         ) : (
           <table className="w-full border-collapse text-xs">
-            <thead className="sticky top-0 z-10 bg-background">
+            <thead className="sticky top-0 z-30 bg-background">
               <tr className="border-b border-border/40">
                 {/* Variable Name Column - Sticky Header + Sticky Column */}
-                <th className="sticky left-0 z-20 bg-background text-left px-3 py-2 border-r border-border/20 before:absolute before:inset-0 before:bg-background before:-z-10">
-                  <span className="text-[11px] font-medium text-foreground-secondary relative z-10">
+                <th className="sticky left-0 z-40 bg-background text-left px-3 py-2 border-r border-border/20">
+                  <span className="text-[11px] font-medium text-foreground-secondary">
                     Name
                   </span>
                 </th>
@@ -262,11 +262,9 @@ export function BrandVariableTable() {
                 .map(([groupName, variables]) => (
                 <React.Fragment key={groupName}>
                   {/* Group Header Row */}
-                  <tr className="bg-surface/30 sticky top-[33px] z-[9]">
-                    <td 
-                      colSpan={modes.length + 1}
-                      className="px-3 py-1.5 border-b border-border/50"
-                    >
+                  <tr className="bg-surface/30 sticky top-[33px] z-20">
+                    {/* Sticky left column for group name */}
+                    <td className="sticky left-0 z-20 bg-surface/30 px-3 py-1.5 border-b border-border/50 border-r border-border/20">
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-semibold text-foreground uppercase tracking-wide">
                           {groupName}
@@ -276,6 +274,13 @@ export function BrandVariableTable() {
                         </span>
                       </div>
                     </td>
+                    {/* Scrolling columns - empty cells to maintain alignment */}
+                    {modes.map((mode) => (
+                      <td 
+                        key={mode.modeId}
+                        className="bg-surface/30 border-b border-border/50 border-r border-border/40"
+                      />
+                    ))}
                   </tr>
                   
                   {/* Variables in this group */}
@@ -285,12 +290,10 @@ export function BrandVariableTable() {
                       className="border-b border-border/40 hover:bg-interactive-hover transition-colors group"
                     >
                       {/* Variable Name - Sticky Column with hover state */}
-                      <td className="sticky left-0 z-10 bg-background group-hover:bg-interactive-hover px-3 py-1.5 border-r border-border/40 transition-colors before:absolute before:inset-0 before:bg-background before:group-hover:bg-interactive-hover before:-z-10 before:transition-colors relative">
-                        <div className="relative z-10">
-                          <span className="text-[11px] text-foreground whitespace-nowrap truncate" title={variable.name}>
-                            {HierarchyParser.getLastSegment(variable.name)}
-                          </span>
-                        </div>
+                      <td className="sticky left-0 z-10 bg-background group-hover:bg-interactive-hover px-3 py-1.5 border-r border-border/40 transition-colors">
+                        <span className="text-[11px] text-foreground whitespace-nowrap truncate" title={variable.name}>
+                          {HierarchyParser.getLastSegment(variable.name)}
+                        </span>
                       </td>
                       
                       {/* Mode Values */}
