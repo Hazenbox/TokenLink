@@ -344,35 +344,33 @@ export function figmaNativeToGraph(data: FigmaNativeExport): VariableGraph {
     });
   });
   
-  // Step 3: Resolve alias mode IDs
-  // For each alias, find the target variable's mode with the same name as the source mode
+  // Step 3: Validate aliases (modeMap is already populated correctly by addVariable)
+  // FIX: Use correct property names (fromVariableId, toVariableId) and validate modeMap
   graph.aliases.forEach((alias) => {
-    const sourceVar = graph.variables.get(alias.sourceVariableId);
-    const targetVar = graph.variables.get(alias.targetVariableId);
+    const sourceVar = graph.variables.get(alias.fromVariableId);
+    const targetVar = graph.variables.get(alias.toVariableId);
     
     if (!sourceVar || !targetVar) {
-      console.warn(`[FigZig] Alias resolution failed: source or target variable not found`);
+      console.warn(`[FigmaNative] Alias validation failed: source or target variable not found`);
       return;
     }
     
-    // Find the source mode
-    const sourceMode = sourceVar.modes.find((m) => m.id === alias.sourceModeId);
-    if (!sourceMode) {
-      console.warn(`[FigZig] Alias resolution failed: source mode not found`);
-      return;
-    }
-    
-    // Find the target mode with the same name
-    const targetMode = targetVar.modes.find((m) => m.name === sourceMode.name);
-    
-    if (targetMode) {
-      alias.targetModeId = targetMode.id;
-    } else {
-      // Fallback: use first mode of target variable
-      console.warn(
-        `[FigZig] No matching mode "${sourceMode.name}" found in target variable, using first mode`
-      );
-      alias.targetModeId = targetVar.modes[0]?.id || '';
+    // Validate that all modes in modeMap exist
+    for (const [sourceModeId, targetModeId] of Object.entries(alias.modeMap)) {
+      const sourceMode = sourceVar.modes.find((m) => m.id === sourceModeId);
+      const targetMode = targetVar.modes.find((m) => m.id === targetModeId);
+      
+      if (!sourceMode) {
+        console.warn(
+          `[FigmaNative] Alias validation warning: source mode ${sourceModeId} not found in variable ${sourceVar.name}`
+        );
+      }
+      
+      if (!targetMode) {
+        console.warn(
+          `[FigmaNative] Alias validation warning: target mode ${targetModeId} not found in variable ${targetVar.name}`
+        );
+      }
     }
   });
   

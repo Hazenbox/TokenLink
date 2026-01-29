@@ -755,7 +755,53 @@ figma.ui.onmessage = async (msg) => {
         }
       }
       
-      // Step 2: Create variables (grouped by collection)
+      // Step 2: Create modes for each collection and build mode ID mapping
+      console.log('Creating modes for collections...');
+      
+      // Map: collectionId → (importModeId → figmaModeId)
+      const modeIdMap = new Map<string, Map<string, string>>();
+      
+      for (const [internalCollectionId, figmaCollection] of collectionMap.entries()) {
+        // Get all variables in this collection to extract mode names
+        const collectionVariables = Array.from(internalGraph.variables.values()).filter(v => {
+          const group = internalGraph.groups.get(v.groupId);
+          return group && group.collectionId === internalCollectionId;
+        });
+        
+        // Extract unique mode IDs and names from variables
+        const modeInfoMap = new Map<string, string>(); // modeId → modeName
+        collectionVariables.forEach(variable => {
+          variable.modes.forEach(mode => {
+            if (!modeInfoMap.has(mode.id)) {
+              modeInfoMap.set(mode.id, mode.name);
+            }
+          });
+        });
+        
+        // Create mode mapping for this collection
+        const collectionModeMap = new Map<string, string>();
+        modeIdMap.set(internalCollectionId, collectionModeMap);
+        
+        // Create/get modes and build mapping
+        for (const [importModeId, modeName] of modeInfoMap.entries()) {
+          // Check if mode already exists
+          let existingMode = figmaCollection.modes.find(m => m.name === modeName);
+          
+          if (existingMode) {
+            collectionModeMap.set(importModeId, existingMode.modeId);
+            console.log(`Mode "${modeName}" already exists in "${figmaCollection.name}"`);
+          } else {
+            // Create new mode
+            const newModeId = figmaCollection.addMode(modeName);
+            collectionModeMap.set(importModeId, newModeId);
+            console.log(`Created mode "${modeName}" in "${figmaCollection.name}" → ${newModeId}`);
+          }
+        }
+        
+        console.log(`Collection "${figmaCollection.name}": ${modeInfoMap.size} modes, ${collectionVariables.length} variables`);
+      }
+      
+      // Step 3: Create variables (grouped by collection)
       const variables = Array.from(internalGraph.variables.values());
       console.log(`Creating ${variables.length} variables...`);
       
@@ -807,10 +853,16 @@ figma.ui.onmessage = async (msg) => {
           // Set values for each mode (skip aliases for now, will process later)
           for (const mode of variable.modes) {
             if (mode.value.type === 'value') {
-              // Get the mode ID from the collection
-              const modeIds = figmaCollection.modes.map((m) => m.modeId);
-              const modeIndex = variable.modes.findIndex((m) => m.id === mode.id);
-              const figmaModeId = modeIds[Math.min(modeIndex, modeIds.length - 1)];
+              // FIX: Use mode ID mapping instead of broken index-based approach
+              const collectionModeMap = modeIdMap.get(group.collectionId);
+              const figmaModeId = collectionModeMap?.get(mode.id);
+              
+              if (!figmaModeId) {
+                result.warnings.push(
+                  `Mode mapping not found for "${fullName}".${mode.name} (mode ID: ${mode.id})`
+                );
+                continue;
+              }
               
               // Set the value
               try {
@@ -821,7 +873,7 @@ figma.ui.onmessage = async (msg) => {
                   const hex = valueToSet.replace('#', '');
                   const r = parseInt(hex.substring(0, 2), 16) / 255;
                   const g = parseInt(hex.substring(2, 4), 16) / 255;
-                  const b = parseInt(hex.substring(4, 6), 16) / 255;
+                  const b = parseInt(hex.substring(4, 6) , 16) / 255;
                   valueToSet = { r, g, b, a: 1 };
                 }
                 
@@ -851,13 +903,14 @@ figma.ui.onmessage = async (msg) => {
         data: { step: 4, total: 5, message: 'Creating aliases...' }
       });
       
-      // Step 3: Create aliases
-      console.log(`Creating ${internalGraph.aliases.length} aliases...`);
+      // Step 3: Create aliases (iterate through modeMap for ALL mode mappings)
+      console.log(`Creating aliases from ${internalGraph.aliases.length} alias relationships...`);
       
       for (const alias of internalGraph.aliases) {
         try {
-          const sourceVar = variableMap.get(alias.sourceVariableId);
-          const targetVar = variableMap.get(alias.targetVariableId);
+          // FIX: Use correct property names (fromVariableId, toVariableId)
+          const sourceVar = variableMap.get(alias.fromVariableId);
+          const targetVar = variableMap.get(alias.toVariableId);
           
           if (!sourceVar || !targetVar) {
             result.warnings.push(`Alias skipped: source or target variable not found`);
@@ -865,7 +918,7 @@ figma.ui.onmessage = async (msg) => {
           }
           
           // Find the source variable to get its collection
-          const sourceVariable = internalGraph.variables.get(alias.sourceVariableId);
+          const sourceVariable = internalGraph.variables.get(alias.fromVariableId);
           if (!sourceVariable) {
             result.warnings.push(`Alias skipped: source variable data not found`);
             continue;
@@ -885,28 +938,40 @@ figma.ui.onmessage = async (msg) => {
             continue;
           }
           
-          // Create alias for the source mode pointing to target
-          const sourceModeIndex = sourceVariable.modes.findIndex(
-            (m) => m.id === alias.sourceModeId
-          );
-          
-          if (sourceModeIndex === -1) {
-            result.warnings.push(`Alias skipped: source mode not found`);
-            continue;
+          // FIX: Iterate through ALL mode mappings in modeMap (not single sourceModeId)
+          // Each entry in modeMap is: sourceModeId → targetModeId
+          for (const [sourceModeId, targetModeId] of Object.entries(alias.modeMap)) {
+            try {
+              // Find the source mode index
+              const sourceModeIndex = sourceVariable.modes.findIndex(
+                (m) => m.id === sourceModeId
+              );
+              
+              if (sourceModeIndex === -1) {
+                result.warnings.push(`Alias mode skipped: source mode ${sourceModeId} not found`);
+                continue;
+              }
+              
+              const figmaModeId =
+                sourceCollection.modes[
+                  Math.min(sourceModeIndex, sourceCollection.modes.length - 1)
+                ].modeId;
+              
+              // Create the alias
+              const aliasValue = figma.variables.createVariableAlias(targetVar);
+              sourceVar.setValueForMode(figmaModeId, aliasValue);
+              
+              result.stats.aliasesCreated++;
+              
+              console.log(`Created alias: ${sourceVar.name}[mode ${sourceModeId}] → ${targetVar.name}`);
+            } catch (modeError) {
+              result.warnings.push(
+                `Failed to create alias for mode ${sourceModeId}: ${
+                  modeError instanceof Error ? modeError.message : 'Unknown error'
+                }`
+              );
+            }
           }
-          
-          const figmaModeId =
-            sourceCollection.modes[
-              Math.min(sourceModeIndex, sourceCollection.modes.length - 1)
-            ].modeId;
-          
-          // Create the alias
-          const aliasValue = figma.variables.createVariableAlias(targetVar);
-          sourceVar.setValueForMode(figmaModeId, aliasValue);
-          
-          result.stats.aliasesCreated++;
-          
-          console.log(`Created alias: ${sourceVar.name} → ${targetVar.name}`);
         } catch (error) {
           result.errors.push(
             `Failed to create alias: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1525,9 +1590,11 @@ figma.ui.onmessage = async (msg) => {
       });
       
       for (const [collectionName, variables] of sortedCollections) {
-        const collection = await getOrCreateCollection(collectionName);
+        // FIX: Strip ml_ prefix if present (defensive check)
+        const cleanCollectionName = collectionName.replace(/^ml_/, '');
+        const collection = await getOrCreateCollection(cleanCollectionName);
         collectionMap.set(collectionName, collection);
-        console.log(`Collection ready: ${collectionName}`);
+        console.log(`Collection ready: ${cleanCollectionName}${collectionName !== cleanCollectionName ? ' (stripped ml_ prefix)' : ''}`);
       }
       
       // Phase 2: Create modes for each collection

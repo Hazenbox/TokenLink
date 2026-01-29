@@ -95,7 +95,8 @@ export function convertMultiLayerToPreview(
     collection.variableIds = figmaVars.map(v => v.id);
     
     collections.push(collection);
-    variablesByCollection.set(collection.id, figmaVars);
+    // FIX: Use collection.name (clean) as key, not collection.id (has ml_ prefix)
+    variablesByCollection.set(collection.name, figmaVars);
     
     console.log(`[Preview Adapter] Collection "${collectionName}": ${figmaVars.length} variables, ${modeNames.length} modes`);
   });
