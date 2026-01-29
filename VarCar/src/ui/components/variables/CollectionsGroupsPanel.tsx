@@ -54,7 +54,7 @@ export function CollectionsGroupsPanel({
   return (
     <div 
       ref={containerRef}
-      className="w-[200px] h-full flex flex-col border-r border-border/20 bg-background flex-shrink-0"
+      className="w-[200px] h-full flex flex-col border-r border-border/40 bg-background flex-shrink-0"
     >
       {/* Collections Section */}
       <div 
@@ -70,7 +70,7 @@ export function CollectionsGroupsPanel({
       {/* Resize Handle */}
       <div 
         onMouseDown={handleMouseDown}
-        className={`h-1 cursor-ns-resize transition-colors border-y border-border/20 flex-shrink-0 ${
+        className={`h-1 cursor-ns-resize transition-colors border-y border-border/40 flex-shrink-0 ${
           isResizing 
             ? 'bg-primary/40' 
             : 'hover:bg-primary/20'

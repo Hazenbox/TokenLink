@@ -64,7 +64,7 @@ export function ConsoleLogViewer({ logs, isVisible, onClose, onClear }: ConsoleL
       case 'warn':
         return <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />;
       default:
-        return <Info className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />;
+        return <Info className="w-3.5 h-3.5 text-foreground-tertiary flex-shrink-0" />;
     }
   };
 
@@ -83,7 +83,7 @@ export function ConsoleLogViewer({ logs, isVisible, onClose, onClear }: ConsoleL
     const isActive = filter === buttonFilter;
     return `px-3 py-1 text-xs rounded transition-colors ${
       isActive
-        ? 'bg-blue-500 text-white'
+        ? 'bg-surface-elevated text-foreground'
         : 'bg-surface-elevated text-foreground-secondary hover:bg-surface-elevated/80'
     }`;
   };
@@ -126,7 +126,7 @@ export function ConsoleLogViewer({ logs, isVisible, onClose, onClear }: ConsoleL
               placeholder="Search logs..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 pr-3 py-1 text-xs bg-surface border border-border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 w-48"
+              className="pl-8 pr-3 py-1 text-xs bg-surface border border-border rounded focus:outline-none focus:ring-1 focus:ring-border-strong w-48"
             />
           </div>
 
@@ -218,7 +218,7 @@ export function ConsoleLogViewer({ logs, isVisible, onClose, onClear }: ConsoleL
             setAutoScroll(true);
             logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
           }}
-          className="absolute bottom-4 right-4 px-3 py-1.5 bg-blue-500 text-white text-xs rounded shadow-lg hover:bg-blue-600 transition-colors"
+          className="absolute bottom-4 right-4 px-3 py-1.5 bg-surface-elevated text-foreground text-xs rounded shadow-lg hover:bg-interactive-hover transition-colors"
         >
           Scroll to bottom
         </button>

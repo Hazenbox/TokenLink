@@ -35,9 +35,9 @@ export function SyncProgressModal({ progress }: SyncProgressModalProps) {
     if (progress.step === progress.total) {
       return <CheckCircle className="w-4 h-4 text-green-500" />;
     } else if (progress.step === 1) {
-      return <AlertTriangle className="w-4 h-4 text-blue-500" />;
+      return <AlertTriangle className="w-4 h-4 text-foreground-tertiary" />;
     }
-    return <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />;
+    return <Loader2 className="w-4 h-4 text-foreground-tertiary animate-spin" />;
   };
 
   // Format variable count
@@ -76,13 +76,13 @@ export function SyncProgressModal({ progress }: SyncProgressModalProps) {
           {/* Step indicator */}
           <div className="flex items-center justify-between text-xs text-foreground-secondary">
             <span>Step {progress.step} of {progress.total}</span>
-            <span className="font-medium text-blue-500">{percentage}%</span>
+            <span className="font-medium text-foreground">{percentage}%</span>
           </div>
 
           {/* Progress bar */}
           <div className="h-1.5 bg-surface-elevated rounded-full overflow-hidden">
             <div
-              className="h-full bg-blue-500 transition-all duration-500 ease-out rounded-full"
+              className="h-full bg-foreground-secondary transition-all duration-500 ease-out rounded-full"
               style={{ width: `${percentage}%` }}
             />
           </div>

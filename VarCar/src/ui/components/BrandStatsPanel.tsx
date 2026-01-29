@@ -46,9 +46,9 @@ export function BrandStatsPanel() {
 
         {/* Key Metrics */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-surface-elevated border-l-4 border-l-blue-500 rounded-lg p-4">
+          <div className="bg-surface-elevated border-l-4 border-l-border-strong rounded-lg p-4">
             <div className="flex items-center gap-2 mb-1">
-              <Package className="w-4 h-4 text-blue-500" />
+              <Package className="w-4 h-4 text-foreground-tertiary" />
               <span className="text-xs font-medium text-foreground">Variables</span>
             </div>
             <div className="text-2xl font-bold text-foreground">

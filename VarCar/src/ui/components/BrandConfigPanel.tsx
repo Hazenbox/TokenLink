@@ -67,7 +67,7 @@ export function BrandConfigPanel() {
   // Collapsed state - show only toggle button
   if (configPanelCollapsed) {
     return (
-      <div className="w-12 border-l border-border/20 bg-background flex flex-col items-center py-2 flex-shrink-0">
+      <div className="w-12 border-l border-border/40 bg-background flex flex-col items-center py-2 flex-shrink-0">
         <button
           onClick={toggleConfigPanel}
           className="w-8 h-8 flex items-center justify-center rounded hover:bg-surface/50 text-foreground-tertiary"
@@ -83,19 +83,19 @@ export function BrandConfigPanel() {
   if (!activeBrand) {
     return (
       <div 
-        className="border-l border-border/20 bg-background flex flex-col relative flex-shrink-0"
+        className="border-l border-border/40 bg-background flex flex-col relative flex-shrink-0"
         style={{ width: `${configPanelWidth}px`, minWidth: '280px', maxWidth: '500px' }}
       >
         {/* Resize Handle */}
         <div
           onMouseDown={handleMouseDown}
-          className={`absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-blue-500/20 transition-colors ${
-            isResizing ? 'bg-blue-500/40' : ''
+          className={`absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-border-strong/30 transition-colors ${
+            isResizing ? 'bg-border-strong/50' : ''
           }`}
         />
         
         {/* Collapse Button */}
-        <div className="pl-4 pr-4 py-2 border-b border-border/20 flex items-center justify-between flex-shrink-0">
+        <div className="pl-4 pr-4 py-2 border-b border-border/40 flex items-center justify-between flex-shrink-0">
           <h2 className="text-sm font-semibold text-foreground">Configuration</h2>
           <button
             onClick={toggleConfigPanel}
@@ -194,14 +194,14 @@ export function BrandConfigPanel() {
 
   return (
     <div 
-      className="h-full flex flex-col border-l border-border/20 bg-background relative flex-shrink-0"
+      className="h-full flex flex-col border-l border-border/40 bg-background relative flex-shrink-0"
       style={{ width: `${configPanelWidth}px`, minWidth: '280px', maxWidth: '500px' }}
     >
       {/* Resize Handle */}
       <div
         onMouseDown={handleMouseDown}
-        className={`absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-blue-500/20 transition-colors z-20 ${
-          isResizing ? 'bg-blue-500/40' : ''
+        className={`absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-border-strong/30 transition-colors z-20 ${
+          isResizing ? 'bg-border-strong/50' : ''
         }`}
       />
       
@@ -228,7 +228,7 @@ export function BrandConfigPanel() {
             flex items-center justify-center gap-2
             transition-all duration-200
             ${canSyncBrand 
-              ? 'bg-blue-500 hover:bg-blue-600 text-white' 
+              ? 'bg-surface-elevated hover:bg-interactive-hover text-foreground' 
               : 'bg-surface border border-border text-foreground-tertiary cursor-not-allowed'}
             ${syncStatus === 'success' ? 'bg-green-500 hover:bg-green-600' : ''}
             ${syncStatus === 'error' ? 'bg-red-500 hover:bg-red-600' : ''}
@@ -256,7 +256,7 @@ export function BrandConfigPanel() {
             <span>How it works</span>
           </button>
           {showInfo && (
-            <div className="mt-2 bg-surface-elevated border-l-2 border-l-blue-500 rounded pl-2 pr-1.5 py-2 text-xs text-foreground-secondary space-y-2">
+            <div className="mt-2 bg-surface-elevated border-l-2 border-l-border-strong rounded pl-2 pr-1.5 py-2 text-xs text-foreground-secondary space-y-2">
               <p>Multi-layer architecture generates 2,600+ variables across 9 collections:</p>
               <ul className="text-[10px] space-y-0.5 ml-2">
                 <li>• Layer 0: Primitives (RGB from RangDe)</li>

@@ -120,7 +120,7 @@ export function BrandListPanel() {
                     rounded-md p-2 cursor-pointer transition-colors
                     ${
                       activeBrandId === brand.id
-                        ? 'bg-surface-elevated border border-blue-500'
+                        ? 'bg-surface-elevated border border-border-strong'
                         : 'bg-surface-elevated border border-border hover:border-border-strong'
                     }
                   `}

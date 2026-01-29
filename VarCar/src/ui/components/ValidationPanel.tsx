@@ -107,7 +107,7 @@ export function ValidationPanel() {
         {/* Info */}
         {validation.info.length > 0 && (
           <div className="space-y-2">
-            <div className="flex items-center gap-1 text-blue-500">
+            <div className="flex items-center gap-1 text-foreground-tertiary">
               <Info className="w-4 h-4" />
               <span className="text-xs font-semibold">Info</span>
             </div>
@@ -115,7 +115,7 @@ export function ValidationPanel() {
               {validation.info.map((info, idx) => (
                 <div
                   key={idx}
-                  className="text-xs text-blue-400 bg-surface-elevated border-l-2 border-l-blue-500 rounded px-2 py-1"
+                  className="text-xs text-foreground-secondary bg-surface-elevated border-l-2 border-l-border-strong rounded px-2 py-1"
                 >
                   {info}
                 </div>

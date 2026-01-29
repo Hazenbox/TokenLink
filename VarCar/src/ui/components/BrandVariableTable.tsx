@@ -11,7 +11,7 @@ import { useVariablesViewStore } from '@/store/variables-view-store';
 import { BrandGenerator } from '@/lib/brand-generator';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Download, Settings } from 'lucide-react';
+import { Search, Download } from 'lucide-react';
 import { ModeCell } from './variables/ModeCell';
 import { brandToFigmaAdapter } from '@/adapters/brandToFigmaVariables';
 import { HierarchyParser } from '@/lib/hierarchy-parser';
@@ -216,7 +216,7 @@ export function BrandVariableTable() {
         ) : (
           <table className="w-full border-collapse text-xs">
             <thead className="sticky top-0 z-10 bg-background">
-              <tr className="border-b border-border/20">
+              <tr className="border-b border-border/40">
                 {/* Variable Name Column - Sticky Header + Sticky Column */}
                 <th className="sticky left-0 z-20 bg-background text-left px-3 py-2 border-r border-border/20 before:absolute before:inset-0 before:bg-background before:-z-10">
                   <span className="text-[11px] font-medium text-foreground-secondary relative z-10">
@@ -228,7 +228,7 @@ export function BrandVariableTable() {
                 {modes.map((mode) => (
                   <th 
                     key={mode.modeId} 
-                    className="text-left px-3 py-2 min-w-[200px] border-r border-border/10 whitespace-nowrap"
+                    className="text-left px-3 py-2 min-w-[200px] border-r border-border/40 whitespace-nowrap"
                   >
                     <span className="text-[11px] font-medium text-foreground-secondary">
                       {mode.name}
@@ -245,7 +245,7 @@ export function BrandVariableTable() {
                   <tr className="bg-surface/20">
                     <td 
                       colSpan={modes.length + 1}
-                      className="px-3 py-2 border-b border-border/20"
+                      className="px-3 py-2 border-b border-border/40"
                     >
                       <span className="text-[11px] font-semibold text-foreground">
                         {groupName}
@@ -257,12 +257,11 @@ export function BrandVariableTable() {
                   {variables.map((variable) => (
                     <tr 
                       key={variable.id} 
-                      className="border-b border-border/10 hover:bg-interactive-hover transition-colors group"
+                      className="border-b border-border/40 hover:bg-interactive-hover transition-colors group"
                     >
                       {/* Variable Name - Sticky Column with hover state */}
-                      <td className="sticky left-0 z-10 bg-background group-hover:bg-interactive-hover px-3 py-1.5 border-r border-border/20 transition-colors before:absolute before:inset-0 before:bg-background before:group-hover:bg-interactive-hover before:-z-10 before:transition-colors relative">
-                        <div className="flex items-center gap-1.5 relative z-10">
-                          <Settings className="w-3 h-3 text-foreground-tertiary flex-shrink-0" />
+                      <td className="sticky left-0 z-10 bg-background group-hover:bg-interactive-hover px-3 py-1.5 border-r border-border/40 transition-colors before:absolute before:inset-0 before:bg-background before:group-hover:bg-interactive-hover before:-z-10 before:transition-colors relative">
+                        <div className="relative z-10">
                           <span className="text-[11px] text-foreground whitespace-nowrap truncate" title={variable.name}>
                             {HierarchyParser.getLastSegment(variable.name)}
                           </span>
@@ -277,7 +276,7 @@ export function BrandVariableTable() {
                         return (
                           <td 
                             key={mode.modeId} 
-                            className="border-r border-border/10 align-middle min-w-[200px]"
+                            className="border-r border-border/40 align-middle min-w-[200px]"
                           >
                             {value ? (
                               <ModeCell value={value} color={resolvedColor} />
@@ -299,7 +298,7 @@ export function BrandVariableTable() {
       </div>
 
       {/* Footer Stats - Minimal */}
-      <div className="px-3 py-2 border-t border-border/20 flex-shrink-0 bg-background">
+      <div className="px-3 py-2 border-t border-border/40 flex-shrink-0 bg-background">
         <div className="flex items-center gap-4 text-[10px] text-foreground-tertiary">
           <div>
             <span className="text-foreground-secondary">{filteredVariables.length}</span> variables

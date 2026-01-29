@@ -96,7 +96,7 @@ export function GroupsSidebar({ onCreateGroup }: GroupsSidebarProps) {
   return (
     <div className="h-full flex flex-col bg-background">
       {/* Header */}
-      <div className="px-3 py-2 border-b border-border/20 flex items-center justify-between flex-shrink-0">
+      <div className="px-3 py-2 border-b border-border/40 flex items-center justify-between flex-shrink-0">
         <span className="text-[11px] font-medium text-foreground-secondary">
           Groups
         </span>
@@ -141,7 +141,7 @@ export function GroupsSidebar({ onCreateGroup }: GroupsSidebarProps) {
           w-full px-3 py-2 flex items-center justify-between
           text-left text-[11px] transition-colors
           hover:bg-surface/50
-          ${activeGroupId === 'all' ? 'bg-surface-selected border-l-2 border-l-blue-500' : ''}
+          ${activeGroupId === 'all' ? 'bg-surface-selected border-l-2 border-l-border-strong' : ''}
         `}
       >
         <div className="flex-1 min-w-0">
@@ -188,7 +188,7 @@ export function GroupsSidebar({ onCreateGroup }: GroupsSidebarProps) {
                       w-full px-3 py-2 flex items-center gap-2
                       text-left text-[11px] transition-colors
                       hover:bg-surface/50
-                      ${isActiveGroup && selectedStep === 'all' ? 'bg-surface-selected border-l-2 border-l-blue-500' : ''}
+                      ${isActiveGroup && selectedStep === 'all' ? 'bg-surface-selected border-l-2 border-l-border-strong' : ''}
                     `}
                   >
                     {/* Chevron icon (only if has steps) */}
@@ -225,7 +225,7 @@ export function GroupsSidebar({ onCreateGroup }: GroupsSidebarProps) {
                         className={`
                           w-full px-3 py-1.5 text-left text-[11px]
                           transition-colors hover:bg-surface/50 rounded
-                          ${isActiveGroup && selectedStep === 'all' ? 'text-blue-500 font-medium' : 'text-foreground-secondary'}
+                          ${isActiveGroup && selectedStep === 'all' ? 'text-foreground font-medium' : 'text-foreground-secondary'}
                         `}
                       >
                         All steps
@@ -242,7 +242,7 @@ export function GroupsSidebar({ onCreateGroup }: GroupsSidebarProps) {
                           className={`
                             w-full px-3 py-1.5 text-left text-[11px]
                             transition-colors hover:bg-surface/50 rounded
-                            ${isActiveGroup && selectedStep === step ? 'text-blue-500 font-medium' : 'text-foreground-secondary'}
+                            ${isActiveGroup && selectedStep === step ? 'text-foreground font-medium' : 'text-foreground-secondary'}
                           `}
                         >
                           {step}

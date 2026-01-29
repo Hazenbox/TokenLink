@@ -271,7 +271,7 @@ export function HowItWorks() {
                           <td className="px-3 py-2">
                             <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${item.level === "AA"
                               ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                              : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                              : "bg-surface-elevated text-foreground-secondary"
                               }`}>
                               {item.level}
                             </span>
