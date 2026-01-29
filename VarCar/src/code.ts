@@ -1723,11 +1723,15 @@ figma.ui.onmessage = async (msg) => {
         const collection = collectionMap.get(collectionName)!;
         const modes = [...new Set((variables as any[]).map(v => v.mode))];
         
-        for (const modeName of modes) {
-          await getOrCreateMode(collection, modeName);
+        // Create modes, renaming default "Mode 1" for the first one
+        for (let i = 0; i < modes.length; i++) {
+          const modeName = modes[i];
+          const isFirstMode = i === 0;
+          await getOrCreateMode(collection, modeName, isFirstMode);
         }
         
-        console.log(`Modes created for ${collectionName}: ${modes.join(', ')}`);
+        console.log(`Modes configured for ${collectionName}: ${modes.join(', ')}`);
+        console.log(`  Total modes: ${collection.modes.length} (expected: ${modes.length})`);
       }
       
       // Phase 3: Create variables layer by layer with batching
