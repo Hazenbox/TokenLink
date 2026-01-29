@@ -769,6 +769,23 @@ const App: React.FC = () => {
         setTimeout(() => setNotification(null), 5000);
       }
       
+      // ml_ collections cleanup handlers
+      if (msg.type === 'ml-collections-cleaned') {
+        if (msg.data.graph) {
+          setGraphData(msg.data.graph);
+        }
+        setNotification({ 
+          type: 'success', 
+          message: msg.data.message || `Deleted ${msg.data.deletedCount} ml_ prefixed collections`
+        });
+        setTimeout(() => setNotification(null), 4000);
+      }
+      
+      if (msg.type === 'ml-collections-cleanup-error') {
+        setNotification({ type: 'error', message: msg.data.message });
+        setTimeout(() => setNotification(null), 5000);
+      }
+      
       if (msg.type === 'variable-deleted') {
         setGraphData(msg.data.graph);
         setNotification({ type: 'success', message: 'Variable deleted successfully!' });

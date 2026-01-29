@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Plus, Search, X } from 'lucide-react';
+import { Plus, Search, X, Trash2 } from 'lucide-react';
 import { shallow } from 'zustand/shallow';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
@@ -71,6 +71,24 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
     setActiveCollection(id);
   }, [setActiveCollection]);
   
+  // Handle cleanup of ml_ prefixed collections
+  const handleCleanupMlCollections = useCallback(() => {
+    const mlCollections = collections.filter(c => c.name.startsWith('ml_'));
+    
+    if (mlCollections.length === 0) {
+      alert('No ml_ prefixed collections found.');
+      return;
+    }
+    
+    const confirmMsg = `Delete ${mlCollections.length} collections with ml_ prefix?\n\n${mlCollections.map(c => c.name).join('\n')}\n\nThis cannot be undone.`;
+    
+    if (confirm(confirmMsg)) {
+      parent.postMessage({ 
+        pluginMessage: { type: 'cleanup-ml-collections' } 
+      }, '*');
+    }
+  }, [collections]);
+  
   // Filter collections by search query
   const filteredCollections = collections.filter((collection) =>
     collection.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -83,13 +101,25 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
         <span className="text-[11px] font-medium text-foreground-secondary">
           Collections
         </span>
-        <button
-          onClick={onCreateCollection}
-          className="w-5 h-5 flex items-center justify-center rounded hover:bg-surface/50 text-foreground-tertiary"
-          title="Add Collection"
-        >
-          <Plus className="w-3.5 h-3.5" />
-        </button>
+        <div className="flex items-center gap-1">
+          {/* Cleanup ml_ collections button */}
+          {collections.some(c => c.name.startsWith('ml_')) && (
+            <button
+              onClick={handleCleanupMlCollections}
+              className="w-5 h-5 flex items-center justify-center rounded hover:bg-red-500/20 text-red-500/70 hover:text-red-500"
+              title="Delete ml_ prefixed collections"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+          <button
+            onClick={onCreateCollection}
+            className="w-5 h-5 flex items-center justify-center rounded hover:bg-surface/50 text-foreground-tertiary"
+            title="Add Collection"
+          >
+            <Plus className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
       
       {/* Search */}

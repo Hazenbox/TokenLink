@@ -1419,6 +1419,67 @@ figma.ui.onmessage = async (msg) => {
     }
   }
   
+  // Handle cleanup of ml_ prefixed collections
+  if (msg.type === 'cleanup-ml-collections') {
+    try {
+      console.log('Starting cleanup of ml_ prefixed collections...');
+      
+      const collections = await figma.variables.getLocalVariableCollectionsAsync();
+      const mlCollections = collections.filter(c => c.name.startsWith('ml_'));
+      
+      console.log(`Found ${mlCollections.length} collections with ml_ prefix`);
+      
+      if (mlCollections.length === 0) {
+        figma.ui.postMessage({
+          type: 'ml-collections-cleaned',
+          data: { 
+            success: true, 
+            deletedCount: 0,
+            deletedNames: [],
+            message: 'No ml_ prefixed collections found'
+          }
+        });
+        return;
+      }
+      
+      const deletedNames: string[] = [];
+      for (const collection of mlCollections) {
+        const name = collection.name;
+        collection.remove();
+        deletedNames.push(name);
+        console.log(`Deleted collection: ${name}`);
+      }
+      
+      // Refresh graph
+      const updatedCollections = await figma.variables.getLocalVariableCollectionsAsync();
+      const updatedVariables = await figma.variables.getLocalVariablesAsync();
+      const updatedGraph = figmaToGraph(updatedCollections, updatedVariables);
+      const serializedGraph = serializeGraph(updatedGraph);
+      
+      figma.ui.postMessage({
+        type: 'ml-collections-cleaned',
+        data: { 
+          success: true, 
+          deletedCount: deletedNames.length,
+          deletedNames,
+          graph: serializedGraph,
+          message: `Successfully deleted ${deletedNames.length} ml_ prefixed collections`
+        }
+      });
+      
+      console.log('Cleanup complete:', deletedNames);
+    } catch (error) {
+      console.error('Error cleaning ml_ collections:', error);
+      figma.ui.postMessage({
+        type: 'ml-collections-cleanup-error',
+        data: { 
+          success: false,
+          message: error instanceof Error ? error.message : 'Failed to cleanup ml_ collections' 
+        }
+      });
+    }
+  }
+  
   // Handle brand sync with aliasing
   if (msg.type === 'sync-brand-with-aliases') {
     try {
