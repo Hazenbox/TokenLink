@@ -162,18 +162,28 @@ export function BrandVariableTable() {
     );
   }
 
-  // Group variables by their first hierarchy level (color groups)
+  // Group variables by parent path (all segments except last)
   const groupedVariables = useMemo(() => {
     const groups: { [key: string]: typeof filteredVariables } = {};
     
     filteredVariables.forEach((variable) => {
       const segments = HierarchyParser.parseVariableName(variable.name);
-      const groupName = segments[0] || 'Other';
+      
+      // Group by parent path (all segments except last)
+      // e.g., "Grey/Default/Ghost/Surface" → "Grey / Default / Ghost"
+      const groupName = segments.length > 1 
+        ? segments.slice(0, -1).join(' / ')
+        : 'Root';
       
       if (!groups[groupName]) {
         groups[groupName] = [];
       }
       groups[groupName].push(variable);
+    });
+    
+    // Sort variables within each group by name
+    Object.values(groups).forEach(vars => {
+      vars.sort((a, b) => a.name.localeCompare(b.name));
     });
     
     return groups;
@@ -246,17 +256,24 @@ export function BrandVariableTable() {
             </thead>
             
             <tbody>
-              {Object.entries(groupedVariables).map(([groupName, variables]) => (
+              {Object.entries(groupedVariables)
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([groupName, variables]) => (
                 <React.Fragment key={groupName}>
                   {/* Group Header Row */}
-                  <tr className="bg-surface/20">
+                  <tr className="bg-surface/30 sticky top-[33px] z-[9]">
                     <td 
                       colSpan={modes.length + 1}
-                      className="px-3 py-2 border-b border-border/40"
+                      className="px-3 py-1.5 border-b border-border/50"
                     >
-                      <span className="text-[11px] font-semibold text-foreground">
-                        {groupName}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-semibold text-foreground uppercase tracking-wide">
+                          {groupName}
+                        </span>
+                        <span className="text-[9px] text-foreground-tertiary">
+                          ({variables.length})
+                        </span>
+                      </div>
                     </td>
                   </tr>
                   
