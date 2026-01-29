@@ -107,7 +107,7 @@ export function BrandConfigPanel() {
         <div className="h-full flex items-center justify-center">
           <EmptyState
             title="Select or create a brand to configure"
-            className="py-12"
+            className="py-8"
           />
         </div>
       </div>
