@@ -7,11 +7,10 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Trash2 } from 'lucide-react';
 import { shallow } from 'zustand/shallow';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { SearchInput } from '@/ui/components/common/SearchInput';
 import { useBrandStore } from '@/store/brand-store';
 import { useVariablesViewStore } from '@/store/variables-view-store';
 import { FigmaCollection } from '@/models/brand';
-import { EmptyState, SearchEmptyState } from '../EmptyState';
+import { EmptyState } from '../EmptyState';
 
 interface CollectionsSidebarProps {
   onCreateCollection?: () => void;
@@ -55,9 +54,6 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
   // Initialization guard to prevent infinite loop
   const [isInitialized, setIsInitialized] = useState(false);
   
-  // Search state
-  const [searchQuery, setSearchQuery] = useState('');
-  
   // Auto-select first collection if none selected (only once on mount)
   useEffect(() => {
     if (!isInitialized && collections.length > 0 && !activeCollectionId) {
@@ -89,11 +85,6 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
     }
   }, [collections]);
   
-  // Filter collections by search query
-  const filteredCollections = collections.filter((collection) =>
-    collection.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  
   return (
     <div className="h-full flex flex-col bg-background">
       {/* Header */}
@@ -115,12 +106,6 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
         </div>
       </div>
       
-      {/* Search */}
-      <SearchInput 
-        value={searchQuery}
-        onChange={setSearchQuery}
-      />
-      
       {/* Collections List */}
       <ScrollArea className="flex-1">
         {collections.length === 0 ? (
@@ -129,15 +114,9 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
             description="Create a brand to start"
             className="py-4"
           />
-        ) : filteredCollections.length === 0 ? (
-          <SearchEmptyState
-            searchQuery={searchQuery}
-            onClear={() => setSearchQuery("")}
-            className="py-4"
-          />
         ) : (
           <div className="py-1">
-            {filteredCollections.map((collection) => (
+            {collections.map((collection) => (
               <CollectionItem
                 key={collection.id}
                 collection={collection}

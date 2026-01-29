@@ -7,7 +7,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronsUpDown, ChevronRight, ChevronDown } from 'lucide-react';
 import { shallow } from 'zustand/shallow';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { SearchInput } from '@/ui/components/common/SearchInput';
 import { useBrandStore } from '@/store/brand-store';
 import { useVariablesViewStore } from '@/store/variables-view-store';
 import { HierarchyParser, HierarchyNode } from '@/lib/hierarchy-parser';
@@ -28,9 +27,6 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
   // Get variables for current collection
   const allVariablesMap = useBrandStore((state) => state.figmaVariablesByCollection, shallow);
   
-  // Search state
-  const [searchQuery, setSearchQuery] = useState('');
-  
   // Build hierarchy tree from variables
   const hierarchyTree = useMemo(() => {
     const variables = allVariablesMap.get(activeCollectionId || '') || [];
@@ -42,51 +38,6 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
     HierarchyParser.getTotalVariableCount(hierarchyTree),
     [hierarchyTree]
   );
-  
-  // Filter tree by search query
-  const filteredTree = useMemo(() => {
-    if (!searchQuery || searchQuery.trim().length === 0) {
-      return hierarchyTree;
-    }
-    
-    const matchingNodes = HierarchyParser.searchNodes(hierarchyTree, searchQuery);
-    
-    // Build filtered tree with only matching paths
-    const filteredRoots = new Map<string, HierarchyNode>();
-    
-    matchingNodes.forEach(node => {
-      // Recreate path from root to this node
-      let currentLevel = filteredRoots;
-      
-      node.path.forEach((segment, index) => {
-        if (!currentLevel.has(segment)) {
-          // Find original node to copy data
-          const originalNode = HierarchyParser.findNode(hierarchyTree, node.path.slice(0, index + 1));
-          if (originalNode) {
-            currentLevel.set(segment, {
-              ...originalNode,
-              children: new Map()
-            });
-          }
-        }
-        
-        const currentNode = currentLevel.get(segment);
-        if (currentNode) {
-          currentLevel = currentNode.children;
-        }
-      });
-    });
-    
-    return filteredRoots;
-  }, [hierarchyTree, searchQuery]);
-  
-  // Auto-expand all nodes when searching
-  useEffect(() => {
-    if (searchQuery && searchQuery.trim().length > 0) {
-      const allPaths = HierarchyParser.flattenTree(filteredTree).map(node => node.fullPath);
-      expandAllHierarchyNodes(allPaths);
-    }
-  }, [searchQuery, filteredTree]);
   
   // Check if current path is selected
   const isPathSelected = (path: string[]): boolean => {
@@ -206,12 +157,6 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
         </button>
       </div>
       
-      {/* Search */}
-      <SearchInput 
-        value={searchQuery}
-        onChange={setSearchQuery}
-      />
-      
       {/* All Option */}
       <button
         onClick={() => setHierarchyPath([])}
@@ -234,7 +179,7 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
       {/* Hierarchy tree */}
       <ScrollArea className="flex-1">
         <div className="pb-2">
-          {Array.from(filteredTree.values())
+          {Array.from(hierarchyTree.values())
             .sort((a, b) => a.name.localeCompare(b.name))
             .map(node => renderNode(node))}
         </div>

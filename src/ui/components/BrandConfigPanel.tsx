@@ -10,17 +10,13 @@ import { CompactPaletteSelector } from './CompactPaletteSelector';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { CompactButton } from './common/CompactButton';
-import { Info, ChevronDown, ChevronUp, Upload, ChevronLeft, ChevronRight, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Info, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { BrandGenerator } from '@/lib/brand-generator';
 import { EmptyState } from './EmptyState';
 
 export function BrandConfigPanel() {
   const activeBrand = useBrandStore((state) => state.getActiveBrand());
   const updateBrandPalette = useBrandStore((state) => state.updateBrandPalette);
-  const syncBrand = useBrandStore((state) => state.syncBrand);
-  const syncBrandWithLayers = useBrandStore((state) => state.syncBrandWithLayers);
-  const syncStatus = useBrandStore((state) => state.syncStatus);
-  const canSync = useBrandStore((state) => state.canSync());
   
   const configPanelCollapsed = useVariablesViewStore((state) => state.configPanelCollapsed);
   const configPanelWidth = useVariablesViewStore((state) => state.configPanelWidth);
@@ -137,62 +133,6 @@ export function BrandConfigPanel() {
     useBrandStore.getState().updateBrand(activeBrand.id, { colors: newColors });
   };
 
-  const handleSync = async () => {
-    // Validation happens in the store before syncing
-    // User will see error toast via useFigmaMessages hook
-    await syncBrandWithLayers(activeBrand.id);
-  };
-
-  const canSyncBrand = validation.valid && canSync && syncStatus === 'idle';
-  
-  // Get sync button content based on status
-  const getSyncButtonContent = () => {
-    switch (syncStatus) {
-      case 'validating':
-        return (
-          <>
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            <span>Validating...</span>
-          </>
-        );
-      case 'previewing':
-        return (
-          <>
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            <span>Generating...</span>
-          </>
-        );
-      case 'syncing':
-        return (
-          <>
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            <span>Syncing...</span>
-          </>
-        );
-      case 'success':
-        return (
-          <>
-            <CheckCircle className="w-3.5 h-3.5" />
-            <span>Synced!</span>
-          </>
-        );
-      case 'error':
-        return (
-          <>
-            <AlertCircle className="w-3.5 h-3.5" />
-            <span>Failed</span>
-          </>
-        );
-      default:
-        return (
-          <>
-            <Upload className="w-3.5 h-3.5" />
-            <span>Sync to Figma</span>
-          </>
-        );
-    }
-  };
-
   return (
     <div 
       className="h-full flex flex-col border-l border-border/40 bg-background relative flex-shrink-0"
@@ -206,9 +146,9 @@ export function BrandConfigPanel() {
         }`}
       />
       
-      {/* Header with Sync Button */}
+      {/* Header */}
       <div className="px-3 py-2 border-b border-border/30 flex-shrink-0">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between">
           <h2 className="text-[11px] font-semibold text-foreground-secondary">
             {activeBrand.name}
           </h2>
@@ -220,43 +160,17 @@ export function BrandConfigPanel() {
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
-        
-        <button
-          onClick={handleSync}
-          disabled={!canSyncBrand}
-          className={`
-            w-full h-8 px-3 rounded-md text-xs font-medium
-            flex items-center justify-center gap-2
-            transition-all duration-200
-            ${canSyncBrand 
-              ? 'bg-surface-elevated hover:bg-interactive-hover text-foreground' 
-              : 'bg-surface border border-border text-foreground-tertiary cursor-not-allowed'}
-            ${syncStatus === 'success' ? 'bg-green-500 hover:bg-green-600' : ''}
-            ${syncStatus === 'error' ? 'bg-red-500 hover:bg-red-600' : ''}
-          `}
-        >
-          {getSyncButtonContent()}
-        </button>
-        
-        {/* Sync status message */}
-        {!canSyncBrand && syncStatus === 'idle' && (
-          <div className="mt-2 text-xs text-orange-500">
-            {!validation.valid && '⚠ Fix validation errors first'}
-            {validation.valid && !canSync && '⚠ Rate limit: Wait before syncing again'}
-          </div>
-        )}
-
       </div>
 
       {/* Config Content */}
       <ScrollArea className="flex-1 w-full max-w-full">
-        <div className="pl-4 pt-4 pb-4 pr-4 space-y-6 w-full max-w-full">
+        <div className="pl-3 pt-3 pb-3 pr-3 space-y-4 w-full max-w-full">
           {/* Required Palettes - Single Column */}
           <div>
-            <h3 className="text-xs font-semibold text-foreground mb-3">
+            <h3 className="text-xs font-semibold text-foreground mb-2">
               Required Palettes
             </h3>
-            <div className="space-y-3">
+            <div className="space-y-2">
               <CompactPaletteSelector
                 label="Primary"
                 value={activeBrand.colors.primary.paletteId}
@@ -294,10 +208,10 @@ export function BrandConfigPanel() {
 
           {/* Semantic Colors - Single Column */}
           <div>
-            <h3 className="text-xs font-semibold text-foreground mb-3">
+            <h3 className="text-xs font-semibold text-foreground mb-2">
               Semantic Colors
             </h3>
-            <div className="space-y-3">
+            <div className="space-y-2">
               <CompactPaletteSelector
                 label="Positive"
                 value={activeBrand.colors.semantic.positive.paletteId}

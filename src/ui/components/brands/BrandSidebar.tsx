@@ -3,7 +3,6 @@ import { Plus, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CompactButton } from "../common/CompactButton";
 import { IconButton } from "../common/IconButton";
-import { SearchInput } from "@/ui/components/common/SearchInput";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CompactTooltip } from "@/components/ui/compact-tooltip";
@@ -20,7 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useBrandStore } from "@/store/brand-store";
 import { cn } from "@colors/utils";
-import { EmptyState, SearchEmptyState } from "../EmptyState";
+import { EmptyState } from "../EmptyState";
 
 interface BrandItemProps {
   brand: { id: string; name: string; syncedAt?: number; updatedAt: number };
@@ -196,7 +195,6 @@ export function BrandSidebar() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [editingName, setEditingName] = React.useState("");
-  const [searchQuery, setSearchQuery] = React.useState("");
 
   const handleCreate = () => {
     if (newBrandName.trim()) {
@@ -219,8 +217,7 @@ export function BrandSidebar() {
     setEditingName(name);
   };
 
-  const filteredBrands = brands
-    .filter((b) => b.name.toLowerCase().includes(searchQuery.toLowerCase()))
+  const sortedBrands = brands
     .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
@@ -269,12 +266,6 @@ export function BrandSidebar() {
           </DialogContent>
         </Dialog>
       </div>
-      
-      {/* Search */}
-      <SearchInput 
-        value={searchQuery}
-        onChange={setSearchQuery}
-      />
 
       <ScrollArea className="flex-1">
         <div className="px-2 py-1">
@@ -284,15 +275,9 @@ export function BrandSidebar() {
               description="Click + to create one"
               className="py-3"
             />
-          ) : filteredBrands.length === 0 ? (
-            <SearchEmptyState
-              searchQuery={searchQuery}
-              onClear={() => setSearchQuery("")}
-              className="py-3"
-            />
           ) : (
             <div className="space-y-0">
-              {filteredBrands.map((brand) => (
+              {sortedBrands.map((brand) => (
                 <BrandItem
                   key={brand.id}
                   brand={brand}

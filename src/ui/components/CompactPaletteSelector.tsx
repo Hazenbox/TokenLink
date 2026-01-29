@@ -33,6 +33,7 @@ export function CompactPaletteSelector({
   const palettes = usePaletteStore((state) => state.palettes);
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [focusedIndex, setFocusedIndex] = useState<number>(-1);
 
   // Get selected palette for preview
   const selectedPalette = palettes.find((p) => p.id === value);
@@ -46,6 +47,43 @@ export function CompactPaletteSelector({
     onChange(id, name);
     setOpen(false);
     setSearchQuery('');
+    setFocusedIndex(-1);
+  };
+
+  // Keyboard navigation handler
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!open) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        setOpen(true);
+      }
+      return;
+    }
+    
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setFocusedIndex(prev => 
+          prev < filteredPalettes.length - 1 ? prev + 1 : prev
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setFocusedIndex(prev => prev > 0 ? prev - 1 : 0);
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (focusedIndex >= 0 && focusedIndex < filteredPalettes.length) {
+          const palette = filteredPalettes[focusedIndex];
+          handleSelect(palette.id, palette.name);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        setOpen(false);
+        setFocusedIndex(-1);
+        break;
+    }
   };
 
   return (
@@ -61,12 +99,13 @@ export function CompactPaletteSelector({
             variant="outline"
             className="w-full justify-between h-8 px-2 text-xs font-normal border-border"
             onClick={() => setOpen(!open)}
+            onKeyDown={handleKeyDown}
           >
-            <div className="flex items-center gap-2 flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 flex-1 min-w-0">
               {selectedPalette && (
                 <div
-                  className="h-4 w-4 rounded border border-border/50 flex-shrink-0"
-                  style={{ backgroundColor: selectedPalette.steps[600] || '#ccc' }}
+                  className="h-3.5 w-3.5 rounded border border-border/50 flex-shrink-0"
+                  style={{ backgroundColor: selectedPalette.steps[1200] || '#ccc' }}
                 />
               )}
               <span className={cn(
@@ -110,7 +149,7 @@ export function CompactPaletteSelector({
                   No palettes found
                 </div>
               ) : (
-                filteredPalettes.map((palette) => (
+                filteredPalettes.map((palette, index) => (
                   <div
                     key={palette.id}
                     className={`
@@ -120,25 +159,19 @@ export function CompactPaletteSelector({
                           ? 'bg-surface-elevated'
                           : 'hover:bg-surface'
                       }
+                      ${focusedIndex === index ? 'ring-2 ring-primary' : ''}
                     `}
                     onClick={() => handleSelect(palette.id, palette.name)}
                   >
-                    <div className="text-xs font-medium text-foreground mb-1">
-                      {palette.name}
-                    </div>
-                    {/* Preview palette steps */}
-                    <div className="flex gap-0.5">
-                      {[200, 600, 1200, 2500].map((step) => {
-                        const color = (palette?.steps as any)?.[step] || '#ccc';
-                        return (
-                          <div
-                            key={step}
-                            className="h-4 flex-1 rounded border border-border/50"
-                            style={{ backgroundColor: color }}
-                            title={`Step ${step}: ${color}`}
-                          />
-                        );
-                      })}
+                    <div className="flex items-center gap-1.5">
+                      <div
+                        className="h-3.5 w-3.5 rounded border border-border/50 flex-shrink-0"
+                        style={{ backgroundColor: (palette?.steps as any)?.[1200] || '#ccc' }}
+                        title="Step 1200"
+                      />
+                      <span className="text-xs font-medium text-foreground">
+                        {palette.name}
+                      </span>
                     </div>
                   </div>
                 ))
