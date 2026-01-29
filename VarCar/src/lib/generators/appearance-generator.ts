@@ -52,21 +52,20 @@ export class AppearanceGenerator extends BaseLayerGenerator {
           return;
         }
         
-        // Find Interaction State variable for this palette
-        // Use 'Idle' state and 'Bold' emphasis for most, 'Subtle' for Neutral
-        const stateMode = 'Idle';
+        // Find Fill Emphasis variable for this palette
+        // Use 'Subtle' emphasis for Neutral, 'Bold' for others
         const emphasisMode = appearance === 'Neutral' ? 'Subtle' : 'Bold';
-        const interactionStateName = `${paletteName}/Default/${emphasisMode}/[Interaction state] ${scale}`;
+        const fillEmphasisName = `${paletteName}/[Child] ${scale}`;
         
-        const interactionStateVars = this.registry.findByCollection('interaction-state')
-          .filter(v => v.name === interactionStateName && v.modeName === stateMode);
+        const fillEmphasisVars = this.registry.findByCollection('fill-emphasis')
+          .filter(v => v.name === fillEmphasisName && v.modeName === emphasisMode);
         
-        if (interactionStateVars.length === 0) {
-          this.warn(`Interaction State variable not found: ${interactionStateName} (${stateMode})`);
+        if (fillEmphasisVars.length === 0) {
+          this.warn(`Fill Emphasis variable not found: ${fillEmphasisName} (${emphasisMode})`);
           return;
         }
         
-        const interactionStateVar = interactionStateVars[0];
+        const fillEmphasisVar = fillEmphasisVars[0];
         
         variables.push({
           id: this.generateVariableId(),
@@ -76,8 +75,8 @@ export class AppearanceGenerator extends BaseLayerGenerator {
           layer: this.layer.order,
           modeId: `mode_${idx}`,
           modeName: appearance,
-          aliasToId: interactionStateVar.id,
-          aliasToName: interactionStateName,
+          aliasToId: fillEmphasisVar.id,
+          aliasToName: fillEmphasisName,
           metadata: { scale, appearance, targetPalette: paletteName }
         });
       });
