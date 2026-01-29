@@ -1,6 +1,6 @@
 {
   "name": "FigMap",
-  "id": "figmap-plugin",
+  "id": "figmap-plugin-20260129",
   "api": "1.0.0",
   "main": "dist/code.js",
   "ui": "dist/ui/src/ui/index.html",
