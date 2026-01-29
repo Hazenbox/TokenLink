@@ -59,7 +59,7 @@ export function CompactPaletteSelector({
         <PopoverTrigger asChild>
           <Button
             variant="outline"
-            className="w-full justify-between h-8 px-2 text-xs font-normal"
+            className="w-full justify-between h-8 px-2 text-xs font-normal border-border"
             onClick={() => setOpen(!open)}
           >
             <div className="flex items-center gap-2 flex-1 min-w-0">

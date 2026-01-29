@@ -1,9 +1,9 @@
 import * as React from "react";
-import { Plus, MoreHorizontal, Search, X } from "lucide-react";
+import { Plus, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CompactButton } from "../common/CompactButton";
 import { IconButton } from "../common/IconButton";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "../common/SearchInput";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -64,7 +64,7 @@ function BrandItem({
         "group flex flex-col gap-1 rounded-lg px-3 py-2 text-xs transition-colors cursor-pointer select-none",
         isActive
           ? "bg-surface-elevated"
-          : "hover:bg-surface"
+          : "hover:bg-surface-elevated/50"
       )}
       onClick={onSelect}
     >
@@ -234,7 +234,7 @@ export function BrandSidebar() {
               <TooltipTrigger asChild>
                 <DialogTrigger asChild>
                   <button
-                    className="w-5 h-5 flex items-center justify-center rounded hover:bg-surface/50 text-foreground-tertiary"
+                    className="w-5 h-5 flex items-center justify-center rounded hover:bg-surface-elevated/50 text-foreground-tertiary"
                     title="Add Brand"
                   >
                     <Plus className="w-3.5 h-3.5" />
@@ -277,26 +277,10 @@ export function BrandSidebar() {
       </div>
       
       {/* Search */}
-      <div className="px-2 py-2">
-        <div className="relative group">
-          <Search className="absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-foreground-tertiary" />
-          <Input
-            type="text"
-            placeholder="Search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-7 px-2 pl-7 pr-7 text-xs"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 hover:bg-surface rounded-full transition-colors cursor-pointer"
-            >
-              <X className="h-3 w-3 text-foreground-tertiary" />
-            </button>
-          )}
-        </div>
-      </div>
+      <SearchInput 
+        value={searchQuery}
+        onChange={setSearchQuery}
+      />
 
       <ScrollArea className="flex-1">
         <div className="px-2 py-1">

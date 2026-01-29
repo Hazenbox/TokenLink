@@ -4,10 +4,10 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { ChevronsUpDown, ChevronRight, ChevronDown, Search, X } from 'lucide-react';
+import { ChevronsUpDown, ChevronRight, ChevronDown } from 'lucide-react';
 import { shallow } from 'zustand/shallow';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Input } from '@/components/ui/input';
+import { SearchInput } from '@/ui/components/common/SearchInput';
 import { useBrandStore } from '@/store/brand-store';
 import { useVariablesViewStore } from '@/store/variables-view-store';
 import { HierarchyParser, HierarchyNode } from '@/lib/hierarchy-parser';
@@ -125,8 +125,7 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
           className={`
             w-full flex items-center justify-between gap-2
             text-left text-[11px] transition-colors
-            hover:bg-interactive-hover
-            ${isSelected ? 'bg-surface-selected border-l-2 border-l-primary' : ''}
+            ${isSelected ? 'bg-surface-elevated' : 'hover:bg-surface-elevated/50'}
             ${isAncestor && !isSelected ? 'bg-surface/20' : ''}
           `}
           style={{ paddingLeft: `${paddingLeft}px`, paddingRight: '12px', paddingTop: '8px', paddingBottom: '8px' }}
@@ -200,26 +199,10 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
       </div>
       
       {/* Search */}
-      <div className="px-2 py-2">
-        <div className="relative group">
-          <Search className="absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-foreground-tertiary" />
-          <Input
-            type="text"
-            placeholder="Search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-7 px-2 pl-7 pr-7 text-xs bg-background border-border/40"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 hover:bg-interactive-hover rounded-full transition-colors cursor-pointer"
-            >
-              <X className="h-3 w-3 text-foreground-tertiary" />
-            </button>
-          )}
-        </div>
-      </div>
+      <SearchInput 
+        value={searchQuery}
+        onChange={setSearchQuery}
+      />
       
       {/* Expand/Collapse All */}
       {hierarchyTree.size > 0 && (
@@ -248,8 +231,7 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
         className={`
           w-full px-3 py-2 flex items-center justify-between
           text-left text-[11px] transition-colors
-          hover:bg-interactive-hover
-          ${hierarchyPath.length === 0 ? 'bg-surface-selected border-l-2 border-l-primary' : ''}
+          ${hierarchyPath.length === 0 ? 'bg-surface-elevated' : 'hover:bg-surface-elevated/50'}
         `}
       >
         <div className="flex-1 min-w-0">

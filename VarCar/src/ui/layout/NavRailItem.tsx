@@ -34,8 +34,8 @@ export const NavRailItem = React.forwardRef<HTMLButtonElement, NavRailItemProps>
             "w-10 h-7 flex items-center justify-center rounded-full",
             "transition-all duration-instant ease-snappy",
             isActive
-              ? "bg-surface-elevated glow-primary"
-              : "group-hover:bg-surface group-hover:glow-subtle"
+              ? "bg-surface-elevated"
+              : "group-hover:bg-surface"
           )}
         >
           <Icon 
