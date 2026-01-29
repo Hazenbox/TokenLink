@@ -1734,6 +1734,36 @@ figma.ui.onmessage = async (msg) => {
         console.log(`  Total modes: ${collection.modes.length} (expected: ${modes.length})`);
       }
       
+      // Validate mode configuration to detect orphaned "Mode 1" or missing modes
+      console.log('\n=== Mode Configuration Validation ===');
+      for (const [collectionName, variables] of sortedCollections) {
+        const collection = collectionMap.get(collectionName)!;
+        const expectedModes = [...new Set((variables as any[]).map(v => v.mode))];
+        const actualModes = collection.modes.map(m => m.name);
+        
+        console.log(`Collection: ${collectionName}`);
+        console.log(`  Expected: [${expectedModes.join(', ')}]`);
+        console.log(`  Actual:   [${actualModes.join(', ')}]`);
+        
+        // Check for orphaned "Mode 1"
+        if (actualModes.includes('Mode 1') && !expectedModes.includes('Mode 1')) {
+          console.warn(`  ⚠️ WARNING: Orphaned "Mode 1" detected!`);
+        }
+        
+        // Check for missing modes
+        const missingModes = expectedModes.filter(m => !actualModes.includes(m));
+        if (missingModes.length > 0) {
+          console.warn(`  ⚠️ WARNING: Missing modes: ${missingModes.join(', ')}`);
+        }
+        
+        // Check for extra modes
+        const extraModes = actualModes.filter(m => !expectedModes.includes(m));
+        if (extraModes.length > 0) {
+          console.warn(`  ⚠️ WARNING: Extra modes found: ${extraModes.join(', ')}`);
+        }
+      }
+      console.log('=== Mode Validation Complete ===\n');
+      
       // Phase 3: Create variables layer by layer with batching
       figma.ui.postMessage({
         type: 'sync-progress',
