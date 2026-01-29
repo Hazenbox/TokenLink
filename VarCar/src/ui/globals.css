@@ -12,39 +12,39 @@
 
 @layer base {
   :root {
-    /* Base Surfaces - Tailwind Gray Scale */
-    --background: 0 0% 3.9%;           /* gray-950 - Pure black background */
-    --background-canvas: 0 0% 9%;      /* gray-900 - Canvas/workspace background */
-    --surface: 0 0% 14.9%;             /* gray-800 - Elevated surfaces (cards, panels) */
-    --surface-elevated: 0 0% 23.1%;    /* gray-700 - Higher elevation (nodes, active items) */
-    --surface-selected: 0 0% 20%;      /* Selected item background for Figma-style UI */
+    /* Base Surfaces - Figma-style colors */
+    --background: 0 0% 11.8%;           /* #1E1E1E - Main background */
+    --background-canvas: 0 0% 17.3%;    /* #2C2C2C - Canvas/workspace background */
+    --surface: 0 0% 17.3%;              /* #2C2C2C - Elevated surfaces (cards, panels) */
+    --surface-elevated: 0 0% 14.5%;     /* #252525 - Higher elevation (nodes, active items) */
+    --surface-selected: 217 91% 60% / 0.15; /* #3B82F6 with 15% opacity - Selected item background */
     
     /* Grid Pattern - Subtle dot/grid for canvas */
-    --grid-color: 0 0% 23.1%;          /* gray-700 - Grid dots/lines */
+    --grid-color: 0 0% 23.5%;          /* #3C3C3C - Grid dots/lines */
     --grid-opacity: 0.15%;              /* 15% opacity for grid */
     
-    /* Text Hierarchy - Tailwind Gray Scale */
-    --foreground: 0 0% 87.1%;          /* gray-200 - Primary text (softer white) */
-    --foreground-secondary: 0 0% 63.1%; /* gray-400 - Secondary text */
-    --foreground-tertiary: 0 0% 45.1%;  /* gray-500 - Tertiary text */
+    /* Text Hierarchy - Figma-style colors */
+    --foreground: 0 0% 90%;            /* #E5E5E5 - Primary text */
+    --foreground-secondary: 0 0% 62.7%; /* #A0A0A0 - Secondary text */
+    --foreground-tertiary: 0 0% 44.1%;  /* #707070 - Tertiary text */
     --foreground-disabled: 0 0% 32.2%;  /* gray-600 - Disabled text */
     
-    /* Borders & Dividers - Tailwind Gray Scale */
-    --border: 0 0% 14.9%;              /* gray-800 - Standard borders */
-    --border-subtle: 0 0% 9%;          /* gray-900 - Subtle dividers */
-    --border-strong: 0 0% 23.1%;       /* gray-700 - Strong borders */
+    /* Borders & Dividers - Figma-style colors */
+    --border: 0 0% 23.5%;              /* #3C3C3C - Standard borders */
+    --border-subtle: 0 0% 19.6%;       /* #323232 - Subtle dividers */
+    --border-strong: 0 0% 23.5%;       /* #3C3C3C - Strong borders */
     
-    /* Interactive States - Tailwind Gray Scale */
-    --interactive: 0 0% 14.9%;         /* gray-800 - Hover backgrounds */
-    --interactive-hover: 0 0% 23.1%;   /* gray-700 - Active hover */
-    --interactive-pressed: 0 0% 9%;    /* gray-900 - Pressed state */
+    /* Interactive States - Figma-style colors */
+    --interactive: 0 0% 16.5%;         /* #2A2A2A - Hover backgrounds */
+    --interactive-hover: 0 0% 16.5%;   /* #2A2A2A - Active hover */
+    --interactive-pressed: 0 0% 11.8%; /* #1E1E1E - Pressed state */
     
-    /* Primary Actions - Gray Only (No Blue) */
-    --primary: 0 0% 32.2%;             /* gray-600 - Primary actions */
-    --primary-hover: 0 0% 45.1%;       /* gray-500 - Hover state */
-    --primary-pressed: 0 0% 23.1%;     /* gray-700 - Pressed state */
-    --primary-foreground: 0 0% 87.1%;  /* gray-200 - Softer white text on primary */
-    --primary-glow: 255 255 255 / 0.15; /* White glow only */
+    /* Primary Actions - Blue accent */
+    --primary: 217 91% 60%;            /* #3B82F6 - Primary actions (blue) */
+    --primary-hover: 217 91% 65%;      /* Lighter blue - Hover state */
+    --primary-pressed: 217 91% 55%;    /* Darker blue - Pressed state */
+    --primary-foreground: 0 0% 100%;   /* White text on primary */
+    --primary-glow: 217 91% 60% / 0.25; /* Blue glow */
     
     /* Semantic Colors - Gray Variants (No Colors) */
     --success: 0 0% 45.1%;             /* gray-500 - Gray instead of green */
@@ -57,14 +57,14 @@
     --glow-primary: 255 255 255 / 0.15; /* White glow (no blue) */
     --glow-success: 255 255 255 / 0.15; /* White glow (no green) */
     
-    /* Muted Backgrounds - Tailwind Gray Scale */
-    --muted: 0 0% 9%;                  /* gray-900 - Muted backgrounds */
-    --muted-foreground: 0 0% 45.1%;    /* gray-500 - Muted text */
+    /* Muted Backgrounds - Figma-style colors */
+    --muted: 0 0% 11.8%;               /* #1E1E1E - Muted backgrounds */
+    --muted-foreground: 0 0% 44.1%;    /* #707070 - Muted text */
     
-    /* Inputs - Tailwind Gray Scale */
-    --input: 0 0% 9%;                  /* gray-900 - Input backgrounds */
-    --input-border: 0 0% 14.9%;        /* gray-800 - Input borders */
-    --input-focus: 0 0% 32.2%;         /* gray-600 - Gray focus ring (no blue) */
+    /* Inputs - Figma-style colors */
+    --input: 0 0% 11.8%;               /* #1E1E1E - Input backgrounds */
+    --input-border: 0 0% 23.5%;        /* #3C3C3C - Input borders */
+    --input-focus: 217 91% 60%;        /* #3B82F6 - Blue focus ring */
     
     /* Overlays - Black Only */
     --overlay: 0 0 0 / 0.4;            /* 40% black overlay for modals */
@@ -117,24 +117,24 @@
     --menu-item-hover: 0 0% 14.9%;     /* gray-800 - Menu item hover */
     --menu-divider: 0 0% 9%;           /* gray-900 - Menu divider */
     
-    /* Card & Popover - Tailwind Gray Scale */
-    --card: 0 0% 14.9%;                /* gray-800 - Card background */
-    --card-foreground: 0 0% 87.1%;     /* gray-200 - Card text */
-    --popover: 0 0% 14.9%;             /* gray-800 - Popover background */
-    --popover-foreground: 0 0% 87.1%;  /* gray-200 - Popover text */
+    /* Card & Popover - Figma-style colors */
+    --card: 0 0% 17.3%;                /* #2C2C2C - Card background */
+    --card-foreground: 0 0% 90%;       /* #E5E5E5 - Card text */
+    --popover: 0 0% 17.3%;             /* #2C2C2C - Popover background */
+    --popover-foreground: 0 0% 90%;    /* #E5E5E5 - Popover text */
     
-    /* Secondary & Accent - Tailwind Gray Scale */
-    --secondary: 0 0% 14.9%;           /* gray-800 - Secondary background */
-    --secondary-foreground: 0 0% 87.1%; /* gray-200 - Secondary text */
-    --accent: 0 0% 14.9%;              /* gray-800 - Accent background */
-    --accent-foreground: 0 0% 87.1%;   /* gray-200 - Accent text */
+    /* Secondary & Accent - Figma-style colors */
+    --secondary: 0 0% 17.3%;           /* #2C2C2C - Secondary background */
+    --secondary-foreground: 0 0% 90%;  /* #E5E5E5 - Secondary text */
+    --accent: 217 91% 60%;             /* #3B82F6 - Accent (blue) */
+    --accent-foreground: 0 0% 100%;    /* White - Accent text */
     
     /* Destructive - Tailwind Gray Scale (No Red) */
     --destructive: 0 0% 45.1%;         /* gray-500 - Destructive (gray, not red) */
     --destructive-foreground: 0 0% 87.1%; /* gray-200 - Destructive text */
     
-    /* Ring (focus ring) - Tailwind Gray Scale */
-    --ring: 0 0% 32.2%;                /* gray-600 - Focus ring (gray, not blue) */
+    /* Ring (focus ring) - Blue accent */
+    --ring: 217 91% 60%;               /* #3B82F6 - Focus ring (blue) */
     
     /* Radius */
     --radius: 0.5rem;                  /* 8px - Base border radius */

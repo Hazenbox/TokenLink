@@ -68,7 +68,7 @@ export function AutomateApp() {
         
         {/* Variable Table - Takes remaining space */}
         <VariablesErrorBoundary>
-          <div className="flex-1 overflow-hidden min-w-0">
+          <div className="flex-1 overflow-hidden min-w-0 bg-background">
             <BrandVariableTable />
           </div>
         </VariablesErrorBoundary>

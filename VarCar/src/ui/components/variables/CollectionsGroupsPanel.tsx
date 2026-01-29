@@ -72,8 +72,8 @@ export function CollectionsGroupsPanel({
         onMouseDown={handleMouseDown}
         className={`h-1 cursor-ns-resize transition-colors border-y border-border/20 flex-shrink-0 ${
           isResizing 
-            ? 'bg-blue-500/40' 
-            : 'hover:bg-blue-500/20'
+            ? 'bg-primary/40' 
+            : 'hover:bg-primary/20'
         }`}
         title="Drag to resize"
       />

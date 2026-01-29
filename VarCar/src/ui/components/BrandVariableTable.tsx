@@ -11,7 +11,7 @@ import { useVariablesViewStore } from '@/store/variables-view-store';
 import { BrandGenerator } from '@/lib/brand-generator';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Download } from 'lucide-react';
+import { Search, Download, Settings } from 'lucide-react';
 import { ModeCell } from './variables/ModeCell';
 import { brandToFigmaAdapter } from '@/adapters/brandToFigmaVariables';
 import { HierarchyParser } from '@/lib/hierarchy-parser';
@@ -155,44 +155,59 @@ export function BrandVariableTable() {
     );
   }
 
+  // Group variables by their first hierarchy level (color groups)
+  const groupedVariables = useMemo(() => {
+    const groups: { [key: string]: typeof filteredVariables } = {};
+    
+    filteredVariables.forEach((variable) => {
+      const segments = HierarchyParser.parseVariableName(variable.name);
+      const groupName = segments[0] || 'Other';
+      
+      if (!groups[groupName]) {
+        groups[groupName] = [];
+      }
+      groups[groupName].push(variable);
+    });
+    
+    return groups;
+  }, [filteredVariables]);
+
   return (
     <div className="h-full flex flex-col bg-background">
-      {/* Header */}
-      <div className="p-4 border-b border-border flex-shrink-0">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h2 className="text-sm font-semibold text-foreground">
-              Variables
-            </h2>
-            <p className="text-xs text-foreground-secondary">
-              {filteredVariables.length} variables
-            </p>
+      {/* Header - Figma style with collection name */}
+      <div className="px-4 py-3 border-b border-border/20 flex-shrink-0 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h2 className="text-[13px] font-medium text-foreground">
+            {activeCollection?.name || 'Variables'}
+          </h2>
+          <span className="text-[11px] text-foreground-tertiary">
+            {filteredVariables.length}
+          </span>
+        </div>
+        
+        {/* Search - Compact inline */}
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-foreground-tertiary" />
+            <Input
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-7 w-48 pl-7 text-xs bg-background border-border/40"
+            />
           </div>
-          
           <Button
             onClick={handleExport}
             size="sm"
-            variant="outline"
-            className="h-7 px-3"
+            variant="ghost"
+            className="h-7 px-2 text-foreground-tertiary hover:text-foreground"
           >
-            <Download className="w-3 h-3 mr-1" />
-            Export CSV
+            <Download className="w-3.5 h-3.5" />
           </Button>
-        </div>
-
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-foreground-tertiary" />
-          <Input
-            placeholder="Search variables..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-7 pl-7 text-xs"
-          />
         </div>
       </div>
 
-      {/* Flat Variables Table (NO ACCORDION) - Native Scrolling for Horizontal + Vertical */}
+      {/* Variables Table with Group Headers - Native Scrolling */}
       <div className="flex-1 overflow-x-auto overflow-y-auto relative">
         {filteredVariables.length === 0 ? (
           <div className="text-center py-12 text-foreground-secondary text-xs">
@@ -203,7 +218,7 @@ export function BrandVariableTable() {
             <thead className="sticky top-0 z-10 bg-background">
               <tr className="border-b border-border/20">
                 {/* Variable Name Column - Sticky Header + Sticky Column */}
-                <th className="sticky left-0 z-20 bg-background text-left px-3 py-2 border-r-2 border-border shadow-[2px_0_8px_0px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_8px_0px_rgba(0,0,0,0.4)] before:absolute before:inset-0 before:bg-background before:-z-10">
+                <th className="sticky left-0 z-20 bg-background text-left px-3 py-2 border-r border-border/20 before:absolute before:inset-0 before:bg-background before:-z-10">
                   <span className="text-[11px] font-medium text-foreground-secondary relative z-10">
                     Name
                   </span>
@@ -213,7 +228,7 @@ export function BrandVariableTable() {
                 {modes.map((mode) => (
                   <th 
                     key={mode.modeId} 
-                    className="text-center px-3 py-2 min-w-[180px] border-r border-border/10 whitespace-nowrap"
+                    className="text-left px-3 py-2 min-w-[200px] border-r border-border/10 whitespace-nowrap"
                   >
                     <span className="text-[11px] font-medium text-foreground-secondary">
                       {mode.name}
@@ -224,56 +239,73 @@ export function BrandVariableTable() {
             </thead>
             
             <tbody>
-              {filteredVariables.map((variable) => (
-                <tr 
-                  key={variable.id} 
-                  className="border-b border-border/10 hover:bg-surface/30 transition-colors group"
-                >
-                  {/* Variable Name - Sticky Column with hover state */}
-                  <td className="sticky left-0 z-10 bg-background group-hover:bg-surface/30 px-3 py-2 border-r-2 border-border shadow-[2px_0_8px_0px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_8px_0px_rgba(0,0,0,0.4)] transition-colors before:absolute before:inset-0 before:bg-background before:group-hover:bg-surface/30 before:-z-10 before:transition-colors relative">
-                    <span className="text-[11px] text-foreground whitespace-nowrap relative z-10" title={variable.name}>
-                      {HierarchyParser.getLastSegment(variable.name)}
-                    </span>
-                  </td>
+              {Object.entries(groupedVariables).map(([groupName, variables]) => (
+                <React.Fragment key={groupName}>
+                  {/* Group Header Row */}
+                  <tr className="bg-surface/20">
+                    <td 
+                      colSpan={modes.length + 1}
+                      className="px-3 py-2 border-b border-border/20"
+                    >
+                      <span className="text-[11px] font-semibold text-foreground">
+                        {groupName}
+                      </span>
+                    </td>
+                  </tr>
                   
-                  {/* Mode Values */}
-                  {modes.map((mode) => {
-                    const value = variable.valuesByMode[mode.modeId];
-                    const resolvedColor = variable.resolvedValuesByMode[mode.modeId];
-                    
-                    return (
-                      <td 
-                        key={mode.modeId} 
-                        className="border-r border-border/10 align-middle min-w-[180px]"
-                      >
-                        {value ? (
-                          <ModeCell value={value} color={resolvedColor} />
-                        ) : (
-                          <div className="px-3 py-2 text-center text-foreground-tertiary/30">
-                            —
-                          </div>
-                        )}
+                  {/* Variables in this group */}
+                  {variables.map((variable) => (
+                    <tr 
+                      key={variable.id} 
+                      className="border-b border-border/10 hover:bg-interactive-hover transition-colors group"
+                    >
+                      {/* Variable Name - Sticky Column with hover state */}
+                      <td className="sticky left-0 z-10 bg-background group-hover:bg-interactive-hover px-3 py-1.5 border-r border-border/20 transition-colors before:absolute before:inset-0 before:bg-background before:group-hover:bg-interactive-hover before:-z-10 before:transition-colors relative">
+                        <div className="flex items-center gap-1.5 relative z-10">
+                          <Settings className="w-3 h-3 text-foreground-tertiary flex-shrink-0" />
+                          <span className="text-[11px] text-foreground whitespace-nowrap truncate" title={variable.name}>
+                            {HierarchyParser.getLastSegment(variable.name)}
+                          </span>
+                        </div>
                       </td>
-                    );
-                  })}
-                </tr>
+                      
+                      {/* Mode Values */}
+                      {modes.map((mode) => {
+                        const value = variable.valuesByMode[mode.modeId];
+                        const resolvedColor = variable.resolvedValuesByMode[mode.modeId];
+                        
+                        return (
+                          <td 
+                            key={mode.modeId} 
+                            className="border-r border-border/10 align-middle min-w-[200px]"
+                          >
+                            {value ? (
+                              <ModeCell value={value} color={resolvedColor} />
+                            ) : (
+                              <div className="px-3 py-1.5 text-foreground-tertiary/30">
+                                —
+                              </div>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </React.Fragment>
               ))}
             </tbody>
           </table>
         )}
       </div>
 
-      {/* Footer Stats */}
-      <div className="p-3 border-t border-border flex-shrink-0">
-        <div className="flex items-center justify-between text-[10px] text-foreground-tertiary">
+      {/* Footer Stats - Minimal */}
+      <div className="px-3 py-2 border-t border-border/20 flex-shrink-0 bg-background">
+        <div className="flex items-center gap-4 text-[10px] text-foreground-tertiary">
           <div>
-            Collection: <span className="text-foreground">{activeCollection?.name || 'None'}</span>
+            <span className="text-foreground-secondary">{filteredVariables.length}</span> variables
           </div>
           <div>
-            Variables: <span className="text-foreground">{filteredVariables.length}</span>
-          </div>
-          <div>
-            Modes: <span className="text-foreground">{modes.length}</span>
+            <span className="text-foreground-secondary">{modes.length}</span> modes
           </div>
         </div>
       </div>

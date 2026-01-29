@@ -1,6 +1,7 @@
 /**
  * Mode Cell
  * Displays a color value for a specific mode in the variables table
+ * Figma-style: small inline swatch + alias text
  */
 
 import React from 'react';
@@ -19,8 +20,8 @@ export function ModeCell({ value, color }: ModeCellProps) {
   // Defensive checks
   if (!value || !color) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2">
-        <div className="text-[10px] text-foreground-tertiary/30">—</div>
+      <div className="flex items-center gap-2 px-3 py-1.5">
+        <div className="text-[11px] text-foreground-tertiary/30">—</div>
       </div>
     );
   }
@@ -28,34 +29,26 @@ export function ModeCell({ value, color }: ModeCellProps) {
   const isAlias = value.type === 'ALIAS' && value.aliasId;
   
   return (
-    <div className="flex items-center gap-2 px-3 py-2">
-      {/* Color Swatch */}
+    <div className="flex items-center gap-2 px-3 py-1.5">
+      {/* Color Swatch - Small inline */}
       <div
-        className="w-6 h-6 rounded border border-border/30 flex-shrink-0"
+        className="w-4 h-4 rounded border border-border/40 flex-shrink-0"
         style={{ backgroundColor: color || '#000000' }}
         title={color || 'No color'}
       />
       
-      {/* Value/Alias Display */}
+      {/* Value/Alias Display - Inline */}
       <div className="flex-1 min-w-0">
         {isAlias ? (
-          <div className="flex flex-col gap-0.5">
-            <div 
-              className="text-[10px] text-brand font-mono truncate"
-              title={`Aliases to: ${value.aliasId}`}
-            >
-              → {value.aliasId}
-            </div>
-            <div 
-              className="text-[9px] text-foreground-tertiary/60 font-mono"
-              title={`Resolves to: ${color}`}
-            >
-              {color}
-            </div>
+          <div 
+            className="text-[11px] text-foreground-secondary truncate"
+            title={`${value.aliasId} → ${color}`}
+          >
+            {value.aliasId}
           </div>
         ) : (
           <div 
-            className="text-[10px] text-foreground-tertiary font-mono"
+            className="text-[11px] text-foreground-tertiary truncate"
             title={color || ''}
           >
             {color || '—'}

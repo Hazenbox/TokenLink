@@ -29,8 +29,8 @@ function CollectionItem({ collection, isActive, onClick }: CollectionItemProps) 
       className={`
         w-full px-3 py-2 flex items-center justify-between
         text-left text-[11px] transition-colors
-        hover:bg-surface/50
-        ${isActive ? 'bg-surface-selected border-l-2 border-l-blue-500' : ''}
+        hover:bg-interactive-hover
+        ${isActive ? 'bg-surface-selected border-l-2 border-l-primary' : ''}
       `}
     >
       <div className="flex-1 min-w-0">
@@ -98,7 +98,7 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
     <div className="h-full flex flex-col bg-background">
       {/* Header */}
       <div className="px-3 py-2 border-b border-border/20 flex items-center justify-between flex-shrink-0">
-        <span className="text-[11px] font-medium text-foreground-secondary">
+        <span className="text-[11px] font-semibold text-foreground-secondary">
           Collections
         </span>
         <div className="flex items-center gap-1">
@@ -106,7 +106,7 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
           {collections.some(c => c.name.startsWith('ml_')) && (
             <button
               onClick={handleCleanupMlCollections}
-              className="w-5 h-5 flex items-center justify-center rounded hover:bg-red-500/20 text-red-500/70 hover:text-red-500"
+              className="w-5 h-5 flex items-center justify-center rounded hover:bg-red-500/20 text-red-500/70 hover:text-red-500 transition-colors"
               title="Delete ml_ prefixed collections"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -114,7 +114,7 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
           )}
           <button
             onClick={onCreateCollection}
-            className="w-5 h-5 flex items-center justify-center rounded hover:bg-surface/50 text-foreground-tertiary"
+            className="w-5 h-5 flex items-center justify-center rounded hover:bg-interactive-hover text-foreground-tertiary hover:text-foreground-secondary transition-colors"
             title="Add Collection"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -131,12 +131,12 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
             placeholder="Search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-7 px-2 pl-7 pr-7 text-xs"
+            className="h-7 px-2 pl-7 pr-7 text-xs bg-background border-border/40"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery("")}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 hover:bg-surface rounded-full transition-colors cursor-pointer"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 hover:bg-interactive-hover rounded-full transition-colors cursor-pointer"
             >
               <X className="h-3 w-3 text-foreground-tertiary" />
             </button>

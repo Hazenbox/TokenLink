@@ -125,9 +125,9 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
           className={`
             w-full flex items-center justify-between gap-2
             text-left text-[11px] transition-colors
-            hover:bg-surface/50
-            ${isSelected ? 'bg-surface-selected border-l-2 border-l-blue-500' : ''}
-            ${isAncestor && !isSelected ? 'bg-surface/30' : ''}
+            hover:bg-interactive-hover
+            ${isSelected ? 'bg-surface-selected border-l-2 border-l-primary' : ''}
+            ${isAncestor && !isSelected ? 'bg-surface/20' : ''}
           `}
           style={{ paddingLeft: `${paddingLeft}px`, paddingRight: '12px', paddingTop: '8px', paddingBottom: '8px' }}
         >
@@ -187,12 +187,12 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
     <div className="h-full flex flex-col bg-background">
       {/* Header */}
       <div className="px-3 py-2 border-b border-border/20 flex items-center justify-between flex-shrink-0">
-        <span className="text-[11px] font-medium text-foreground-secondary">
+        <span className="text-[11px] font-semibold text-foreground-secondary">
           Groups
         </span>
         <button
           onClick={() => useVariablesViewStore.getState().toggleGroupsSidebar()}
-          className="w-5 h-5 flex items-center justify-center rounded hover:bg-surface/50 text-foreground-tertiary"
+          className="w-5 h-5 flex items-center justify-center rounded hover:bg-interactive-hover text-foreground-tertiary hover:text-foreground-secondary transition-colors"
           title="Collapse Groups"
         >
           <ChevronsUpDown className="w-3.5 h-3.5" />
@@ -208,12 +208,12 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
             placeholder="Search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-7 px-2 pl-7 pr-7 text-xs"
+            className="h-7 px-2 pl-7 pr-7 text-xs bg-background border-border/40"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery("")}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 hover:bg-surface rounded-full transition-colors cursor-pointer"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 hover:bg-interactive-hover rounded-full transition-colors cursor-pointer"
             >
               <X className="h-3 w-3 text-foreground-tertiary" />
             </button>
@@ -229,13 +229,13 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
               const allPaths = HierarchyParser.flattenTree(hierarchyTree).map(node => node.fullPath);
               expandAllHierarchyNodes(allPaths);
             }}
-            className="flex-1 text-[10px] text-foreground-tertiary hover:text-foreground-secondary px-2 py-1 rounded hover:bg-surface/50 transition-colors"
+            className="flex-1 text-[10px] text-foreground-tertiary hover:text-foreground-secondary px-2 py-1 rounded hover:bg-interactive-hover transition-colors"
           >
             Expand All
           </button>
           <button
             onClick={() => collapseAllHierarchyNodes()}
-            className="flex-1 text-[10px] text-foreground-tertiary hover:text-foreground-secondary px-2 py-1 rounded hover:bg-surface/50 transition-colors"
+            className="flex-1 text-[10px] text-foreground-tertiary hover:text-foreground-secondary px-2 py-1 rounded hover:bg-interactive-hover transition-colors"
           >
             Collapse All
           </button>
@@ -248,8 +248,8 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
         className={`
           w-full px-3 py-2 flex items-center justify-between
           text-left text-[11px] transition-colors
-          hover:bg-surface/50
-          ${hierarchyPath.length === 0 ? 'bg-surface-selected border-l-2 border-l-blue-500' : ''}
+          hover:bg-interactive-hover
+          ${hierarchyPath.length === 0 ? 'bg-surface-selected border-l-2 border-l-primary' : ''}
         `}
       >
         <div className="flex-1 min-w-0">
