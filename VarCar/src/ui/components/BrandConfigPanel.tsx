@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { CompactButton } from './common/CompactButton';
 import { Info, ChevronDown, ChevronUp, Upload, ChevronLeft, ChevronRight, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { BrandGenerator } from '@/lib/brand-generator';
+import { EmptyState } from './EmptyState';
 
 export function BrandConfigPanel() {
   const activeBrand = useBrandStore((state) => state.getActiveBrand());
@@ -103,8 +104,11 @@ export function BrandConfigPanel() {
           </button>
         </div>
         
-        <div className="h-full flex items-center justify-center text-foreground-secondary text-sm px-4">
-          Select or create a brand to configure
+        <div className="h-full flex items-center justify-center">
+          <EmptyState
+            title="Select or create a brand to configure"
+            className="py-12"
+          />
         </div>
       </div>
     );
@@ -203,17 +207,17 @@ export function BrandConfigPanel() {
       />
       
       {/* Header with Sync Button */}
-      <div className="pl-4 pr-4 py-3 border-b border-border flex-shrink-0">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-foreground">
+      <div className="px-3 py-2 border-b border-border/30 flex-shrink-0">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-[11px] font-semibold text-foreground-secondary">
             {activeBrand.name}
           </h2>
           <button
             onClick={toggleConfigPanel}
-            className="w-6 h-6 flex items-center justify-center rounded hover:bg-surface/50 text-foreground-tertiary"
+            className="w-5 h-5 flex items-center justify-center rounded hover:bg-interactive-hover text-foreground-tertiary"
             title="Collapse Panel"
           >
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
         

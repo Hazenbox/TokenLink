@@ -96,8 +96,8 @@ export function GroupsSidebar({ onCreateGroup }: GroupsSidebarProps) {
   return (
     <div className="h-full flex flex-col bg-background">
       {/* Header */}
-      <div className="px-3 py-2 border-b border-border/40 flex items-center justify-between flex-shrink-0">
-        <span className="text-[11px] font-medium text-foreground-secondary">
+      <div className="px-3 py-2 border-b border-border/30 flex items-center justify-between flex-shrink-0">
+        <span className="text-[11px] font-semibold text-foreground-secondary">
           Groups
         </span>
         <button

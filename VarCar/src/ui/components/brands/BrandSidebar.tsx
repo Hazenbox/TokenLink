@@ -6,7 +6,7 @@ import { IconButton } from "../common/IconButton";
 import { SearchInput } from "@/ui/components/common/SearchInput";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { CompactTooltip } from "@/components/ui/compact-tooltip";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useBrandStore } from "@/store/brand-store";
 import { cn } from "@colors/utils";
+import { EmptyState, SearchEmptyState } from "../EmptyState";
 
 interface BrandItemProps {
   brand: { id: string; name: string; syncedAt?: number; updatedAt: number };
@@ -225,28 +226,20 @@ export function BrandSidebar() {
   return (
     <div className="flex h-full w-[220px] flex-col bg-background border-r border-border/40 relative z-10 flex-shrink-0">
       {/* Header */}
-      <div className="px-3 py-2 border-b border-border/20 flex items-center justify-between flex-shrink-0">
-        <span className="text-[11px] font-medium text-foreground-secondary">
+      <div className="px-3 py-2 border-b border-border/30 flex items-center justify-between flex-shrink-0">
+        <span className="text-[11px] font-semibold text-foreground-secondary">
           Brands
         </span>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <TooltipProvider delayDuration={300}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <DialogTrigger asChild>
-                  <button
-                    className="w-5 h-5 flex items-center justify-center rounded hover:bg-surface-elevated/50 text-foreground-tertiary"
-                    title="Add Brand"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
-                </DialogTrigger>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                <p className="text-xs">Create Brand</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <CompactTooltip content="Create Brand">
+            <DialogTrigger asChild>
+              <button
+                className="w-5 h-5 flex items-center justify-center rounded hover:bg-surface-elevated/50 text-foreground-tertiary"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            </DialogTrigger>
+          </CompactTooltip>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Create New Brand</DialogTitle>
@@ -286,15 +279,17 @@ export function BrandSidebar() {
       <ScrollArea className="flex-1">
         <div className="px-2 py-1">
           {brands.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-6 text-center text-sm text-muted-foreground">
-              <p className="text-xs">No brands yet</p>
-              <p className="text-[10px]">Click + to create one</p>
-            </div>
+            <EmptyState
+              title="No brands yet"
+              description="Click + to create one"
+              className="py-6"
+            />
           ) : filteredBrands.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-6 text-center text-sm text-muted-foreground">
-              <p className="text-xs">No brands found</p>
-              <p className="text-[10px]">Try a different search term</p>
-            </div>
+            <SearchEmptyState
+              searchQuery={searchQuery}
+              onClear={() => setSearchQuery("")}
+              className="py-6"
+            />
           ) : (
             <div className="space-y-0">
               {filteredBrands.map((brand) => (

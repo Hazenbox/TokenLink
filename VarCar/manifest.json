@@ -1,6 +1,6 @@
 {
-  "name": "FigMap",
-  "id": "figmap-plugin-20260129",
+  "name": "Token Link",
+  "id": "token-link-plugin-20260129",
   "api": "1.0.0",
   "main": "dist/code.js",
   "ui": "dist/ui/src/ui/index.html",
@@ -11,7 +11,7 @@
   },
   "menu": [
     {
-      "name": "Open FigMap",
+      "name": "Open Token Link",
       "command": "open"
     }
   ]

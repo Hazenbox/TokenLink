@@ -1,4 +1,4 @@
-# FigMap - Figma Plugin
+# Token Link - Figma Plugin
 
 A Figma plugin built with TypeScript, React, and Vite for automating Figma Variables orchestration.
 
@@ -32,7 +32,7 @@ Before you begin, ensure you have the following installed on your computer:
 ## 📁 Project Structure
 
 ```
-FigZig/
+Token Link/
 ├── manifest.json              # Figma plugin configuration
 ├── package.json               # npm dependencies and scripts
 ├── tsconfig.json              # TypeScript configuration for UI

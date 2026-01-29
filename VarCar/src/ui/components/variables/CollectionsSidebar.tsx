@@ -11,6 +11,7 @@ import { SearchInput } from '@/ui/components/common/SearchInput';
 import { useBrandStore } from '@/store/brand-store';
 import { useVariablesViewStore } from '@/store/variables-view-store';
 import { FigmaCollection } from '@/models/brand';
+import { EmptyState, SearchEmptyState } from '../EmptyState';
 
 interface CollectionsSidebarProps {
   onCreateCollection?: () => void;
@@ -96,7 +97,7 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
   return (
     <div className="h-full flex flex-col bg-background">
       {/* Header */}
-      <div className="px-3 py-2 border-b border-border/40 flex items-center justify-between flex-shrink-0">
+      <div className="px-3 py-2 border-b border-border/30 flex items-center justify-between flex-shrink-0">
         <span className="text-[11px] font-semibold text-foreground-secondary">
           Collections
         </span>
@@ -123,17 +124,17 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
       {/* Collections List */}
       <ScrollArea className="flex-1">
         {collections.length === 0 ? (
-          <div className="px-3 py-8 text-center text-[10px] text-foreground-tertiary">
-            No collections
-            <br />
-            Create a brand to start
-          </div>
+          <EmptyState
+            title="No collections"
+            description="Create a brand to start"
+            className="py-8"
+          />
         ) : filteredCollections.length === 0 ? (
-          <div className="px-3 py-8 text-center text-[10px] text-foreground-tertiary">
-            No collections found
-            <br />
-            Try a different search
-          </div>
+          <SearchEmptyState
+            searchQuery={searchQuery}
+            onClear={() => setSearchQuery("")}
+            className="py-8"
+          />
         ) : (
           <div className="py-1">
             {filteredCollections.map((collection) => (

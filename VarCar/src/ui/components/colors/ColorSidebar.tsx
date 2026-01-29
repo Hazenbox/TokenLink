@@ -6,7 +6,7 @@ import { IconButton } from "../common/IconButton";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { CompactTooltip } from "@/components/ui/compact-tooltip";
 import {
   Dialog,
   DialogContent,
@@ -386,22 +386,15 @@ export function ColorSidebar() {
     <div className="flex h-full w-48 flex-col bg-sidebar-background relative z-10">
       <div className="flex flex-col gap-2 px-2 pt-5 pb-3">
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <TooltipProvider delayDuration={300}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <DialogTrigger asChild>
-                  <CompactButton 
-                    icon={Plus} 
-                    label="New Palette" 
-                    className="w-full"
-                  />
-                </DialogTrigger>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                <p className="text-xs">Create Palette</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <CompactTooltip content="Create Palette">
+            <DialogTrigger asChild>
+              <CompactButton 
+                icon={Plus} 
+                label="New Palette" 
+                className="w-full"
+              />
+            </DialogTrigger>
+          </CompactTooltip>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Create New Palette</DialogTitle>

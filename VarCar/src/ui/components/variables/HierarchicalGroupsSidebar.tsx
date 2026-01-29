@@ -185,14 +185,22 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
   return (
     <div className="h-full flex flex-col bg-background">
       {/* Header */}
-      <div className="px-3 py-2 border-b border-border/40 flex items-center justify-between flex-shrink-0">
+      <div className="px-3 py-2 border-b border-border/30 flex items-center justify-between flex-shrink-0">
         <span className="text-[11px] font-semibold text-foreground-secondary">
           Groups
         </span>
         <button
-          onClick={() => useVariablesViewStore.getState().toggleGroupsSidebar()}
+          onClick={() => {
+            // If any nodes are expanded, collapse all; otherwise expand all
+            if (expandedHierarchyNodes.size > 0) {
+              collapseAllHierarchyNodes();
+            } else {
+              const allPaths = HierarchyParser.flattenTree(hierarchyTree).map(node => node.fullPath);
+              expandAllHierarchyNodes(allPaths);
+            }
+          }}
           className="w-5 h-5 flex items-center justify-center rounded hover:bg-interactive-hover text-foreground-tertiary hover:text-foreground-secondary transition-colors"
-          title="Collapse Groups"
+          title={expandedHierarchyNodes.size > 0 ? "Collapse All" : "Expand All"}
         >
           <ChevronsUpDown className="w-3.5 h-3.5" />
         </button>
@@ -203,27 +211,6 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
         value={searchQuery}
         onChange={setSearchQuery}
       />
-      
-      {/* Expand/Collapse All */}
-      {hierarchyTree.size > 0 && (
-        <div className="px-2 pb-2 flex gap-1">
-          <button
-            onClick={() => {
-              const allPaths = HierarchyParser.flattenTree(hierarchyTree).map(node => node.fullPath);
-              expandAllHierarchyNodes(allPaths);
-            }}
-            className="flex-1 text-[10px] text-foreground-tertiary hover:text-foreground-secondary px-2 py-1 rounded hover:bg-interactive-hover transition-colors"
-          >
-            Expand All
-          </button>
-          <button
-            onClick={() => collapseAllHierarchyNodes()}
-            className="flex-1 text-[10px] text-foreground-tertiary hover:text-foreground-secondary px-2 py-1 rounded hover:bg-interactive-hover transition-colors"
-          >
-            Collapse All
-          </button>
-        </div>
-      )}
       
       {/* All Option */}
       <button

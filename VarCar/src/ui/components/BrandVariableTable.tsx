@@ -15,6 +15,7 @@ import { Search, Download } from 'lucide-react';
 import { ModeCell } from './variables/ModeCell';
 import { brandToFigmaAdapter } from '@/adapters/brandToFigmaVariables';
 import { HierarchyParser } from '@/lib/hierarchy-parser';
+import { EmptyState } from './EmptyState';
 
 export function BrandVariableTable() {
   const activeBrand = useBrandStore((state) => state.getActiveBrand());
@@ -116,8 +117,11 @@ export function BrandVariableTable() {
   // Handle different states
   if (!activeBrand) {
     return (
-      <div className="h-full flex items-center justify-center text-foreground-secondary text-sm p-4 bg-background">
-        Select a brand to view variables
+      <div className="h-full flex items-center justify-center bg-background">
+        <EmptyState
+          title="Select a brand to view variables"
+          className="py-12"
+        />
       </div>
     );
   }
@@ -175,12 +179,12 @@ export function BrandVariableTable() {
   return (
     <div className="h-full flex flex-col bg-background">
       {/* Header - Figma style with collection name */}
-      <div className="px-4 py-3 border-b border-border/20 flex-shrink-0 flex items-center justify-between">
+      <div className="px-3 py-2 border-b border-border/30 flex-shrink-0 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h2 className="text-[13px] font-medium text-foreground">
+          <h2 className="text-[11px] font-semibold text-foreground-secondary">
             {activeCollection?.name || 'Variables'}
           </h2>
-          <span className="text-[11px] text-foreground-tertiary">
+          <span className="text-[10px] text-foreground-tertiary">
             {filteredVariables.length}
           </span>
         </div>

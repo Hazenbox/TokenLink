@@ -26,8 +26,8 @@ import { useAppSwitcher } from './AppSwitcher';
 
 // Build timestamp for cache busting
 const BUILD_TIMESTAMP = new Date().toISOString();
-console.log('[FigZig] Build timestamp:', BUILD_TIMESTAMP);
-console.log('[FigZig] App module loaded - Edge wiring fix active');
+console.log('[Token Link] Build timestamp:', BUILD_TIMESTAMP);
+console.log('[Token Link] App module loaded - Edge wiring fix active');
 
 interface Collection {
   id: string;
