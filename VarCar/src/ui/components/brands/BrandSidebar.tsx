@@ -3,7 +3,7 @@ import { Plus, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CompactButton } from "../common/CompactButton";
 import { IconButton } from "../common/IconButton";
-import { SearchInput } from "../common/SearchInput";
+import { SearchInput } from "@/ui/components/common/SearchInput";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
