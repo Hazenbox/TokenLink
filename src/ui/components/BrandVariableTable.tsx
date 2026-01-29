@@ -117,6 +117,34 @@ export function BrandVariableTable() {
     URL.revokeObjectURL(url);
   };
   
+  // Group variables by parent path (all segments except last)
+  // NOTE: This useMemo must be before early returns to avoid React error #310
+  const groupedVariables = useMemo(() => {
+    const groups: { [key: string]: typeof filteredVariables } = {};
+    
+    filteredVariables.forEach((variable) => {
+      const segments = HierarchyParser.parseVariableName(variable.name);
+      
+      // Group by parent path (all segments except last)
+      // e.g., "Grey/Default/Ghost/Surface" → "Grey / Default / Ghost"
+      const groupName = segments.length > 1 
+        ? segments.slice(0, -1).join(' / ')
+        : 'Root';
+      
+      if (!groups[groupName]) {
+        groups[groupName] = [];
+      }
+      groups[groupName].push(variable);
+    });
+    
+    // Sort variables within each group by name
+    Object.values(groups).forEach(vars => {
+      vars.sort((a, b) => a.name.localeCompare(b.name));
+    });
+    
+    return groups;
+  }, [filteredVariables]);
+  
   // Handle different states
   if (!activeBrand) {
     return (
@@ -161,33 +189,6 @@ export function BrandVariableTable() {
       </div>
     );
   }
-
-  // Group variables by parent path (all segments except last)
-  const groupedVariables = useMemo(() => {
-    const groups: { [key: string]: typeof filteredVariables } = {};
-    
-    filteredVariables.forEach((variable) => {
-      const segments = HierarchyParser.parseVariableName(variable.name);
-      
-      // Group by parent path (all segments except last)
-      // e.g., "Grey/Default/Ghost/Surface" → "Grey / Default / Ghost"
-      const groupName = segments.length > 1 
-        ? segments.slice(0, -1).join(' / ')
-        : 'Root';
-      
-      if (!groups[groupName]) {
-        groups[groupName] = [];
-      }
-      groups[groupName].push(variable);
-    });
-    
-    // Sort variables within each group by name
-    Object.values(groups).forEach(vars => {
-      vars.sort((a, b) => a.name.localeCompare(b.name));
-    });
-    
-    return groups;
-  }, [filteredVariables]);
 
   return (
     <div className="h-full flex flex-col bg-background">
