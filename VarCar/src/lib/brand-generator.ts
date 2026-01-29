@@ -145,6 +145,16 @@ export class BrandGenerator {
     this.statistics.paletteUsage[paletteRef.paletteName] = 
       (this.statistics.paletteUsage[paletteRef.paletteName] || 0) + 1;
 
+    // Validate palette.steps has hex values (not OKLCH)
+    const sampleStep = palette.steps[600] || palette.steps[1000] || palette.steps[200];
+    if (sampleStep && sampleStep.startsWith('oklch(')) {
+      this.validation.errors.push(
+        `Palette "${palette.name}" has OKLCH values - expected HEX. ` +
+        `This suggests palette-loader.ts conversion failed.`
+      );
+      return; // Don't generate broken variables
+    }
+
     // Generate scales for all steps
     const allScales = generateAllScales(palette.steps, palette.primaryStep);
 
@@ -157,7 +167,19 @@ export class BrandGenerator {
         const scaleKey = SCALE_KEY_MAP[scaleName];
         const scaleResult = (stepScales as any)[scaleKey];
         
-        if (!scaleResult || !scaleResult.hex) continue;
+        // Enhanced validation
+        if (!scaleResult || !scaleResult.hex) {
+          console.warn(`[Generator] Missing scale result for ${palette.name}/${step}/${scaleName}`);
+          continue;
+        }
+        
+        // Validate hex format
+        if (!scaleResult.hex.startsWith('#') || scaleResult.hex.length !== 7) {
+          this.validation.warnings.push(
+            `Invalid hex for ${palette.name}/${step}/${scaleName}: ${scaleResult.hex}`
+          );
+          continue; // Skip invalid hex
+        }
 
         // Create variable name: BrandName/Appearance/[appearance] Scale
         // Example: MyJio/Primary/[primary] Bold
