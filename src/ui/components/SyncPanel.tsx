@@ -21,7 +21,10 @@ import {
 
 export function SyncPanel() {
   const activeBrand = useBrandStore((state) => state.getActiveBrand());
+  const activeBrandId = useBrandStore((state) => state.activeBrandId);
+  const brands = useBrandStore((state) => state.brands);
   const syncBrand = useBrandStore((state) => state.syncBrand);
+  const syncAllBrands = useBrandStore((state) => state.syncAllBrands);
   const syncStatus = useBrandStore((state) => state.syncStatus);
   const canSync = useBrandStore((state) => state.canSync());
   const canUndo = useBrandStore((state) => state.canUndo());
@@ -34,6 +37,12 @@ export function SyncPanel() {
   const [showPreview, setShowPreview] = useState(false);
 
   const handleSync = async () => {
+    // Check if syncing all brands
+    if (activeBrandId === '__all__') {
+      await syncAllBrands();
+      return;
+    }
+
     if (!activeBrand) return;
 
     // Validation happens in the store before syncing
@@ -42,6 +51,19 @@ export function SyncPanel() {
   };
 
   const handleExport = () => {
+    // Export all brands when "All" is selected
+    if (activeBrandId === '__all__') {
+      const json = exportBrands(brands.map(b => b.id));
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'all_brands.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      return;
+    }
+
     if (!activeBrand) return;
     
     const json = exportBrands([activeBrand.id]);
@@ -72,7 +94,10 @@ export function SyncPanel() {
     input.click();
   };
 
-  if (!activeBrand) {
+  // Handle "All" brands selection
+  const isAllBrands = activeBrandId === '__all__';
+  
+  if (!activeBrand && !isAllBrands) {
     return (
       <div className="border-t border-border bg-card p-4">
         <div className="text-center text-foreground-secondary text-sm">
@@ -82,7 +107,18 @@ export function SyncPanel() {
     );
   }
 
-  const validation = BrandGenerator.validate(activeBrand);
+  // Validation
+  let validation = { valid: true, errors: [], warnings: [] };
+  if (isAllBrands) {
+    // For "All", check if we have any brands
+    validation.valid = brands.length > 0;
+    if (!validation.valid) {
+      validation.errors.push('No brands to sync');
+    }
+  } else if (activeBrand) {
+    validation = BrandGenerator.validate(activeBrand);
+  }
+  
   const canSyncBrand = validation.valid && canSync && syncStatus === 'idle';
 
   return (
@@ -114,7 +150,7 @@ export function SyncPanel() {
             ) : (
               <>
                 <Upload className="w-4 h-4 mr-2" />
-                Sync to Figma
+                {isAllBrands ? 'Sync All Brands to Figma' : 'Sync to Figma'}
               </>
             )}
           </Button>
@@ -123,6 +159,12 @@ export function SyncPanel() {
             <div className="mt-2 text-xs text-orange-600">
               {!validation.valid && '⚠ Fix validation errors first'}
               {validation.valid && !canSync && '⚠ Rate limit: Wait before syncing again'}
+            </div>
+          )}
+          
+          {isAllBrands && canSyncBrand && (
+            <div className="mt-2 text-xs text-blue-600">
+              ℹ️ This will sync {brands.length} brands as a unified design system
             </div>
           )}
         </div>
@@ -179,16 +221,27 @@ export function SyncPanel() {
 
         {/* Sync Info */}
         <div className="text-xs text-foreground-tertiary space-y-1">
-          {activeBrand.syncedAt ? (
-            <div>
-              Last synced: {new Date(activeBrand.syncedAt).toLocaleString()}
-            </div>
-          ) : (
-            <div>Never synced</div>
-          )}
-          {activeBrand.updatedAt > (activeBrand.syncedAt || 0) && activeBrand.syncedAt && (
-            <div className="text-orange-500">⚠ Modified since last sync</div>
-          )}
+          {isAllBrands ? (
+            <>
+              <div className="font-medium text-foreground">Unified Multi-Brand Sync</div>
+              <div>
+                {brands.length} brands will be synced with merged palettes and unified collections
+              </div>
+            </>
+          ) : activeBrand ? (
+            <>
+              {activeBrand.syncedAt ? (
+                <div>
+                  Last synced: {new Date(activeBrand.syncedAt).toLocaleString()}
+                </div>
+              ) : (
+                <div>Never synced</div>
+              )}
+              {activeBrand.updatedAt > (activeBrand.syncedAt || 0) && activeBrand.syncedAt && (
+                <div className="text-orange-500">⚠ Modified since last sync</div>
+              )}
+            </>
+          ) : null}
         </div>
       </div>
     </div>
