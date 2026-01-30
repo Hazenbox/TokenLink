@@ -164,7 +164,7 @@ export function BrandConfigPanel() {
 
       {/* Config Content */}
       <ScrollArea className="flex-1 w-full max-w-full">
-        <div className="pl-3 pt-3 pb-3 pr-3 space-y-4 w-full max-w-full">
+        <div className="pl-3 pt-2 pb-2 pr-3 space-y-3 w-full max-w-full">
           {/* Required Palettes - Single Column */}
           <div>
             <h3 className="text-xs font-semibold text-foreground mb-2">
