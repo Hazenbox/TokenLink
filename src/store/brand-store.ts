@@ -533,6 +533,10 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
       // Get active brand
       getActiveBrand: () => {
         const state = get();
+        // Return null for "All" selection to indicate unified view
+        if (state.activeBrandId === '__all__') {
+          return null;
+        }
         return state.brands.find((b) => b.id === state.activeBrandId) || null;
       },
 
@@ -1576,9 +1580,24 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
       // Figma data refresh actions
       refreshFigmaData: () => {
         const state = get();
-        const activeBrand = state.getActiveBrand();
+        const allBrands = state.brands;
         
-        if (!activeBrand) {
+        // Determine which brands to generate for
+        let brandsToGenerate: Brand[] = [];
+        
+        if (state.activeBrandId === '__all__') {
+          // "All" selected - generate for all brands
+          brandsToGenerate = allBrands;
+        } else {
+          // Single brand selected
+          const activeBrand = state.getActiveBrand();
+          if (activeBrand) {
+            brandsToGenerate = [activeBrand];
+          }
+        }
+        
+        // If no brands to generate, clear state
+        if (brandsToGenerate.length === 0) {
           set({
             figmaCollections: [],
             figmaGroups: [],
@@ -1588,8 +1607,8 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
         }
         
         try {
-          // Always use multi-layer generation for preview
-          const { collections, variablesByCollection } = convertMultiLayerToPreview(activeBrand);
+          // Generate with single or multiple brands
+          const { collections, variablesByCollection } = convertMultiLayerToPreview(brandsToGenerate);
           
           // Store in state
           set({ 
@@ -1605,7 +1624,7 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
             useVariablesViewStore.getState().setActiveCollection(collections[0].id);
           }
           
-          console.log(`[Multi-Layer Preview] ${collections.length} collections, ${variablesByCollection.size} variable sets`);
+          console.log(`[Multi-Layer Preview] ${collections.length} collections, ${variablesByCollection.size} variable sets for ${brandsToGenerate.length} brand(s)`);
         } catch (error) {
           console.error('[Figma] Failed to refresh data:', error);
           set({

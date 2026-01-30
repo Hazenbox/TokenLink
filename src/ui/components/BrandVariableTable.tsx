@@ -19,6 +19,7 @@ import { EmptyState } from './EmptyState';
 
 export function BrandVariableTable() {
   const activeBrand = useBrandStore((state) => state.getActiveBrand());
+  const activeBrandId = useBrandStore((state) => state.activeBrandId);
   const activeCollectionId = useVariablesViewStore((state) => state.activeCollectionId);
   const hierarchyPath = useVariablesViewStore((state) => state.hierarchyPath);
   const searchQuery = useVariablesViewStore((state) => state.searchQuery);
@@ -68,11 +69,15 @@ export function BrandVariableTable() {
     return filtered;
   }, [allVariables, hierarchyPath, searchQuery]);
   
-  // Validate brand
+  // Validate brand (skip validation for "All" view)
   const validation = useMemo(() => {
+    if (activeBrandId === '__all__') {
+      // "All" view is always valid if we have collections
+      return { valid: true, errors: [], warnings: [] };
+    }
     if (!activeBrand) return { valid: false, errors: [], warnings: [] };
     return BrandGenerator.validate(activeBrand);
-  }, [activeBrand]);
+  }, [activeBrand, activeBrandId]);
   
   // Group variables by parent path (all segments except last)
   // NOTE: This useMemo must be before early returns to avoid React error #310
@@ -103,7 +108,7 @@ export function BrandVariableTable() {
   }, [filteredVariables]);
   
   // Handle different states
-  if (!activeBrand) {
+  if (!activeBrand && activeBrandId !== '__all__') {
     return (
       <div className="h-full flex items-center justify-center bg-background">
         <EmptyState

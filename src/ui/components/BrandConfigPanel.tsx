@@ -16,6 +16,7 @@ import { EmptyState } from './EmptyState';
 
 export function BrandConfigPanel() {
   const activeBrand = useBrandStore((state) => state.getActiveBrand());
+  const activeBrandId = useBrandStore((state) => state.activeBrandId);
   const updateBrandPalette = useBrandStore((state) => state.updateBrandPalette);
   
   const configPanelCollapsed = useVariablesViewStore((state) => state.configPanelCollapsed);
@@ -90,7 +91,9 @@ export function BrandConfigPanel() {
         
         {/* Collapse Button */}
         <div className="pl-4 pr-4 py-2 border-b border-border/40 flex items-center justify-between flex-shrink-0">
-          <h2 className="text-sm font-semibold text-foreground">Configuration</h2>
+          <h2 className="text-sm font-semibold text-foreground">
+            {activeBrandId === '__all__' ? 'All Brands' : 'Configuration'}
+          </h2>
           <button
             onClick={toggleConfigPanel}
             className="w-6 h-6 flex items-center justify-center rounded hover:bg-surface/50 text-foreground-tertiary"
@@ -102,7 +105,8 @@ export function BrandConfigPanel() {
         
         <div className="h-full flex items-center justify-center">
           <EmptyState
-            title="Select or create a brand to configure"
+            title={activeBrandId === '__all__' ? 'Viewing all brands' : 'Select or create a brand to configure'}
+            description={activeBrandId === '__all__' ? 'Collections and variables from all brands are unified' : undefined}
             className="py-4"
           />
         </div>

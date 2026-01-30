@@ -14,19 +14,22 @@ import { BrandGenerator } from '@/lib/brand-generator';
 
 /**
  * Convert multi-layer generated variables to preview format
+ * Supports both single brand and multi-brand generation
  */
 export function convertMultiLayerToPreview(
-  brand: Brand
+  brands: Brand[]
 ): {
   collections: FigmaCollection[];
   variablesByCollection: Map<string, FigmaVariable[]>;
 } {
   console.log('[Preview Adapter] Generating multi-layer variables...');
   
-  // 1. Generate multi-layer variables using the new system
-  const generated = BrandGenerator.generateBrandWithLayers(brand);
+  // 1. Generate multi-layer variables using the appropriate method
+  const generated = brands.length > 1 
+    ? BrandGenerator.generateAllBrandsWithLayers(brands)
+    : BrandGenerator.generateBrandWithLayers(brands[0]);
   
-  console.log(`[Preview Adapter] Generated ${generated.variables.length} variables`);
+  console.log(`[Preview Adapter] Generated ${generated.variables.length} variables for ${brands.length} brand(s)`);
   
   // 2. Group variables by collection
   const collectionMap = new Map<string, GeneratedVariable[]>();

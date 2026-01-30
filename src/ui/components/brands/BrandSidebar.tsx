@@ -87,68 +87,74 @@ function BrandItem({
           <>
             <div className="flex items-center gap-1.5 flex-1 min-w-0">
               <span className="truncate text-xs font-medium">{brand.name}</span>
-              <span className={cn("text-[9px] flex-shrink-0", syncStatus.color)}>
-                {syncStatus.label}
-              </span>
+              {brand.id !== '__all__' && (
+                <span className={cn("text-[9px] flex-shrink-0", syncStatus.color)}>
+                  {syncStatus.label}
+                </span>
+              )}
             </div>
-            <Popover open={menuOpen} onOpenChange={setMenuOpen}>
-              <PopoverTrigger asChild>
-                <IconButton
-                  icon={MoreHorizontal}
-                  variant="ghost"
-                  size="sm"
-                  aria-label="More options"
-                  className={cn(
-                    "h-5 w-5 transition-opacity",
-                    menuOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                  )}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setMenuOpen(true);
-                  }}
-                />
-              </PopoverTrigger>
-              <PopoverContent className="w-32 p-1" align="end" side="right">
-                <div className="flex flex-col">
-                  <button
-                    className="rounded px-2 py-1.5 text-xs hover:bg-accent text-left cursor-pointer"
+            {/* Hide menu for "All" option */}
+            {brand.id !== '__all__' && (
+              <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+                <PopoverTrigger asChild>
+                  <IconButton
+                    icon={MoreHorizontal}
+                    variant="ghost"
+                    size="sm"
+                    aria-label="More options"
+                    className={cn(
+                      "h-5 w-5 transition-opacity",
+                      menuOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                    )}
                     onClick={(e) => {
                       e.stopPropagation();
-                      setMenuOpen(false);
-                      onStartEdit();
+                      setMenuOpen(true);
                     }}
-                  >
-                    Rename
-                  </button>
-                  <button
-                    className="rounded px-2 py-1.5 text-xs hover:bg-accent text-left cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setMenuOpen(false);
-                      onDuplicate();
-                    }}
-                  >
-                    Duplicate
-                  </button>
-                  <div className="my-1 h-px bg-border/50" />
-                  <button
-                    className="rounded px-2 py-1.5 text-xs hover:bg-accent text-left cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setMenuOpen(false);
-                      setDeleteDialogOpen(true);
-                    }}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </PopoverContent>
-            </Popover>
+                  />
+                </PopoverTrigger>
+                <PopoverContent className="w-32 p-1" align="end" side="right">
+                  <div className="flex flex-col">
+                    <button
+                      className="rounded px-2 py-1.5 text-xs hover:bg-accent text-left cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuOpen(false);
+                        onStartEdit();
+                      }}
+                    >
+                      Rename
+                    </button>
+                    <button
+                      className="rounded px-2 py-1.5 text-xs hover:bg-accent text-left cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuOpen(false);
+                        onDuplicate();
+                      }}
+                    >
+                      Duplicate
+                    </button>
+                    <div className="my-1 h-px bg-border/50" />
+                    <button
+                      className="rounded px-2 py-1.5 text-xs hover:bg-accent text-left cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuOpen(false);
+                        setDeleteDialogOpen(true);
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
           </>
         )}
       </div>
 
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      {brand.id !== '__all__' && (
+        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[400px]" onClick={(e) => e.stopPropagation()}>
           <DialogHeader>
             <DialogTitle>Delete Brand</DialogTitle>
@@ -175,6 +181,7 @@ function BrandItem({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      )}
     </div>
   );
 }
@@ -276,6 +283,33 @@ export function BrandSidebar() {
             />
           ) : (
             <div className="space-y-0">
+              {/* "All" option for multi-brand unified view */}
+              {brands.length >= 2 && (
+                <>
+                  <BrandItem
+                    key="__all__"
+                    brand={{ 
+                      id: '__all__', 
+                      name: 'All', 
+                      updatedAt: Date.now(),
+                      syncedAt: undefined
+                    }}
+                    isActive={activeBrandId === '__all__'}
+                    isEditing={false}
+                    editingName=""
+                    onSelect={() => setActiveBrand('__all__')}
+                    onStartEdit={() => {}} // No-op for "All"
+                    onEditChange={() => {}} // No-op for "All"
+                    onEditSave={() => {}} // No-op for "All"
+                    onEditCancel={() => {}} // No-op for "All"
+                    onDelete={() => {}} // No-op for "All"
+                    onDuplicate={() => {}} // No-op for "All"
+                  />
+                  <div className="border-t border-border/40 my-1.5" />
+                </>
+              )}
+              
+              {/* Individual brands */}
               {sortedBrands.map((brand) => (
                 <BrandItem
                   key={brand.id}
