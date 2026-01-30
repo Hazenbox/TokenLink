@@ -3,8 +3,8 @@
  * Main component with sidebar and Figma-style layout
  */
 
-import React, { useEffect, useMemo } from 'react';
-import { Upload, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Upload, Loader2, CheckCircle, AlertCircle, Download, FolderInput } from 'lucide-react';
 import { BrandSidebar } from './components/brands/BrandSidebar';
 import { BrandConfigPanel } from './components/BrandConfigPanel';
 import { BrandVariableTable } from './components/BrandVariableTable';
@@ -12,10 +12,16 @@ import { CollectionsGroupsPanel } from './components/variables/CollectionsGroups
 import { VariablesErrorBoundary } from './components/variables/VariablesErrorBoundary';
 import { Toast } from './components/Toast';
 import { SyncProgressModal } from './components/SyncProgressModal';
+import { ExportModal } from './components/ExportModal';
+import { ImportPreviewModal } from './components/ImportPreviewModal';
+import { ImportResults } from './components/ImportResults';
 import { useBrandStore } from '@/store/brand-store';
 import { usePaletteStore } from '@/store/palette-store';
 import { useFigmaMessages } from './hooks/useFigmaMessages';
 import { BrandGenerator } from '@/lib/brand-generator';
+import { parseImportFile, createImportPreview } from '@/services/import-service';
+import { executeImport } from '@/services/import-execution';
+import { ImportPreview, ImportOptions, ImportResult } from '@/models/export-types';
 
 export function AutomateApp() {
   // Handle Figma plugin messages for sync responses
@@ -29,6 +35,13 @@ export function AutomateApp() {
   const syncAllBrands = useBrandStore((state) => state.syncAllBrands);
   const syncStatus = useBrandStore((state) => state.syncStatus);
   const canSync = useBrandStore((state) => state.canSync());
+  
+  // Import/Export modals state
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [showImportPreview, setShowImportPreview] = useState(false);
+  const [showImportResults, setShowImportResults] = useState(false);
+  const [importPreview, setImportPreview] = useState<ImportPreview | null>(null);
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
   
   const isAllBrands = activeBrandId === '__all__';
   
@@ -91,6 +104,59 @@ export function AutomateApp() {
     }
   };
   
+  // Handle export
+  const handleExport = () => {
+    setShowExportModal(true);
+  };
+  
+  // Handle import file selection
+  const handleImportClick = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        try {
+          // Parse the file
+          const parseResult = await parseImportFile(file);
+          
+          if (!parseResult.success || !parseResult.data) {
+            alert(`Failed to parse import file:\n${parseResult.errors.join('\n')}`);
+            return;
+          }
+          
+          // Create preview
+          const preview = createImportPreview(parseResult.data);
+          setImportPreview(preview);
+          setShowImportPreview(true);
+        } catch (error) {
+          console.error('Import error:', error);
+          alert('Failed to import file. Please check the file format.');
+        }
+      }
+    };
+    input.click();
+  };
+  
+  // Handle import execution
+  const handleImport = async (options: ImportOptions) => {
+    if (!importPreview) return;
+    
+    try {
+      const result = await executeImport(importPreview.exportData, options);
+      setImportResult(result);
+      setShowImportPreview(false);
+      setShowImportResults(true);
+      
+      // Refresh UI after import
+      useBrandStore.getState().refreshFigmaData();
+    } catch (error) {
+      console.error('Import execution error:', error);
+      alert('Import failed. Please try again.');
+    }
+  };
+  
   // Initialize palettes and brands on mount (order matters!)
   useEffect(() => {
     const loadData = async () => {
@@ -128,25 +194,51 @@ export function AutomateApp() {
   
   return (
     <div className="h-full w-full flex flex-col bg-background relative overflow-hidden min-w-0">
-      {/* Main Header with Sync Button */}
+      {/* Main Header with Import, Export, and Sync Buttons */}
       <div className="h-9 px-3 py-1.5 border-b border-border/30 flex-shrink-0 flex items-center justify-between bg-background">
         <h1 className="text-xs font-semibold text-foreground-secondary">
           Automate brands
         </h1>
-        <button
-          onClick={handleSync}
-          disabled={!canSyncBrand}
-          className={`
-            h-6 px-2 text-xs font-normal flex items-center gap-1.5 transition-colors
-            ${canSyncBrand 
-              ? 'text-foreground hover:text-foreground-secondary' 
-              : 'text-foreground-tertiary cursor-not-allowed opacity-50'}
-            ${syncStatus === 'success' ? 'text-green-500' : ''}
-            ${syncStatus === 'error' ? 'text-red-500' : ''}
-          `}
-        >
-          {getSyncButtonContent()}
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Export Button */}
+          <button
+            onClick={handleExport}
+            className="h-6 px-2 text-xs font-normal flex items-center gap-1.5 transition-colors text-foreground hover:text-foreground-secondary"
+            title="Export brands and palettes"
+          >
+            <Download className="w-3 h-3" />
+            <span>Export</span>
+          </button>
+          
+          {/* Import Button */}
+          <button
+            onClick={handleImportClick}
+            className="h-6 px-2 text-xs font-normal flex items-center gap-1.5 transition-colors text-foreground hover:text-foreground-secondary"
+            title="Import brands and palettes"
+          >
+            <FolderInput className="w-3 h-3" />
+            <span>Import</span>
+          </button>
+          
+          {/* Separator */}
+          <div className="w-px h-4 bg-border/50" />
+          
+          {/* Sync Button */}
+          <button
+            onClick={handleSync}
+            disabled={!canSyncBrand}
+            className={`
+              h-6 px-2 text-xs font-normal flex items-center gap-1.5 transition-colors
+              ${canSyncBrand 
+                ? 'text-foreground hover:text-foreground-secondary' 
+                : 'text-foreground-tertiary cursor-not-allowed opacity-50'}
+              ${syncStatus === 'success' ? 'text-green-500' : ''}
+              ${syncStatus === 'error' ? 'text-red-500' : ''}
+            `}
+          >
+            {getSyncButtonContent()}
+          </button>
+        </div>
       </div>
       
       {/* Main Content Area */}
@@ -177,6 +269,27 @@ export function AutomateApp() {
       
       {/* Sync Progress Modal */}
       {progress && <SyncProgressModal progress={progress} />}
+      
+      {/* Export Modal */}
+      <ExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+      />
+      
+      {/* Import Preview Modal */}
+      <ImportPreviewModal
+        isOpen={showImportPreview}
+        preview={importPreview}
+        onClose={() => setShowImportPreview(false)}
+        onImport={handleImport}
+      />
+      
+      {/* Import Results Modal */}
+      <ImportResults
+        isOpen={showImportResults}
+        result={importResult}
+        onClose={() => setShowImportResults(false)}
+      />
       
       {/* Toast Notification */}
       {notification && (
