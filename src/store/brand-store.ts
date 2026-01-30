@@ -900,6 +900,9 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
           '*'
         );
         
+        // CRITICAL: Yield to event loop to let modal render
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         console.log('Generating with multi-layer architecture...');
         const generatedBrand = BrandGenerator.generateBrandWithLayers(brand);
         
@@ -1094,6 +1097,9 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
           },
           '*'
         );
+        
+        // CRITICAL: Yield to event loop to let modal render
+        await new Promise(resolve => setTimeout(resolve, 100));
         
         console.log('Generating with multi-brand architecture...');
         const generatedBrand = BrandGenerator.generateAllBrandsWithLayers(allBrands);
