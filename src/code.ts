@@ -1663,12 +1663,6 @@ figma.ui.onmessage = async (msg) => {
       console.log(`Syncing ${brands.length} brands with multi-brand architecture...`);
       console.log(`Collections to sync: ${Object.keys(variablesByCollection).length}`);
       
-      // Send initial progress
-      figma.ui.postMessage({
-        type: 'sync-progress',
-        data: { step: 1, total: 5, message: `Starting multi-brand sync for ${brands.length} brands...` }
-      });
-      
       // Use same sync logic as sync-brand-with-layers
       // The variables already have correct modes from generation
       const collectionMap = new Map<string, VariableCollection>();
@@ -1687,12 +1681,20 @@ figma.ui.onmessage = async (msg) => {
       const totalVariablesToCreate = sortedCollections.reduce((sum, [, vars]) => sum + (vars as any[]).length, 0);
       console.log(`Total variables to create: ${totalVariablesToCreate}`);
       
+      // Send initial progress with total variables count
+      figma.ui.postMessage({
+        type: 'sync-progress',
+        data: { 
+          message: `Starting multi-brand sync for ${brands.length} brands...`,
+          currentVariables: 0,
+          totalVariables: totalVariablesToCreate
+        }
+      });
+      
       // Phase 1: Create all collections
       figma.ui.postMessage({
         type: 'sync-progress',
         data: { 
-          step: 2, 
-          total: 5, 
           message: `Creating ${sortedCollections.length} collections...`,
           currentVariables: 0,
           totalVariables: totalVariablesToCreate
@@ -1710,8 +1712,6 @@ figma.ui.onmessage = async (msg) => {
       figma.ui.postMessage({
         type: 'sync-progress',
         data: { 
-          step: 3, 
-          total: 5, 
           message: 'Creating modes for collections...',
           currentVariables: 0,
           totalVariables: totalVariablesToCreate
@@ -1736,8 +1736,6 @@ figma.ui.onmessage = async (msg) => {
       figma.ui.postMessage({
         type: 'sync-progress',
         data: { 
-          step: 4, 
-          total: 5, 
           message: 'Building variable cache...',
           currentVariables: 0,
           totalVariables: totalVariablesToCreate
@@ -1795,8 +1793,6 @@ figma.ui.onmessage = async (msg) => {
           figma.ui.postMessage({
             type: 'sync-progress',
             data: {
-              step: 4,
-              total: 5,
               message: `Creating primitives... ${Math.min(i + BATCH_SIZE, varsArray.length)}/${varsArray.length}`,
               currentVariables: totalCreated + totalUpdated,
               totalVariables: totalVariablesToCreate
@@ -1874,8 +1870,6 @@ figma.ui.onmessage = async (msg) => {
           figma.ui.postMessage({
             type: 'sync-progress',
             data: {
-              step: 4,
-              total: 5,
               message: `Syncing ${collectionName}... ${Math.min(i + BATCH_SIZE, varsArray.length)}/${varsArray.length}`,
               currentVariables: totalCreated + totalUpdated,
               totalVariables: totalVariablesToCreate
@@ -1932,12 +1926,6 @@ figma.ui.onmessage = async (msg) => {
       console.log(`Syncing brand "${brand.name}" with multi-layer architecture...`);
       console.log(`Collections to sync: ${Object.keys(variablesByCollection).length}`);
       
-      // Send initial progress
-      figma.ui.postMessage({
-        type: 'sync-progress',
-        data: { step: 1, total: 5, message: 'Starting multi-layer sync...' }
-      });
-      
       // Store created collection and variable references
       const collectionMap = new Map<string, VariableCollection>();
       const variableMap = new Map<string, Variable>();
@@ -1956,12 +1944,20 @@ figma.ui.onmessage = async (msg) => {
       const totalVariablesToCreate = sortedCollections.reduce((sum, [, vars]) => sum + (vars as any[]).length, 0);
       console.log(`Total variables to create: ${totalVariablesToCreate}`);
       
+      // Send initial progress with total variables count
+      figma.ui.postMessage({
+        type: 'sync-progress',
+        data: { 
+          message: 'Starting multi-layer sync...',
+          currentVariables: 0,
+          totalVariables: totalVariablesToCreate
+        }
+      });
+      
       // Phase 1: Create all collections
       figma.ui.postMessage({
         type: 'sync-progress',
         data: { 
-          step: 2, 
-          total: 5, 
           message: `Creating ${sortedCollections.length} collections...`,
           currentVariables: 0,
           totalVariables: totalVariablesToCreate
@@ -1980,8 +1976,6 @@ figma.ui.onmessage = async (msg) => {
       figma.ui.postMessage({
         type: 'sync-progress',
         data: { 
-          step: 3, 
-          total: 5, 
           message: 'Creating modes for collections...',
           currentVariables: 0,
           totalVariables: totalVariablesToCreate
@@ -2037,8 +2031,6 @@ figma.ui.onmessage = async (msg) => {
       figma.ui.postMessage({
         type: 'sync-progress',
         data: { 
-          step: 4, 
-          total: 5, 
           message: 'Building variable cache...',
           currentVariables: 0,
           totalVariables: totalVariablesToCreate
@@ -2134,12 +2126,9 @@ figma.ui.onmessage = async (msg) => {
           figma.ui.postMessage({
             type: 'sync-progress',
             data: {
-              step: 4,
-              total: 5,
               message: `${collectionName} (batch ${batchNum}/${totalBatches})`,
               currentVariables: totalCreated + totalUpdated,
               totalVariables: totalVariablesToCreate,
-              progress,
               errors: errors.length
             }
           });
@@ -2289,12 +2278,9 @@ figma.ui.onmessage = async (msg) => {
           figma.ui.postMessage({
             type: 'sync-progress',
             data: {
-              step: 4,
-              total: 5,
               message: `${collectionName} (batch ${batchNum}/${totalBatches})`,
               currentVariables: totalCreated + totalUpdated,
               totalVariables: totalVariablesToCreate,
-              progress,
               errors: errors.length
             }
           });
@@ -2319,8 +2305,6 @@ figma.ui.onmessage = async (msg) => {
       figma.ui.postMessage({
         type: 'sync-progress',
         data: { 
-          step: 5, 
-          total: 5, 
           message: 'Finalizing sync...',
           currentVariables: finalVariableCount,
           totalVariables: totalVariablesToCreate

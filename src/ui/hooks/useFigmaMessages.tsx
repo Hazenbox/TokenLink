@@ -161,6 +161,13 @@ export function useFigmaMessages() {
         break;
       }
 
+      // UI-initiated progress updates (for generation phase)
+      case 'sync-progress-ui': {
+        const data = msg.data as ProgressData & { isGenerating?: boolean };
+        setProgress(data);
+        break;
+      }
+
       // Other message types can be added here
       default:
         // Ignore other message types

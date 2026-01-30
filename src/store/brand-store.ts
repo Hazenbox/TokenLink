@@ -883,10 +883,43 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
 
         // Generate variables with multi-layer architecture
         set({ syncStatus: 'previewing' });
+        
+        // Send manual progress message to UI for generation phase (before blocking operation)
+        window.parent.postMessage(
+          {
+            pluginMessage: {
+              type: 'sync-progress-ui',
+              data: {
+                message: `Generating variables for "${brand.name}"...`,
+                currentVariables: 0,
+                totalVariables: 0, // Will be updated after generation
+                isGenerating: true
+              }
+            }
+          },
+          '*'
+        );
+        
         console.log('Generating with multi-layer architecture...');
         const generatedBrand = BrandGenerator.generateBrandWithLayers(brand);
         
         console.log(`Generated ${generatedBrand.variables.length} variables across ${generatedBrand.statistics.collections.length} collections`);
+        
+        // Update progress after generation completes
+        window.parent.postMessage(
+          {
+            pluginMessage: {
+              type: 'sync-progress-ui',
+              data: {
+                message: 'Variables generated, preparing to sync...',
+                currentVariables: 0,
+                totalVariables: generatedBrand.variables.length,
+                isGenerating: false
+              }
+            }
+          },
+          '*'
+        );
         
         // Group variables by collection
         const variablesByCollection: Record<string, any[]> = {};
@@ -1045,10 +1078,43 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
 
         // Generate variables with multi-brand architecture
         set({ syncStatus: 'previewing' });
+        
+        // Send manual progress message to UI for generation phase (before blocking operation)
+        window.parent.postMessage(
+          {
+            pluginMessage: {
+              type: 'sync-progress-ui',
+              data: {
+                message: `Generating variables for ${allBrands.length} brands...`,
+                currentVariables: 0,
+                totalVariables: 0, // Will be updated after generation
+                isGenerating: true
+              }
+            }
+          },
+          '*'
+        );
+        
         console.log('Generating with multi-brand architecture...');
         const generatedBrand = BrandGenerator.generateAllBrandsWithLayers(allBrands);
         
         console.log(`Generated ${generatedBrand.variables.length} variables across ${generatedBrand.statistics.collections.length} collections for ${allBrands.length} brands`);
+        
+        // Update progress after generation completes
+        window.parent.postMessage(
+          {
+            pluginMessage: {
+              type: 'sync-progress-ui',
+              data: {
+                message: 'Variables generated, preparing to sync...',
+                currentVariables: 0,
+                totalVariables: generatedBrand.variables.length,
+                isGenerating: false
+              }
+            }
+          },
+          '*'
+        );
         
         // Group variables by collection
         const variablesByCollection: Record<string, any[]> = {};

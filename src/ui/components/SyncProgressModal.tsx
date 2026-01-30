@@ -1,18 +1,17 @@
 /**
  * Sync Progress Modal
- * Non-blocking progress indicator showing sync status in bottom-right corner
+ * Compact progress indicator showing sync status in bottom-right corner
  */
 
 import React, { useEffect, useState } from 'react';
-import { Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 
 interface ProgressData {
-  step: number;
-  total: number;
   message: string;
   currentVariables?: number;
-  totalVariables?: number;
+  totalVariables: number;
   errors?: number;
+  isGenerating?: boolean;
 }
 
 interface SyncProgressModalProps {
@@ -27,31 +26,15 @@ export function SyncProgressModal({ progress }: SyncProgressModalProps) {
     setIsVisible(true);
   }, []);
 
-  // Calculate progress percentage
-  const percentage = Math.round((progress.step / progress.total) * 100);
-  
-  // Get phase-specific icon and color
-  const getPhaseIcon = () => {
-    if (progress.step === progress.total) {
-      return <CheckCircle className="w-4 h-4 text-green-500" />;
-    } else if (progress.step === 1) {
-      return <AlertTriangle className="w-4 h-4 text-foreground-tertiary" />;
-    }
-    return <Loader2 className="w-4 h-4 text-foreground-tertiary animate-spin" />;
-  };
-
-  // Format variable count
-  const getVariableCountDisplay = () => {
-    if (progress.currentVariables !== undefined && progress.totalVariables !== undefined) {
-      return `${progress.currentVariables.toLocaleString()} / ${progress.totalVariables.toLocaleString()} variables`;
-    }
-    return null;
-  };
+  // Calculate progress percentage based on variables, not steps
+  const current = progress.currentVariables || 0;
+  const total = progress.totalVariables || 1;
+  const percentage = Math.round((current / total) * 100);
 
   return (
     <div
       className={`
-        fixed bottom-4 right-4 w-80
+        fixed bottom-4 right-4 w-72
         bg-card border border-border rounded-lg shadow-2xl
         backdrop-blur-lg
         transition-all duration-300 ease-out
@@ -62,56 +45,37 @@ export function SyncProgressModal({ progress }: SyncProgressModalProps) {
         animation: 'subtleAppear 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       }}
     >
-      <div className="p-4 space-y-3">
-        {/* Header */}
-        <div className="flex items-center gap-2">
-          {getPhaseIcon()}
-          <h3 className="text-sm font-semibold text-foreground">
-            Syncing to Figma...
-          </h3>
+      <div className="p-3 space-y-2">
+        {/* Header - no icon */}
+        <h3 className="text-sm font-semibold text-foreground">
+          {progress.isGenerating ? 'Generating Variables...' : 'Syncing to Figma...'}
+        </h3>
+
+        {/* Variables count - main indicator */}
+        <div className="text-xs font-medium text-foreground">
+          {current.toLocaleString()} / {total.toLocaleString()} variables
         </div>
 
-        {/* Progress info */}
-        <div className="space-y-2">
-          {/* Step indicator */}
-          <div className="flex items-center justify-between text-xs text-foreground-secondary">
-            <span>Step {progress.step} of {progress.total}</span>
-            <span className="font-medium text-foreground">{percentage}%</span>
-          </div>
-
-          {/* Progress bar */}
-          <div className="h-1.5 bg-surface-elevated rounded-full overflow-hidden">
-            <div
-              className="h-full bg-foreground-secondary transition-all duration-500 ease-out rounded-full"
-              style={{ width: `${percentage}%` }}
-            />
-          </div>
-
-          {/* Variable count (if available) */}
-          {getVariableCountDisplay() && (
-            <div className="text-xs font-medium text-foreground">
-              {getVariableCountDisplay()}
-            </div>
-          )}
-
-          {/* Status message */}
-          <div className="text-xs text-foreground-secondary leading-relaxed">
-            {progress.message}
-          </div>
-
-          {/* Error count (if any errors) */}
-          {progress.errors && progress.errors > 0 && (
-            <div className="flex items-center gap-1 text-xs text-amber-500 bg-amber-950/20 px-2 py-1 rounded">
-              <AlertTriangle className="w-3 h-3" />
-              <span>{progress.errors} error{progress.errors > 1 ? 's' : ''} occurred</span>
-            </div>
-          )}
+        {/* Progress bar - functional, tied to variables */}
+        <div className="h-1.5 bg-surface-elevated rounded-full overflow-hidden">
+          <div
+            className="h-full bg-blue-500 transition-all duration-300 ease-out"
+            style={{ width: `${percentage}%` }}
+          />
         </div>
 
-        {/* Hint */}
-        <div className="text-[10px] text-foreground-tertiary italic pt-1 border-t border-border/30">
-          This window won't block your work
+        {/* Status message */}
+        <div className="text-xs text-foreground-secondary">
+          {progress.message}
         </div>
+
+        {/* Errors - only when they occur */}
+        {progress.errors && progress.errors > 0 && (
+          <div className="flex items-center gap-1 text-xs text-amber-500 bg-amber-950/20 px-2 py-1 rounded">
+            <AlertTriangle className="w-3 h-3" />
+            <span>{progress.errors} error{progress.errors > 1 ? 's' : ''}</span>
+          </div>
+        )}
       </div>
 
       <style>{`
