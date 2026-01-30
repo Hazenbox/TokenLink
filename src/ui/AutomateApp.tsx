@@ -114,7 +114,7 @@ export function AutomateApp() {
       {/* Main Header with Sync Button */}
       <div className="h-9 px-3 py-1.5 border-b border-border/30 flex-shrink-0 flex items-center justify-between bg-background">
         <h1 className="text-xs font-semibold text-foreground-secondary">
-          Brand Variables
+          Automate brands
         </h1>
         <button
           onClick={handleSync}

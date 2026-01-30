@@ -147,10 +147,10 @@ export function BrandConfigPanel() {
       />
       
       {/* Header */}
-      <div className="px-3 py-2 border-b border-border/30 flex-shrink-0">
+      <div className="h-9 px-3 py-1.5 border-b border-border/30 flex-shrink-0">
         <div className="flex items-center justify-between">
           <h2 className="text-[11px] font-semibold text-foreground-secondary">
-            {activeBrand.name}
+            Brand Config
           </h2>
           <button
             onClick={toggleConfigPanel}
@@ -165,10 +165,10 @@ export function BrandConfigPanel() {
       {/* Config Content */}
       <ScrollArea className="flex-1 w-full max-w-full">
         <div className="pl-3 pt-2 pb-2 pr-3 space-y-3 w-full max-w-full">
-          {/* Required Palettes - Single Column */}
+          {/* Brand Name Section */}
           <div>
             <h3 className="text-xs font-semibold text-foreground mb-2">
-              Required Palettes
+              {activeBrand.name}
             </h3>
             <div className="space-y-2">
               <CompactPaletteSelector
@@ -206,12 +206,8 @@ export function BrandConfigPanel() {
             </div>
           </div>
 
-          {/* Semantic Colors - Single Column */}
-          <div>
-            <h3 className="text-xs font-semibold text-foreground mb-2">
-              Semantic Colors
-            </h3>
-            <div className="space-y-2">
+          {/* Semantic Colors - No title */}
+          <div className="space-y-2">
               <CompactPaletteSelector
                 label="Positive"
                 value={activeBrand.colors.semantic.positive.paletteId}
@@ -238,9 +234,8 @@ export function BrandConfigPanel() {
                 value={activeBrand.colors.semantic.informative.paletteId}
                 paletteName={activeBrand.colors.semantic.informative.paletteName}
                 onChange={(id, name) => handleUpdateSemantic('informative', id, name)}
-                compact
-              />
-            </div>
+              compact
+            />
           </div>
 
           {/* Warnings (if any) */}

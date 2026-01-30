@@ -11,6 +11,7 @@ import { useBrandStore } from '@/store/brand-store';
 import { useVariablesViewStore } from '@/store/variables-view-store';
 import { FigmaCollection } from '@/models/brand';
 import { EmptyState } from '../EmptyState';
+import { SidebarItem } from '../common/SidebarItem';
 
 interface CollectionsSidebarProps {
   onCreateCollection?: () => void;
@@ -24,14 +25,7 @@ interface CollectionItemProps {
 
 function CollectionItem({ collection, isActive, onClick }: CollectionItemProps) {
   return (
-    <button
-      onClick={onClick}
-      className={`
-        w-full px-3 py-2 flex items-center justify-between
-        text-left text-[11px] transition-colors
-        ${isActive ? 'bg-surface-elevated' : 'hover:bg-surface-elevated/50'}
-      `}
-    >
+    <SidebarItem isActive={isActive} onClick={onClick}>
       <div className="flex-1 min-w-0">
         <div className={`font-medium truncate ${isActive ? 'text-foreground' : 'text-foreground-secondary'}`}>
           {collection.name}
@@ -40,7 +34,7 @@ function CollectionItem({ collection, isActive, onClick }: CollectionItemProps) 
       <div className="ml-2 text-[10px] text-foreground-tertiary">
         {collection.variableCount}
       </div>
-    </button>
+    </SidebarItem>
   );
 }
 
@@ -88,7 +82,7 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
   return (
     <div className="h-full flex flex-col bg-background">
       {/* Header */}
-      <div className="px-3 py-2 border-b border-border/30 flex items-center justify-between flex-shrink-0">
+      <div className="h-9 px-3 py-1.5 border-b border-border/30 flex items-center justify-between flex-shrink-0">
         <span className="text-[11px] font-semibold text-foreground-secondary">
           Collections
         </span>
@@ -115,7 +109,7 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
             className="py-4"
           />
         ) : (
-          <div className="py-1">
+          <div className="px-2 py-1 space-y-0.5">
             {collections.map((collection) => (
               <CollectionItem
                 key={collection.id}

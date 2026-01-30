@@ -10,6 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useBrandStore } from '@/store/brand-store';
 import { useVariablesViewStore } from '@/store/variables-view-store';
 import { HierarchyParser, HierarchyNode } from '@/lib/hierarchy-parser';
+import { SidebarItem } from '../common/SidebarItem';
 
 interface HierarchicalGroupsSidebarProps {
   onCreateGroup?: () => void;
@@ -62,9 +63,9 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
     const paddingLeft = 12 + (indentLevel * 12); // 12px base + 12px per level
     
     return (
-      <div key={node.fullPath}>
-        {/* Node button */}
-        <button
+      <div key={node.fullPath} style={{ paddingLeft: `${Math.max(0, paddingLeft - 12)}px` }}>
+        <SidebarItem
+          isActive={isSelected}
           onClick={() => {
             if (hasChildren) {
               // Toggle expansion if has children
@@ -73,13 +74,7 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
             // Set as active filter
             setHierarchyPath(node.path);
           }}
-          className={`
-            w-full flex items-center justify-between gap-2
-            text-left text-[11px] transition-colors
-            ${isSelected ? 'bg-surface-elevated' : 'hover:bg-surface-elevated/50'}
-            ${isAncestor && !isSelected ? 'bg-surface/20' : ''}
-          `}
-          style={{ paddingLeft: `${paddingLeft}px`, paddingRight: '12px', paddingTop: '8px', paddingBottom: '8px' }}
+          className={isAncestor && !isSelected ? 'bg-surface/20' : ''}
         >
           <div className="flex items-center gap-1.5 flex-1 min-w-0">
             {/* Chevron for expandable nodes */}
@@ -111,7 +106,7 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
           <div className="text-[10px] text-foreground-tertiary flex-shrink-0">
             {node.variableCount}
           </div>
-        </button>
+        </SidebarItem>
         
         {/* Children (if expanded) */}
         {hasChildren && isExpanded && (
@@ -136,7 +131,7 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
   return (
     <div className="h-full flex flex-col bg-background">
       {/* Header */}
-      <div className="px-3 py-2 border-b border-border/30 flex items-center justify-between flex-shrink-0">
+      <div className="h-9 px-3 py-1.5 border-b border-border/30 flex items-center justify-between flex-shrink-0">
         <span className="text-[11px] font-semibold text-foreground-secondary">
           Groups
         </span>
@@ -158,27 +153,25 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
       </div>
       
       {/* All Option */}
-      <button
-        onClick={() => setHierarchyPath([])}
-        className={`
-          w-full px-3 py-2 flex items-center justify-between
-          text-left text-[11px] transition-colors
-          ${hierarchyPath.length === 0 ? 'bg-surface-elevated' : 'hover:bg-surface-elevated/50'}
-        `}
-      >
-        <div className="flex-1 min-w-0">
-          <div className={`font-medium truncate ${hierarchyPath.length === 0 ? 'text-foreground' : 'text-foreground-secondary'}`}>
-            All
+      <div className="px-2">
+        <SidebarItem 
+          isActive={hierarchyPath.length === 0} 
+          onClick={() => setHierarchyPath([])}
+        >
+          <div className="flex-1 min-w-0">
+            <div className={`font-medium truncate ${hierarchyPath.length === 0 ? 'text-foreground' : 'text-foreground-secondary'}`}>
+              All
+            </div>
           </div>
-        </div>
-        <div className="text-[10px] text-foreground-tertiary flex-shrink-0">
-          {totalCount}
-        </div>
-      </button>
+          <div className="text-[10px] text-foreground-tertiary flex-shrink-0">
+            {totalCount}
+          </div>
+        </SidebarItem>
+      </div>
       
       {/* Hierarchy tree */}
       <ScrollArea className="flex-1">
-        <div className="pb-2">
+        <div className="px-2 pb-2 space-y-0.5">
           {Array.from(hierarchyTree.values())
             .sort((a, b) => a.name.localeCompare(b.name))
             .map(node => renderNode(node))}

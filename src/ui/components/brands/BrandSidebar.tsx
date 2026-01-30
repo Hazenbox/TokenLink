@@ -69,7 +69,7 @@ function BrandItem({
       )}
       onClick={onSelect}
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         {isEditing ? (
           <Input
             value={editingName}
@@ -85,7 +85,12 @@ function BrandItem({
           />
         ) : (
           <>
-            <span className="flex-1 truncate text-xs font-medium">{brand.name}</span>
+            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+              <span className="truncate text-xs font-medium">{brand.name}</span>
+              <span className={cn("text-[9px] flex-shrink-0", syncStatus.color)}>
+                {syncStatus.label}
+              </span>
+            </div>
             <Popover open={menuOpen} onOpenChange={setMenuOpen}>
               <PopoverTrigger asChild>
                 <IconButton
@@ -142,12 +147,6 @@ function BrandItem({
           </>
         )}
       </div>
-      
-      {!isEditing && (
-        <div className={cn("text-[10px]", syncStatus.color)}>
-          {syncStatus.label}
-        </div>
-      )}
 
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[400px]" onClick={(e) => e.stopPropagation()}>
@@ -223,7 +222,7 @@ export function BrandSidebar() {
   return (
     <div className="flex h-full w-[220px] flex-col bg-background border-r border-border/40 relative z-10 flex-shrink-0">
       {/* Header */}
-      <div className="px-3 py-2 border-b border-border/30 flex items-center justify-between flex-shrink-0">
+      <div className="h-9 px-3 py-1.5 border-b border-border/30 flex items-center justify-between flex-shrink-0">
         <span className="text-[11px] font-semibold text-foreground-secondary">
           Brands
         </span>

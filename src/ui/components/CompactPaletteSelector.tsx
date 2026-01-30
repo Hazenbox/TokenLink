@@ -87,7 +87,7 @@ export function CompactPaletteSelector({
   };
 
   return (
-    <div className="flex flex-col gap-1.5 w-full max-w-full">
+    <div className="flex flex-col gap-1 w-full max-w-full">
       <Label className="text-xs font-medium text-foreground">
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
@@ -97,7 +97,7 @@ export function CompactPaletteSelector({
         <PopoverTrigger asChild>
           <Button
             variant="outline"
-            className="w-full justify-between h-8 px-2 text-xs font-normal border-border"
+            className="w-full justify-between h-7 px-1.5 text-xs font-light border-border"
             onClick={() => setOpen(!open)}
             onKeyDown={handleKeyDown}
           >
@@ -129,7 +129,7 @@ export function CompactPaletteSelector({
           collisionPadding={8}
         >
           {/* Search input */}
-          <div className="p-2 border-b border-border">
+          <div className="p-1.5 border-b border-border">
             <div className="relative">
               <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-foreground-tertiary" />
               <Input
@@ -153,7 +153,7 @@ export function CompactPaletteSelector({
                   <div
                     key={palette.id}
                     className={`
-                      p-2 rounded-md cursor-pointer transition-colors
+                      p-1.5 rounded-md cursor-pointer transition-colors
                       ${
                         value === palette.id
                           ? 'bg-surface-elevated'
@@ -169,7 +169,7 @@ export function CompactPaletteSelector({
                         style={{ backgroundColor: (palette?.steps as any)?.[1200] || '#ccc' }}
                         title="Step 1200"
                       />
-                      <span className="text-xs font-medium text-foreground">
+                      <span className="text-xs font-normal text-foreground">
                         {palette.name}
                       </span>
                     </div>

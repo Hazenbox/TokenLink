@@ -11,7 +11,7 @@ import { useVariablesViewStore } from '@/store/variables-view-store';
 import { BrandGenerator } from '@/lib/brand-generator';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Download } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { ModeCell } from './variables/ModeCell';
 import { brandToFigmaAdapter } from '@/adapters/brandToFigmaVariables';
 import { HierarchyParser } from '@/lib/hierarchy-parser';
@@ -73,49 +73,6 @@ export function BrandVariableTable() {
     if (!activeBrand) return { valid: false, errors: [], warnings: [] };
     return BrandGenerator.validate(activeBrand);
   }, [activeBrand]);
-
-  // Handle export
-  const handleExport = () => {
-    if (!activeBrand) return;
-    
-    // Determine max hierarchy depth for CSV columns
-    const maxDepth = Math.max(
-      ...filteredVariables.map(v => HierarchyParser.parseVariableName(v.name).length),
-      0
-    );
-    
-    // Create dynamic hierarchy column headers
-    const hierarchyHeaders = Array.from({ length: maxDepth }, (_, i) => `Level ${i + 1}`);
-    const headers = [...hierarchyHeaders, ...modes.map(m => m.name)];
-    const rows: string[] = [];
-    
-    filteredVariables.forEach((variable) => {
-      // Parse name into segments
-      const segments = HierarchyParser.parseVariableName(variable.name);
-      
-      // Pad segments to max depth
-      const paddedSegments = [
-        ...segments,
-        ...Array(maxDepth - segments.length).fill('')
-      ];
-      
-      const row = [
-        ...paddedSegments,
-        ...modes.map((mode) => variable.resolvedValuesByMode[mode.modeId] || '')
-      ];
-      rows.push(row.join(','));
-    });
-    
-    const csv = [headers.join(','), ...rows].join('\n');
-    
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${activeBrand.name}_variables.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
   
   // Group variables by parent path (all segments except last)
   // NOTE: This useMemo must be before early returns to avoid React error #310
@@ -193,7 +150,7 @@ export function BrandVariableTable() {
   return (
     <div className="h-full flex flex-col bg-background">
       {/* Header - Figma style with collection name */}
-      <div className="px-3 py-2 border-b border-border/30 flex-shrink-0 flex items-center justify-between">
+      <div className="h-9 px-3 py-1.5 border-b border-border/30 flex-shrink-0 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h2 className="text-[11px] font-semibold text-foreground-secondary">
             {activeCollection?.name || 'Variables'}
@@ -206,22 +163,14 @@ export function BrandVariableTable() {
         {/* Search - Compact inline */}
         <div className="flex items-center gap-2">
           <div className="relative">
-            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-foreground-tertiary" />
+            <Search className="absolute left-1.5 top-1/2 transform -translate-y-1/2 w-3 h-3 text-foreground-tertiary" />
             <Input
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-7 w-48 pl-7 text-xs bg-background border-border/40"
+              className="h-6 w-40 pl-6 pr-2 text-xs bg-background border-border/40"
             />
           </div>
-          <Button
-            onClick={handleExport}
-            size="sm"
-            variant="ghost"
-            className="h-7 px-2 text-foreground-tertiary hover:text-foreground"
-          >
-            <Download className="w-3.5 h-3.5" />
-          </Button>
         </div>
       </div>
 
