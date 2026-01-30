@@ -23,18 +23,35 @@ export function AutomateApp() {
   
   // Sync logic
   const activeBrand = useBrandStore((state) => state.getActiveBrand());
+  const activeBrandId = useBrandStore((state) => state.activeBrandId);
+  const brands = useBrandStore((state) => state.brands);
   const syncBrandWithLayers = useBrandStore((state) => state.syncBrandWithLayers);
+  const syncAllBrands = useBrandStore((state) => state.syncAllBrands);
   const syncStatus = useBrandStore((state) => state.syncStatus);
   const canSync = useBrandStore((state) => state.canSync());
   
+  const isAllBrands = activeBrandId === '__all__';
+  
   const validation = useMemo(() => {
+    // Handle "All" brands case
+    if (activeBrandId === '__all__') {
+      return { 
+        valid: brands.length > 0, 
+        errors: brands.length === 0 ? ['No brands to sync'] : [], 
+        warnings: [] 
+      };
+    }
     if (!activeBrand) return { valid: false, errors: [], warnings: [] };
     return BrandGenerator.validate(activeBrand);
-  }, [activeBrand]);
+  }, [activeBrand, activeBrandId, brands]);
   
-  const canSyncBrand = activeBrand && validation.valid && canSync && syncStatus === 'idle';
+  const canSyncBrand = (isAllBrands || activeBrand) && validation.valid && canSync && syncStatus === 'idle';
   
   const handleSync = async () => {
+    if (activeBrandId === '__all__') {
+      await syncAllBrands();
+      return;
+    }
     if (!activeBrand) return;
     await syncBrandWithLayers(activeBrand.id);
   };
@@ -68,7 +85,7 @@ export function AutomateApp() {
         return (
           <>
             <Upload className="w-3 h-3" />
-            <span>Sync to Figma</span>
+            <span>{isAllBrands ? 'Sync all brands to figma' : 'Sync to Figma'}</span>
           </>
         );
     }
