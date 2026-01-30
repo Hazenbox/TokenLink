@@ -32,7 +32,7 @@ export function NavigationRail() {
   return (
     <>
       <nav
-        className="w-16 bg-background border-r border-border-subtle flex flex-col items-center py-5 gap-2"
+        className="w-18 bg-background border-r border-border-subtle flex flex-col items-center py-5 gap-2"
         role="navigation"
         aria-label="Main navigation"
       >

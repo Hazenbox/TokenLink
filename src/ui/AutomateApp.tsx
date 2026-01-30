@@ -68,7 +68,7 @@ export function AutomateApp() {
         return (
           <>
             <Upload className="w-3 h-3" />
-            <span>Sync</span>
+            <span>Sync to Figma</span>
           </>
         );
     }
@@ -120,12 +120,12 @@ export function AutomateApp() {
           onClick={handleSync}
           disabled={!canSyncBrand}
           className={`
-            h-6 px-2 rounded text-xs font-medium flex items-center gap-1.5 transition-colors
+            h-6 px-2 text-xs font-normal flex items-center gap-1.5 transition-colors
             ${canSyncBrand 
-              ? 'bg-surface-elevated hover:bg-interactive-hover text-foreground' 
-              : 'bg-surface border border-border text-foreground-tertiary cursor-not-allowed opacity-50'}
-            ${syncStatus === 'success' ? 'bg-green-500/20 text-green-500 border-green-500/30' : ''}
-            ${syncStatus === 'error' ? 'bg-red-500/20 text-red-500 border-red-500/30' : ''}
+              ? 'text-foreground hover:text-foreground-secondary' 
+              : 'text-foreground-tertiary cursor-not-allowed opacity-50'}
+            ${syncStatus === 'success' ? 'text-green-500' : ''}
+            ${syncStatus === 'error' ? 'text-red-500' : ''}
           `}
         >
           {getSyncButtonContent()}

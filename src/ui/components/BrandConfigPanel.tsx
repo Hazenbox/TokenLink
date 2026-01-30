@@ -170,7 +170,7 @@ export function BrandConfigPanel() {
             <h3 className="text-xs font-semibold text-foreground mb-2">
               {activeBrand.name}
             </h3>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <CompactPaletteSelector
                 label="Primary"
                 value={activeBrand.colors.primary.paletteId}
@@ -207,7 +207,7 @@ export function BrandConfigPanel() {
           </div>
 
           {/* Semantic Colors - No title */}
-          <div className="space-y-3">
+          <div className="space-y-4">
               <CompactPaletteSelector
                 label="Positive"
                 value={activeBrand.colors.semantic.positive.paletteId}

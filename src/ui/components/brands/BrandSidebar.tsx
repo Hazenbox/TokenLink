@@ -53,8 +53,8 @@ function BrandItem({
   
   const getSyncStatus = () => {
     if (!brand.syncedAt) return { label: "Not synced", color: "text-muted-foreground" };
-    if (brand.updatedAt > brand.syncedAt) return { label: "Modified", color: "text-orange-500" };
-    return { label: "Synced", color: "text-green-500" };
+    if (brand.updatedAt > brand.syncedAt) return { label: "Modified", color: "text-orange-400/70" };
+    return { label: "Synced", color: "text-green-400/70" };
   };
   
   const syncStatus = getSyncStatus();

@@ -27,7 +27,7 @@ function CollectionItem({ collection, isActive, onClick }: CollectionItemProps) 
   return (
     <SidebarItem isActive={isActive} onClick={onClick}>
       <div className="flex-1 min-w-0">
-        <div className={`font-medium truncate ${isActive ? 'text-foreground' : 'text-foreground-secondary'}`}>
+        <div className={`font-normal truncate ${isActive ? 'text-foreground' : 'text-foreground-secondary'}`}>
           {collection.name}
         </div>
       </div>
@@ -101,7 +101,7 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
       </div>
       
       {/* Collections List */}
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1" style={{ overflowX: 'auto' }}>
         {collections.length === 0 ? (
           <EmptyState
             title="No collections"
@@ -109,7 +109,7 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
             className="py-4"
           />
         ) : (
-          <div className="px-2 pt-2 pb-1 space-y-0.5">
+          <div className="px-2 pt-2 pb-1 space-y-0.5 min-w-max">
             {collections.map((collection) => (
               <CollectionItem
                 key={collection.id}

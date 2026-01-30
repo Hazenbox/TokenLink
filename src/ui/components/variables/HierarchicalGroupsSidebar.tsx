@@ -60,10 +60,10 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
     const isAncestor = isAncestorOfSelected(node.path);
     
     const indentLevel = node.level;
-    const paddingLeft = 8 + (indentLevel * 8); // 8px base + 8px per level
+    const paddingLeft = 4 + (indentLevel * 6); // 4px base + 6px per level
     
     return (
-      <div key={node.fullPath} style={{ paddingLeft: `${Math.max(0, paddingLeft - 8)}px` }}>
+      <div key={node.fullPath} style={{ paddingLeft: `${Math.max(0, paddingLeft - 4)}px` }}>
         <SidebarItem
           isActive={isSelected}
           onClick={() => {
@@ -97,7 +97,7 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
             )}
             
             {/* Node name */}
-            <div className={`font-medium truncate ${isSelected ? 'text-foreground' : 'text-foreground-secondary'}`}>
+            <div className={`font-normal truncate ${isSelected ? 'text-foreground' : 'text-foreground-secondary'}`}>
               {node.name}
             </div>
           </div>
@@ -159,7 +159,7 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
           onClick={() => setHierarchyPath([])}
         >
           <div className="flex-1 min-w-0">
-            <div className={`font-medium truncate ${hierarchyPath.length === 0 ? 'text-foreground' : 'text-foreground-secondary'}`}>
+            <div className={`font-normal truncate ${hierarchyPath.length === 0 ? 'text-foreground' : 'text-foreground-secondary'}`}>
               All
             </div>
           </div>
@@ -170,8 +170,8 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
       </div>
       
       {/* Hierarchy tree */}
-      <ScrollArea className="flex-1">
-        <div className="px-2 pt-1 pb-2 space-y-0.5">
+      <ScrollArea className="flex-1" style={{ overflowX: 'auto' }}>
+        <div className="px-2 pt-1 pb-2 space-y-0.5 min-w-max">
           {Array.from(hierarchyTree.values())
             .sort((a, b) => a.name.localeCompare(b.name))
             .map(node => renderNode(node))}
