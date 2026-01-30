@@ -27,6 +27,7 @@ import { brandToFigmaAdapter } from "@/adapters/brandToFigmaVariables";
 import { migrateAllLegacyBrands, needsMigration } from "@/lib/brand-migration";
 import { convertMultiLayerToPreview } from "@/adapters/multi-layer-preview-adapter";
 import { useVariablesViewStore } from "./variables-view-store";
+import { useLayerMappingStore } from "./layer-mapping-store";
 
 /**
  * Module-level cache for Figma data (outside Zustand to prevent infinite loops)
@@ -144,6 +145,7 @@ interface BrandStoreState {
   // Sync operations
   syncBrand: (brandId: string) => Promise<SyncResult>;
   syncBrandWithLayers: (brandId: string) => Promise<SyncResult>;
+  syncAllBrands: () => Promise<SyncResult>;
   canSync: () => boolean;
   updateSyncStatusFromPlugin: (status: 'success' | 'error', data?: any) => void;
   
@@ -231,6 +233,58 @@ function deepClone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj));
 }
 
+/**
+ * Sanitize brand name for use in variable names
+ * Removes or replaces special characters
+ */
+function sanitizeBrandName(name: string): string {
+  return name
+    .trim()
+    // Replace spaces and special chars with nothing or underscore if needed
+    .replace(/[^\w\s]/g, '')
+    .replace(/\s+/g, '');
+}
+
+/**
+ * Validate brand name before creation/rename
+ * Returns { valid: boolean, error?: string }
+ */
+function validateBrandName(name: string, existingBrands: Brand[], excludeId?: string): { valid: boolean; error?: string } {
+  // Check empty
+  if (!name || name.trim() === '') {
+    return { valid: false, error: 'Brand name cannot be empty' };
+  }
+  
+  const trimmedName = name.trim();
+  
+  // Check length
+  if (trimmedName.length < 2) {
+    return { valid: false, error: 'Brand name must be at least 2 characters' };
+  }
+  
+  if (trimmedName.length > 50) {
+    return { valid: false, error: 'Brand name must be less than 50 characters' };
+  }
+  
+  // Check for duplicates
+  const duplicate = existingBrands.find(b => 
+    b.name.toLowerCase() === trimmedName.toLowerCase() && 
+    b.id !== excludeId
+  );
+  
+  if (duplicate) {
+    return { valid: false, error: `Brand name "${trimmedName}" already exists` };
+  }
+  
+  // Check for invalid characters (optional - could allow most chars)
+  const hasInvalidChars = /[<>:"/\\|?*\x00-\x1f]/g.test(trimmedName);
+  if (hasInvalidChars) {
+    return { valid: false, error: 'Brand name contains invalid characters' };
+  }
+  
+  return { valid: true };
+}
+
 export const useBrandStore = create<BrandStoreState>()((set, get) => ({
       // Initial state
       brands: [],
@@ -255,9 +309,17 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
 
       // Create brand
       createBrand: (name: string, colors?: Partial<BrandColors>) => {
+        // Validate brand name
+        const validation = validateBrandName(name, get().brands);
+        if (!validation.valid) {
+          console.error('[Brand Store] Brand validation failed:', validation.error);
+          // You might want to show this error in UI
+          return;
+        }
+        
         const newBrand: Brand = {
           id: generateId(),
-          name,
+          name: name.trim(),
           colors: colors ? { ...createDefaultColors(), ...colors } : createDefaultColors(),
           createdAt: Date.now(),
           updatedAt: Date.now(),
@@ -291,6 +353,10 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
         
         // Invalidate cache for new brand
         invalidateBrandCache(newBrand.id);
+        
+        // Update layer config modes with all brand names
+        const allBrandNames = get().brands.map(b => b.name);
+        useLayerMappingStore.getState().updateThemeAndBrandModes(allBrandNames);
         
         // Refresh Figma data for new brand
         get().refreshFigmaData();
@@ -382,6 +448,10 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
         // Invalidate cache for deleted brand
         invalidateBrandCache(id);
         
+        // Update layer config modes with remaining brand names
+        const remainingBrandNames = get().brands.map(b => b.name);
+        useLayerMappingStore.getState().updateThemeAndBrandModes(remainingBrandNames);
+        
         // Refresh Figma data after delete
         get().refreshFigmaData();
         
@@ -433,12 +503,29 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
 
       // Rename brand
       renameBrand: (id: string, name: string) => {
-        get().updateBrand(id, { name });
+        // Validate new brand name
+        const validation = validateBrandName(name, get().brands, id);
+        if (!validation.valid) {
+          console.error('[Brand Store] Brand rename validation failed:', validation.error);
+          // You might want to show this error in UI
+          return;
+        }
+        
+        get().updateBrand(id, { name: name.trim() });
+        
+        // Update layer config modes with all brand names (including renamed one)
+        const allBrandNames = get().brands.map(b => b.name);
+        useLayerMappingStore.getState().updateThemeAndBrandModes(allBrandNames);
       },
 
       // Set active brand
       setActiveBrand: (id: string | null) => {
         set({ activeBrandId: id });
+        
+        // Update layer config modes with all brand names
+        const allBrandNames = get().brands.map(b => b.name);
+        useLayerMappingStore.getState().updateThemeAndBrandModes(allBrandNames);
+        
         get().refreshFigmaData(); // Refresh Figma data when brand changes
         get().saveBrands(); // Save active brand selection
       },
@@ -872,6 +959,176 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
           };
         }
       },
+      
+      // Sync all brands with multi-layer architecture
+      syncAllBrands: async () => {
+        const state = get();
+        
+        // Prevent concurrent syncs
+        if (state.syncStatus !== 'idle' && state.syncStatus !== 'error') {
+          return {
+            success: false,
+            brandId: 'all',
+            timestamp: Date.now(),
+            variablesSynced: 0,
+            modesAdded: [],
+            errors: ['Sync already in progress'],
+            warnings: []
+          };
+        }
+        
+        // Rate limiting check (max 5 syncs per minute)
+        const oneMinuteAgo = Date.now() - 60000;
+        const recentAttempts = state.syncAttempts.filter(
+          (a) => a.timestamp > oneMinuteAgo
+        );
+        
+        if (recentAttempts.length >= 5) {
+          return {
+            success: false,
+            brandId: 'all',
+            timestamp: Date.now(),
+            variablesSynced: 0,
+            modesAdded: [],
+            errors: ['Rate limit exceeded. Maximum 5 syncs per minute.'],
+            warnings: []
+          };
+        }
+
+        const allBrands = state.brands;
+        if (allBrands.length === 0) {
+          return {
+            success: false,
+            brandId: 'all',
+            timestamp: Date.now(),
+            variablesSynced: 0,
+            modesAdded: [],
+            errors: ['No brands to sync'],
+            warnings: []
+          };
+        }
+
+        // Validate all brands before sync
+        set({ syncStatus: 'validating' });
+        const validationErrors: string[] = [];
+        const validationWarnings: string[] = [];
+        
+        for (const brand of allBrands) {
+          const validation = get().validateBrand(brand.id);
+          if (!validation.valid) {
+            validationErrors.push(`Brand "${brand.name}": ${validation.errors.join(', ')}`);
+          }
+          validationWarnings.push(...validation.warnings.map(w => `Brand "${brand.name}": ${w}`));
+        }
+        
+        if (validationErrors.length > 0) {
+          set({ syncStatus: 'error' });
+          return {
+            success: false,
+            brandId: 'all',
+            timestamp: Date.now(),
+            variablesSynced: 0,
+            modesAdded: [],
+            errors: validationErrors,
+            warnings: validationWarnings
+          };
+        }
+
+        // Create backup before sync
+        allBrands.forEach(brand => {
+          get().createBackup(brand, 'Before multi-brand sync operation', false);
+        });
+
+        // Generate variables with multi-brand architecture
+        set({ syncStatus: 'previewing' });
+        console.log('Generating with multi-brand architecture...');
+        const generatedBrand = BrandGenerator.generateAllBrandsWithLayers(allBrands);
+        
+        console.log(`Generated ${generatedBrand.variables.length} variables across ${generatedBrand.statistics.collections.length} collections for ${allBrands.length} brands`);
+        
+        // Group variables by collection
+        const variablesByCollection: Record<string, any[]> = {};
+        for (const variable of generatedBrand.variables) {
+          if (!variablesByCollection[variable.collection]) {
+            variablesByCollection[variable.collection] = [];
+          }
+          variablesByCollection[variable.collection].push(variable);
+        }
+        
+        // Update sync status
+        set({ syncStatus: 'syncing' });
+
+        try {
+          // Send message to plugin code with multi-brand structure
+          window.parent.postMessage(
+            {
+              pluginMessage: {
+                type: 'sync-all-brands',
+                data: { 
+                  brands: allBrands,
+                  variablesByCollection
+                }
+              }
+            },
+            '*'
+          );
+
+          // Track sync attempts for rate limiting
+          set((state) => {
+            const newAttempts = [
+              ...state.syncAttempts,
+              { timestamp: Date.now() }
+            ];
+            
+            return {
+              syncStatus: 'syncing',
+              syncAttempts: newAttempts.slice(-100)
+            };
+          });
+
+          // Update sync timestamp for all brands
+          allBrands.forEach(brand => {
+            get().updateBrand(brand.id, { syncedAt: Date.now() });
+          });
+
+          // Add audit log
+          get().addAuditEntry({
+            action: 'sync',
+            brandId: 'all',
+            brandName: `All Brands (${allBrands.length})`,
+            metadata: { 
+              type: 'multi-brand',
+              brandCount: allBrands.length,
+              layers: generatedBrand.statistics.collections.length,
+              totalVariables: generatedBrand.variables.length
+            }
+          });
+
+          // NOTE: Don't set success status here - wait for plugin response
+          // Status will be updated via updateSyncStatusFromPlugin when plugin responds
+
+          return {
+            success: true,
+            brandId: 'all',
+            timestamp: Date.now(),
+            variablesSynced: generatedBrand.variables.length,
+            modesAdded: generatedBrand.statistics.modes,
+            errors: [],
+            warnings: validationWarnings
+          };
+        } catch (error) {
+          set({ syncStatus: 'error' });
+          return {
+            success: false,
+            brandId: 'all',
+            timestamp: Date.now(),
+            variablesSynced: 0,
+            modesAdded: [],
+            errors: [error instanceof Error ? error.message : 'Unknown error'],
+            warnings: []
+          };
+        }
+      },
 
       // Check if can sync
       canSync: () => {
@@ -1173,6 +1430,12 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
               backups: data.backups || [],
               auditLog: data.auditLog || []
             });
+            
+            // Update layer config modes with all brand names after loading
+            const allBrandNames = brands.map((b) => b.name);
+            if (allBrandNames.length > 0) {
+              useLayerMappingStore.getState().updateThemeAndBrandModes(allBrandNames);
+            }
             
             // Then save if migration occurred - use setTimeout to ensure set() completes
             if (needsSave) {

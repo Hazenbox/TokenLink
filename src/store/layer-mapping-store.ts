@@ -24,6 +24,7 @@ interface LayerMappingStore {
   exportConfig: () => string;
   importConfig: (json: string) => boolean;
   getValidation: () => { valid: boolean; errors: string[]; warnings: string[] };
+  updateThemeAndBrandModes: (brandNames: string[]) => void;
 }
 
 export const useLayerMappingStore = create<LayerMappingStore>((set, get) => ({
@@ -244,6 +245,55 @@ export const useLayerMappingStore = create<LayerMappingStore>((set, get) => ({
    */
   getValidation: () => {
     return validateLayerConfig(get().config);
+  },
+  
+  /**
+   * Update Theme and Brand layer modes based on brand names
+   * Supports both single brand (array with 1 name) and multi-brand (array with multiple names)
+   * 
+   * @param brandNames - Array of brand names to use as modes
+   */
+  updateThemeAndBrandModes: (brandNames: string[]) => {
+    // Trim and filter empty names
+    const cleanedBrandNames = brandNames
+      .map(name => name.trim())
+      .filter(name => name !== '');
+    
+    if (cleanedBrandNames.length === 0) {
+      console.warn('[LayerMappingStore] No valid brand names provided, clearing modes');
+      // Allow empty array - useful when all brands are deleted
+    }
+    
+    set((state) => {
+      const updatedLayers = state.config.layers.map((layer) => {
+        if (layer.id === 'theme' || layer.id === 'brand') {
+          return {
+            ...layer,
+            modes: cleanedBrandNames
+          };
+        }
+        return layer;
+      });
+      
+      return {
+        config: {
+          ...state.config,
+          layers: updatedLayers
+        }
+      };
+    });
+    
+    // Validate and save
+    const validation = validateLayerConfig(get().config);
+    if (!validation.valid) {
+      console.error('[LayerMappingStore] Invalid config after mode update:', validation.errors);
+      return;
+    }
+    
+    // Auto-save after update
+    setTimeout(() => get().saveConfig(), 500);
+    
+    console.log(`[LayerMappingStore] Updated Theme and Brand modes to [${cleanedBrandNames.join(', ')}]`);
   }
 }));
 

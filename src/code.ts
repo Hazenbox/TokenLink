@@ -1656,6 +1656,275 @@ figma.ui.onmessage = async (msg) => {
     }
   }
   
+  // Handle multi-brand sync
+  if (msg.type === 'sync-all-brands') {
+    try {
+      const { brands, variablesByCollection } = msg.data;
+      console.log(`Syncing ${brands.length} brands with multi-brand architecture...`);
+      console.log(`Collections to sync: ${Object.keys(variablesByCollection).length}`);
+      
+      // Send initial progress
+      figma.ui.postMessage({
+        type: 'sync-progress',
+        data: { step: 1, total: 5, message: `Starting multi-brand sync for ${brands.length} brands...` }
+      });
+      
+      // Use same sync logic as sync-brand-with-layers
+      // The variables already have correct modes from generation
+      const collectionMap = new Map<string, VariableCollection>();
+      const variableMap = new Map<string, Variable>();
+      
+      // Sort collections by layer order
+      const sortedCollections = Object.entries(variablesByCollection)
+        .sort(([, varsA], [, varsB]) => {
+          const layerA = (varsA as any)[0]?.layer || 0;
+          const layerB = (varsB as any)[0]?.layer || 0;
+          return layerA - layerB;
+        });
+      
+      console.log('Processing collections in order:', sortedCollections.map(([name]) => name));
+      
+      const totalVariablesToCreate = sortedCollections.reduce((sum, [, vars]) => sum + (vars as any[]).length, 0);
+      console.log(`Total variables to create: ${totalVariablesToCreate}`);
+      
+      // Phase 1: Create all collections
+      figma.ui.postMessage({
+        type: 'sync-progress',
+        data: { 
+          step: 2, 
+          total: 5, 
+          message: `Creating ${sortedCollections.length} collections...`,
+          currentVariables: 0,
+          totalVariables: totalVariablesToCreate
+        }
+      });
+      
+      for (const [collectionName, variables] of sortedCollections) {
+        const cleanCollectionName = collectionName.replace(/^ml_/, '');
+        const collection = await getOrCreateCollection(cleanCollectionName);
+        collectionMap.set(collectionName, collection);
+        console.log(`Collection ready: ${cleanCollectionName}`);
+      }
+      
+      // Phase 2: Create modes for each collection
+      figma.ui.postMessage({
+        type: 'sync-progress',
+        data: { 
+          step: 3, 
+          total: 5, 
+          message: 'Creating modes for collections...',
+          currentVariables: 0,
+          totalVariables: totalVariablesToCreate
+        }
+      });
+      
+      for (const [collectionName, variables] of sortedCollections) {
+        const collection = collectionMap.get(collectionName)!;
+        const modes = [...new Set((variables as any[]).map(v => v.mode))];
+        
+        // Create modes, renaming default "Mode 1" for the first one
+        for (let i = 0; i < modes.length; i++) {
+          const modeName = modes[i];
+          const isFirstMode = i === 0;
+          await getOrCreateMode(collection, modeName, isFirstMode);
+        }
+        
+        console.log(`Modes configured for ${collectionName}: ${modes.join(', ')}`);
+      }
+      
+      // Phase 3: Build variable cache
+      figma.ui.postMessage({
+        type: 'sync-progress',
+        data: { 
+          step: 4, 
+          total: 5, 
+          message: 'Building variable cache...',
+          currentVariables: 0,
+          totalVariables: totalVariablesToCreate
+        }
+      });
+      
+      const variableCache = await buildVariableCache();
+      console.log(`Cache built: ${variableCache.size} existing variables`);
+      
+      let totalCreated = 0;
+      let totalUpdated = 0;
+      const BATCH_SIZE = 50;
+      const errors: Array<{ variable: string; error: string }> = [];
+      
+      // Separate primitives from other collections
+      const primitivesEntry = Array.from(sortedCollections).find(([name]) => name === '00_Primitives');
+      const otherCollections = Array.from(sortedCollections).filter(([name]) => name !== '00_Primitives');
+      
+      // Process Primitives first
+      if (primitivesEntry) {
+        console.log('\n=== Processing Primitives ===');
+        const [collectionName, variables] = primitivesEntry;
+        const collection = collectionMap.get(collectionName)!;
+        const varsArray = variables as any[];
+        
+        for (let i = 0; i < varsArray.length; i += BATCH_SIZE) {
+          const batch = varsArray.slice(i, i + BATCH_SIZE);
+          
+          for (const variable of batch) {
+            try {
+              const existingVar = findVariableInCache(variableCache, collection.id, variable.name);
+              let figmaVar: Variable;
+              
+              if (existingVar) {
+                figmaVar = existingVar;
+                totalUpdated++;
+              } else {
+                figmaVar = figma.variables.createVariable(variable.name, collection, 'COLOR');
+                variableCache.set(`${collection.id}:${variable.name}`, figmaVar);
+                totalCreated++;
+              }
+              
+              // Set RGB value
+              if (variable.value) {
+                const rgb = hexToRGB(variable.value, `variable: ${variable.name}`);
+                figmaVar.setValueForMode(collection.defaultModeId, rgb);
+              }
+              
+              variableMap.set(`${collectionName}:${variable.name}:${variable.mode}`, figmaVar);
+            } catch (error) {
+              errors.push({ variable: variable.name, error: error instanceof Error ? error.message : 'Unknown error' });
+            }
+          }
+          
+          figma.ui.postMessage({
+            type: 'sync-progress',
+            data: {
+              step: 4,
+              total: 5,
+              message: `Creating primitives... ${Math.min(i + BATCH_SIZE, varsArray.length)}/${varsArray.length}`,
+              currentVariables: totalCreated + totalUpdated,
+              totalVariables: totalVariablesToCreate
+            }
+          });
+        }
+      }
+      
+      // Process other collections (with alias support)
+      for (const [collectionName, variables] of otherCollections) {
+        const collection = collectionMap.get(collectionName)!;
+        const varsArray = variables as any[];
+        
+        console.log(`\nProcessing ${collectionName}... (${varsArray.length} variables)`);
+        
+        for (let i = 0; i < varsArray.length; i += BATCH_SIZE) {
+          const batch = varsArray.slice(i, i + BATCH_SIZE);
+          
+          for (const variable of batch) {
+            try {
+              const existingVar = findVariableInCache(variableCache, collection.id, variable.name);
+              let figmaVar: Variable;
+              
+              if (existingVar) {
+                figmaVar = existingVar;
+                totalUpdated++;
+              } else {
+                figmaVar = figma.variables.createVariable(variable.name, collection, 'COLOR');
+                variableCache.set(`${collection.id}:${variable.name}`, figmaVar);
+                totalCreated++;
+              }
+              
+              // Find mode for this variable
+              const mode = collection.modes.find(m => m.name === variable.mode);
+              if (!mode) {
+                errors.push({ variable: variable.name, error: `Mode not found: ${variable.mode}` });
+                continue;
+              }
+              
+              // Set alias
+              if (variable.aliasTo) {
+                const targetName = variable.aliasTo.paletteName;
+                let targetVar: Variable | undefined;
+                
+                // Search in variableMap
+                for (const [key, fVar] of variableMap.entries()) {
+                  const [, vName] = key.split(':');
+                  if (vName === targetName) {
+                    targetVar = fVar;
+                    break;
+                  }
+                }
+                
+                // Fallback to cache search
+                if (!targetVar) {
+                  for (const [, targetColl] of collectionMap.entries()) {
+                    targetVar = findVariableInCache(variableCache, targetColl.id, targetName);
+                    if (targetVar) break;
+                  }
+                }
+                
+                if (targetVar) {
+                  figmaVar.setValueForMode(mode.modeId, { type: 'VARIABLE_ALIAS', id: targetVar.id });
+                } else {
+                  errors.push({ variable: variable.name, error: `Alias target not found: ${targetName}` });
+                }
+              }
+              
+              variableMap.set(`${collectionName}:${variable.name}:${variable.mode}`, figmaVar);
+            } catch (error) {
+              errors.push({ variable: variable.name, error: error instanceof Error ? error.message : 'Unknown error' });
+            }
+          }
+          
+          figma.ui.postMessage({
+            type: 'sync-progress',
+            data: {
+              step: 4,
+              total: 5,
+              message: `Syncing ${collectionName}... ${Math.min(i + BATCH_SIZE, varsArray.length)}/${varsArray.length}`,
+              currentVariables: totalCreated + totalUpdated,
+              totalVariables: totalVariablesToCreate
+            }
+          });
+        }
+      }
+      
+      // Complete
+      console.log(`\n=== Multi-Brand Sync Complete ===`);
+      console.log(`Created: ${totalCreated}, Updated: ${totalUpdated}, Errors: ${errors.length}`);
+      
+      if (errors.length > 0) {
+        console.error('Errors encountered:', errors);
+      }
+      
+      // Refresh graph
+      const updatedCollections = await figma.variables.getLocalVariableCollectionsAsync();
+      const updatedVariables = await figma.variables.getLocalVariablesAsync();
+      const updatedGraph = figmaToGraph(updatedCollections, updatedVariables);
+      const serializedGraph = serializeGraph(updatedGraph);
+      
+      figma.ui.postMessage({
+        type: 'brand-sync-success',
+        data: {
+          success: true,
+          brandId: 'all',
+          timestamp: Date.now(),
+          variablesSynced: totalCreated + totalUpdated,
+          modesAdded: brands.map((b: any) => b.name),
+          errors: errors.map(e => `${e.variable}: ${e.error}`),
+          warnings: [],
+          graph: serializedGraph
+        }
+      });
+      
+    } catch (error) {
+      console.error('Error syncing all brands:', error);
+      figma.ui.postMessage({
+        type: 'brand-sync-error',
+        data: {
+          success: false,
+          errors: [error instanceof Error ? error.message : 'Failed to sync all brands'],
+          warnings: []
+        }
+      });
+    }
+  }
+  
   // Handle multi-layer brand sync
   if (msg.type === 'sync-brand-with-layers') {
     try {

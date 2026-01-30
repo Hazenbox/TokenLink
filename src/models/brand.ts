@@ -117,6 +117,10 @@ export interface Brand {
   description?: string;
   tags?: string[];
   template?: string;
+  
+  // Organizational prefix for variable naming (e.g., "Jio")
+  // Defaults to first word of brand name if not specified
+  organizationalPrefix?: string;
 }
 
 /**

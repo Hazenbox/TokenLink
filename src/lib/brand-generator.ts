@@ -441,6 +441,21 @@ export class BrandGenerator {
   }
   
   /**
+   * Create generator for multi-brand layers (Theme, Brand)
+   * These generators need access to all brands to create variables with modes for each brand
+   */
+  private createLayerGeneratorMultiBrand(layer: any, registry: VariableRegistry, allBrands: Brand[]): BaseLayerGenerator {
+    switch (layer.generationType) {
+      case 'theme':
+        return new ThemeGenerator(layer, registry, this.brand, allBrands);
+      case 'brand':
+        return new BrandVariantGenerator(layer, registry, this.brand, allBrands);
+      default:
+        throw new Error(`Multi-brand generator not supported for layer type: ${layer.generationType}`);
+    }
+  }
+  
+  /**
    * Convert VariableEntry to GeneratedVariable format
    */
   private convertToGeneratedVariables(registry: VariableRegistry): GeneratedVariable[] {
@@ -526,12 +541,119 @@ export class BrandGenerator {
   }
   
   /**
-   * Static method to generate with layer mappings
-   * This is a placeholder for future multi-layer architecture support
+   * Static method to generate with layer mappings (single brand)
    */
   public static generateBrandWithLayers(brand: Brand): GeneratedBrand {
     const generator = new BrandGenerator(brand);
     return generator.generateWithLayers();
+  }
+  
+  /**
+   * Static method to generate all brands with layer mappings (multi-brand)
+   * Generates shared layers once, then per-brand and aggregate layers
+   * 
+   * @param brands - Array of all brands to generate
+   * @returns GeneratedBrand with variables from all brands
+   */
+  public static generateAllBrandsWithLayers(brands: Brand[]): GeneratedBrand {
+    console.log('=== Multi-Brand Variable Generation Started ===');
+    console.log(`Generating variables for ${brands.length} brands`);
+    
+    if (brands.length === 0) {
+      console.warn('[BrandGenerator] No brands provided for generation');
+      return {
+        brand: { id: '', name: 'Empty', colors: {} as BrandColors, createdAt: Date.now(), updatedAt: Date.now(), version: 1 },
+        variables: [],
+        statistics: { totalVariables: 0, collections: [], modes: [], paletteUsage: {}, contrastIssues: 0, aliasDepth: 0 },
+        validation: { valid: true, errors: [], warnings: ['No brands to generate'], info: [] }
+      };
+    }
+    
+    // Use first brand as primary for structure (all brands share same layer structure)
+    const primaryBrand = brands[0];
+    const registry = new VariableRegistry();
+    const layerConfig = useLayerMappingStore.getState().config;
+    const enabledLayers = getEnabledLayers(layerConfig);
+    
+    console.log(`Generating ${enabledLayers.length} enabled layers`);
+    
+    const validation: ValidationResult = { valid: true, errors: [], warnings: [], info: [] };
+    
+    // Generate each layer in order
+    for (const layer of enabledLayers) {
+      console.log(`\nGenerating Layer ${layer.order}: ${layer.displayName}`);
+      
+      try {
+        let layerVariables: VariableEntry[] = [];
+        
+        // For layers 0-5 (shared layers): generate once using primary brand
+        if (layer.order <= 5) {
+          const generator = new BrandGenerator(primaryBrand).createLayerGenerator(layer, registry);
+          layerVariables = generator.generate();
+        }
+        // For layer 6 (Appearance): generate per brand
+        else if (layer.id === 'appearance') {
+          for (const brand of brands) {
+            const generator = new BrandGenerator(brand).createLayerGenerator(layer, registry);
+            const brandVars = generator.generate();
+            layerVariables.push(...brandVars);
+          }
+        }
+        // For layers 7-8 (Theme, Brand): aggregate all brands
+        else if (layer.id === 'theme' || layer.id === 'brand') {
+          // Pass all brands to these generators
+          const generator = new BrandGenerator(primaryBrand).createLayerGeneratorMultiBrand(layer, registry, brands);
+          layerVariables = generator.generate();
+        }
+        // Default: use primary brand
+        else {
+          const generator = new BrandGenerator(primaryBrand).createLayerGenerator(layer, registry);
+          layerVariables = generator.generate();
+        }
+        
+        // Register all variables in the registry
+        layerVariables.forEach(v => registry.register(v));
+        
+        console.log(`✓ Generated ${layerVariables.length} variables for ${layer.displayName}`);
+      } catch (error) {
+        console.error(`✗ Error generating ${layer.displayName}:`, error);
+        validation.errors.push(`Failed to generate ${layer.displayName}: ${error}`);
+      }
+    }
+    
+    // Get statistics from registry
+    const stats = registry.getStatistics();
+    console.log('\n=== Generation Statistics ===');
+    console.log(`Total variables: ${stats.totalVariables}`);
+    console.log(`Max alias depth: ${stats.maxAliasDepth}`);
+    console.log('Variables by layer:', stats.variablesByLayer);
+    
+    // Convert registry entries to GeneratedVariable format
+    const generator = new BrandGenerator(primaryBrand);
+    const allVariables = generator.convertToGeneratedVariables(registry);
+    
+    // Build statistics
+    const statistics: BrandStatistics = {
+      totalVariables: allVariables.length,
+      collections: Object.keys(stats.variablesByCollection),
+      modes: brands.map(b => b.name),
+      paletteUsage: {},
+      contrastIssues: 0,
+      aliasDepth: stats.maxAliasDepth
+    };
+    
+    validation.valid = validation.errors.length === 0;
+    validation.info.push(`Generated ${allVariables.length} variables across ${enabledLayers.length} layers for ${brands.length} brands`);
+    validation.info.push(`Maximum alias depth: ${stats.maxAliasDepth}`);
+    
+    console.log('=== Multi-Brand Variable Generation Complete ===\n');
+    
+    return {
+      brand: primaryBrand, // Return primary brand as reference
+      variables: allVariables,
+      statistics,
+      validation
+    };
   }
 }
 

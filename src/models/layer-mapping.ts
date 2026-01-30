@@ -173,26 +173,26 @@ export const DEFAULT_LAYER_CONFIG: LayerMappingConfig = {
       order: 7,
       collectionName: "9 Theme",
       displayName: "Theme",
-      description: "Brand themes (MyJio/JioFinance/JioHome)",
+      description: "Brand themes - modes will be dynamically set based on active brand(s)",
       enabled: true,
       namingPattern: "{brand}/{appearance}",
       generationType: "theme",
       aliasesToLayer: "appearance",
-      modes: ["MyJio", "JioFinance", "JioHome"],
-      estimatedVariableCount: 384 // 128 × 3 brands
+      modes: [], // Modes will be dynamically set based on active brand(s)
+      estimatedVariableCount: 384 // 128 × 3 brands (for multi-brand scenario)
     },
     {
       id: "brand",
       order: 8,
       collectionName: "10 Brand",
       displayName: "Brand",
-      description: "Brand variants (Jio/JS)",
+      description: "Brand variants - modes will be dynamically set based on active brand(s)",
       enabled: true,
       namingPattern: "{brandVariant}/{token}",
       generationType: "brand",
       aliasesToLayer: "theme",
-      modes: ["Jio", "JS"],
-      estimatedVariableCount: 256 // 128 × 2 variants
+      modes: [], // Modes will be dynamically set based on active brand(s)
+      estimatedVariableCount: 256 // 128 × 2 variants (for multi-brand scenario)
     }
   ],
   globalRules: {

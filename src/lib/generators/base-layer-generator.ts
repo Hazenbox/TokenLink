@@ -8,11 +8,16 @@ import { VariableRegistry, VariableEntry } from '@/lib/variable-registry';
 import { Brand } from '@/models/brand';
 
 export abstract class BaseLayerGenerator {
+  protected allBrands?: Brand[];
+  
   constructor(
     protected layer: LayerDefinition,
     protected registry: VariableRegistry,
-    protected brand: Brand
-  ) {}
+    protected brand: Brand,
+    allBrands?: Brand[]
+  ) {
+    this.allBrands = allBrands;
+  }
   
   /**
    * Generate all variables for this layer
