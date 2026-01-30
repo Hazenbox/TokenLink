@@ -22,9 +22,14 @@ export class FillEmphasisGenerator extends BaseLayerGenerator {
     const variables: VariableEntry[] = [];
     const modes = this.layer.modes || ['Ghost', 'Minimal', 'Subtle', 'Bold'];
     
-    this.log(`Generating Fill Emphasis variables with ${modes.length} modes`);
+    // Check if multi-brand mode
+    const isMultiBrand = this.allBrands && this.allBrands.length > 1;
+    const paletteNames = isMultiBrand 
+      ? this.getAllBrandsPaletteNames()
+      : this.getAssignedPaletteNames();
     
-    const paletteNames = this.getAssignedPaletteNames();
+    this.log(`Generating Fill Emphasis variables with ${modes.length} modes${isMultiBrand ? ` (multi-brand: ${this.allBrands!.length} brands)` : ''}`);
+    this.log(`Processing ${paletteNames.length} palettes: ${paletteNames.join(', ')}`);
     
     for (const paletteName of paletteNames) {
       for (const scale of SCALE_NAMES) {
@@ -84,6 +89,30 @@ export class FillEmphasisGenerator extends BaseLayerGenerator {
     if (this.brand.colors.semantic?.negative?.paletteName) names.add(this.brand.colors.semantic.negative.paletteName);
     if (this.brand.colors.semantic?.warning?.paletteName) names.add(this.brand.colors.semantic.warning.paletteName);
     if (this.brand.colors.semantic?.informative?.paletteName) names.add(this.brand.colors.semantic.informative.paletteName);
+    
+    return Array.from(names);
+  }
+  
+  /**
+   * Get all unique palette names from all brands (for multi-brand mode)
+   */
+  private getAllBrandsPaletteNames(): string[] {
+    if (!this.allBrands) return this.getAssignedPaletteNames();
+    
+    const names = new Set<string>();
+    
+    this.allBrands.forEach(brand => {
+      if (!brand.colors) return;
+      
+      if (brand.colors.neutral?.paletteName) names.add(brand.colors.neutral.paletteName);
+      if (brand.colors.primary?.paletteName) names.add(brand.colors.primary.paletteName);
+      if (brand.colors.secondary?.paletteName) names.add(brand.colors.secondary.paletteName);
+      if (brand.colors.sparkle?.paletteName) names.add(brand.colors.sparkle.paletteName);
+      if (brand.colors.semantic?.positive?.paletteName) names.add(brand.colors.semantic.positive.paletteName);
+      if (brand.colors.semantic?.negative?.paletteName) names.add(brand.colors.semantic.negative.paletteName);
+      if (brand.colors.semantic?.warning?.paletteName) names.add(brand.colors.semantic.warning.paletteName);
+      if (brand.colors.semantic?.informative?.paletteName) names.add(brand.colors.semantic.informative.paletteName);
+    });
     
     return Array.from(names);
   }

@@ -68,6 +68,18 @@ function hexToRGB(hex: string): { r: number; g: number; b: number; a: number } {
 
 export class PrimitivesGenerator extends BaseLayerGenerator {
   generate(): VariableEntry[] {
+    // Check if multi-brand mode
+    if (this.allBrands && this.allBrands.length > 1) {
+      return this.generateMultiBrand();
+    } else {
+      return this.generateSingleBrand();
+    }
+  }
+  
+  /**
+   * Generate for single brand
+   */
+  private generateSingleBrand(): VariableEntry[] {
     const variables: VariableEntry[] = [];
     
     // Get assigned palettes from brand
@@ -114,6 +126,84 @@ export class PrimitivesGenerator extends BaseLayerGenerator {
     }
     
     this.log(`Generated ${variables.length} primitive variables`);
+    return variables;
+  }
+  
+  /**
+   * Generate for multiple brands (merge all unique palettes)
+   */
+  private generateMultiBrand(): VariableEntry[] {
+    const variables: VariableEntry[] = [];
+    const brands = this.allBrands!;
+    
+    this.log(`Generating Primitives (multi-brand) for ${brands.length} brands`);
+    
+    // Collect ALL unique palettes from all brands
+    const allPalettes = new Map<string, any>();
+    const paletteStore = usePaletteStore.getState();
+    
+    brands.forEach(brand => {
+      if (!brand.colors) return;
+      
+      // Collect palette IDs from this brand
+      const paletteRefs = [
+        brand.colors.primary,
+        brand.colors.secondary,
+        brand.colors.sparkle,
+        brand.colors.neutral,
+        brand.colors.semantic?.positive,
+        brand.colors.semantic?.negative,
+        brand.colors.semantic?.warning,
+        brand.colors.semantic?.informative
+      ].filter(Boolean);
+      
+      paletteRefs.forEach(ref => {
+        if (ref?.paletteId && !allPalettes.has(ref.paletteId)) {
+          const palette = paletteStore.palettes.find(p => p.id === ref.paletteId);
+          if (palette) {
+            allPalettes.set(ref.paletteId, palette);
+          }
+        }
+      });
+    });
+    
+    this.log(`Collected ${allPalettes.size} unique palettes from all brands: ${Array.from(allPalettes.values()).map(p => p.name).join(', ')}`);
+    
+    // Generate variables for each unique palette
+    allPalettes.forEach(palette => {
+      const allScales = generateAllScales(palette.steps, palette.primaryStep);
+      
+      // For each step
+      for (const step of STEPS) {
+        const stepScales = allScales[step];
+        if (!stepScales) continue;
+        
+        // For each scale type
+        for (const scale of SCALE_NAMES) {
+          const scaleKey = SCALE_KEY_MAP[scale];
+          const scaleResult = (stepScales as any)[scaleKey];
+          if (!scaleResult || !scaleResult.hex) continue;
+          
+          // Create primitive variable
+          const name = `${palette.name}/${step}/${scale}`;
+          const rgb = hexToRGB(scaleResult.hex);
+          
+          variables.push({
+            id: this.generateVariableId(),
+            name,
+            collectionId: this.layer.id,
+            collectionName: this.layer.collectionName,
+            layer: this.layer.order,
+            modeId: 'default',
+            modeName: 'Mode 1',
+            value: rgb,
+            metadata: { step, scale }
+          });
+        }
+      }
+    });
+    
+    this.log(`Generated ${variables.length} primitive variables (merged from ${brands.length} brands)`);
     return variables;
   }
   

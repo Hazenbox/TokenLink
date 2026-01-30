@@ -20,6 +20,18 @@ const SCALE_NAMES = [
 
 export class SemiSemanticsGenerator extends BaseLayerGenerator {
   generate(): VariableEntry[] {
+    // Check if multi-brand mode
+    if (this.allBrands && this.allBrands.length > 1) {
+      return this.generateMultiBrand();
+    } else {
+      return this.generateSingleBrand();
+    }
+  }
+  
+  /**
+   * Generate for single brand
+   */
+  private generateSingleBrand(): VariableEntry[] {
     const variables: VariableEntry[] = [];
     
     if (!this.brand.colors) {
@@ -78,6 +90,74 @@ export class SemiSemanticsGenerator extends BaseLayerGenerator {
     }
     
     this.log(`Generated ${variables.length} semi-semantic variables`);
+    return variables;
+  }
+  
+  /**
+   * Generate for multiple brands (merge all unique palettes)
+   */
+  private generateMultiBrand(): VariableEntry[] {
+    const variables: VariableEntry[] = [];
+    const brands = this.allBrands!;
+    
+    this.log(`Generating Semi-Semantics (multi-brand) for ${brands.length} brands`);
+    
+    // Collect ALL unique palette names from all brands
+    const allPaletteNames = new Set<string>();
+    
+    brands.forEach(brand => {
+      if (!brand.colors) return;
+      
+      const paletteRefs = [
+        brand.colors.neutral,
+        brand.colors.primary,
+        brand.colors.secondary,
+        brand.colors.sparkle,
+        brand.colors.semantic?.positive,
+        brand.colors.semantic?.negative,
+        brand.colors.semantic?.warning,
+        brand.colors.semantic?.informative
+      ].filter(Boolean);
+      
+      paletteRefs.forEach(ref => {
+        if (ref?.paletteName) {
+          allPaletteNames.add(ref.paletteName);
+        }
+      });
+    });
+    
+    this.log(`Collected ${allPaletteNames.size} unique palettes from all brands: ${Array.from(allPaletteNames).join(', ')}`);
+    
+    // Generate variables for each unique palette
+    allPaletteNames.forEach(paletteName => {
+      for (const step of STEPS) {
+        for (const scale of SCALE_NAMES) {
+          const name = `${paletteName}/${step}/[Semi semantics] ${scale}`;
+          const primitiveName = `${paletteName}/${step}/${scale}`;
+          const primitiveVar = this.resolveAliasTarget(primitiveName, 'primitives');
+          
+          if (!primitiveVar) {
+            this.warn(`Primitive not found: ${primitiveName}`);
+            continue;
+          }
+          
+          variables.push({
+            id: this.generateVariableId(),
+            name,
+            collectionId: this.layer.id,
+            collectionName: this.layer.collectionName,
+            layer: this.layer.order,
+            modeId: 'default',
+            modeName: 'Mode 1',
+            aliasToId: primitiveVar.id,
+            aliasToName: primitiveName,
+            metadata: { step, scale, palette: paletteName }
+          });
+        }
+      }
+    });
+    
+    this.log(`Generated ${variables.length} semi-semantic variables (merged from ${brands.length} brands)`);
     return variables;
   }
 }

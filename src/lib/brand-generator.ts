@@ -441,17 +441,35 @@ export class BrandGenerator {
   }
   
   /**
-   * Create generator for multi-brand layers (Theme, Brand)
-   * These generators need access to all brands to create variables with modes for each brand
+   * Create generator for multi-brand layers
+   * These generators need access to all brands to merge palettes or create multi-mode variables
    */
   private createLayerGeneratorMultiBrand(layer: any, registry: VariableRegistry, allBrands: Brand[]): BaseLayerGenerator {
     switch (layer.generationType) {
+      case 'primitives':
+        return new PrimitivesGenerator(layer, registry, this.brand, allBrands);
+      case 'semantic':
+        return new SemiSemanticsGenerator(layer, registry, this.brand, allBrands);
+      case 'mode':
+        return new ColourModeGenerator(layer, registry, this.brand, allBrands);
+      case 'hierarchy':
+        if (layer.id === 'background-level') {
+          return new BackgroundLevelGenerator(layer, registry, this.brand, allBrands);
+        }
+        if (layer.id === 'fill-emphasis') {
+          return new FillEmphasisGenerator(layer, registry, this.brand, allBrands);
+        }
+        throw new Error(`Unknown hierarchy layer: ${layer.id}`);
+      case 'state':
+        return new InteractionStateGenerator(layer, registry, this.brand, allBrands);
+      case 'contextual':
+        return new AppearanceGenerator(layer, registry, this.brand, allBrands);
       case 'theme':
         return new ThemeGenerator(layer, registry, this.brand, allBrands);
       case 'brand':
         return new BrandVariantGenerator(layer, registry, this.brand, allBrands);
       default:
-        throw new Error(`Multi-brand generator not supported for layer type: ${layer.generationType}`);
+        throw new Error(`Unknown layer generation type: ${layer.generationType}`);
     }
   }
   
@@ -586,10 +604,11 @@ export class BrandGenerator {
       try {
         let layerVariables: VariableEntry[] = [];
         
-        // For layers 0-5 (shared layers): generate once using primary brand
+        // For layers 0-5 (shared layers): use multi-brand generator to merge palettes
         if (layer.order <= 5) {
-          const generator = new BrandGenerator(primaryBrand).createLayerGenerator(layer, registry);
+          const generator = new BrandGenerator(primaryBrand).createLayerGeneratorMultiBrand(layer, registry, brands);
           layerVariables = generator.generate();
+          console.log(`  Multi-brand merge: ${layerVariables.length} variables generated`);
         }
         // For layer 6 (Appearance): generate per brand
         else if (layer.id === 'appearance') {
@@ -597,13 +616,14 @@ export class BrandGenerator {
             const generator = new BrandGenerator(brand).createLayerGenerator(layer, registry);
             const brandVars = generator.generate();
             layerVariables.push(...brandVars);
+            console.log(`  Brand "${brand.name}": ${brandVars.length} appearance variables`);
           }
         }
-        // For layers 7-8 (Theme, Brand): aggregate all brands
+        // For layers 7-8 (Theme, Brand): aggregate all brands with multi-mode
         else if (layer.id === 'theme' || layer.id === 'brand') {
-          // Pass all brands to these generators
           const generator = new BrandGenerator(primaryBrand).createLayerGeneratorMultiBrand(layer, registry, brands);
           layerVariables = generator.generate();
+          console.log(`  Multi-mode: ${layerVariables.length} variables with ${brands.length} modes each`);
         }
         // Default: use primary brand
         else {
