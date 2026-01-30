@@ -20,7 +20,7 @@ export const NavRailItem = React.forwardRef<HTMLButtonElement, NavRailItemProps>
         aria-current={isActive ? "page" : undefined}
         data-active={isActive}
         className={cn(
-          "group w-16 flex flex-col items-center justify-center gap-2 py-2",
+          "group w-14 flex flex-col items-center justify-center gap-1 py-2",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-2xl",
           "disabled:pointer-events-none disabled:opacity-50",
           "transition-colors duration-instant ease-snappy",
@@ -31,7 +31,7 @@ export const NavRailItem = React.forwardRef<HTMLButtonElement, NavRailItemProps>
         {/* Icon container with background */}
         <div
           className={cn(
-            "w-10 h-7 flex items-center justify-center rounded-full",
+            "w-9 h-6 flex items-center justify-center rounded-full",
             "transition-all duration-instant ease-snappy",
             isActive
               ? "bg-surface-elevated"

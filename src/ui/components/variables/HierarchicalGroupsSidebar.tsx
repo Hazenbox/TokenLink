@@ -60,10 +60,10 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
     const isAncestor = isAncestorOfSelected(node.path);
     
     const indentLevel = node.level;
-    const paddingLeft = 12 + (indentLevel * 12); // 12px base + 12px per level
+    const paddingLeft = 8 + (indentLevel * 8); // 8px base + 8px per level
     
     return (
-      <div key={node.fullPath} style={{ paddingLeft: `${Math.max(0, paddingLeft - 12)}px` }}>
+      <div key={node.fullPath} style={{ paddingLeft: `${Math.max(0, paddingLeft - 8)}px` }}>
         <SidebarItem
           isActive={isSelected}
           onClick={() => {
@@ -153,7 +153,7 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
       </div>
       
       {/* All Option */}
-      <div className="px-2">
+      <div className="px-2 pt-2">
         <SidebarItem 
           isActive={hierarchyPath.length === 0} 
           onClick={() => setHierarchyPath([])}
@@ -171,7 +171,7 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
       
       {/* Hierarchy tree */}
       <ScrollArea className="flex-1">
-        <div className="px-2 pb-2 space-y-0.5">
+        <div className="px-2 pt-1 pb-2 space-y-0.5">
           {Array.from(hierarchyTree.values())
             .sort((a, b) => a.name.localeCompare(b.name))
             .map(node => renderNode(node))}

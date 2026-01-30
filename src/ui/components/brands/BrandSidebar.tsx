@@ -62,14 +62,14 @@ function BrandItem({
   return (
     <div
       className={cn(
-        "group flex flex-col gap-1 rounded-lg px-3 py-2 text-xs transition-colors cursor-pointer select-none",
+        "group flex items-center rounded-lg px-3 h-7 text-xs transition-colors cursor-pointer select-none",
         isActive
           ? "bg-surface-elevated"
           : "hover:bg-surface-elevated/50"
       )}
       onClick={onSelect}
     >
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2 w-full">
         {isEditing ? (
           <Input
             value={editingName}
@@ -267,7 +267,7 @@ export function BrandSidebar() {
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="px-2 py-1">
+        <div className="px-2 pt-2 pb-1">
           {brands.length === 0 ? (
             <EmptyState
               title="No brands yet"

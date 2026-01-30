@@ -2292,8 +2292,8 @@ if (figma.command === 'open') {
   // Load saved window size or use defaults
   (async () => {
     const savedSize = await figma.clientStorage.getAsync('windowSize');
-    const width = savedSize?.width || 1200;
-    const height = savedSize?.height || 800;
+    const width = savedSize?.width || 1440;
+    const height = savedSize?.height || 900;
     
     // Show the UI with saved or default dimensions
     figma.showUI(__html__, {
