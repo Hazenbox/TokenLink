@@ -313,6 +313,7 @@ function validateBrandName(name: string, existingBrands: Brand[], excludeId?: st
 export const useBrandStore = create<BrandStoreState>()((set, get) => ({
       // Initial state
       brands: [],
+      brandsById: new Map(), // O(1) lookup index for brands
       activeBrandId: null,
       syncStatus: 'idle',
       history: [],
@@ -581,6 +582,11 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
           return null;
         }
         // Use O(1) Map lookup instead of O(n) array find
+        // Defensive: fall back to array find if Map not initialized yet (migration case)
+        if (!state.brandsById) {
+          console.warn('[Brand Store] brandsById Map not initialized, falling back to array find');
+          return state.brands.find((b) => b.id === state.activeBrandId) || null;
+        }
         return state.brandsById.get(state.activeBrandId || '') || null;
       },
 
