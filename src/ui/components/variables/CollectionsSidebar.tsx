@@ -23,10 +23,6 @@ const LOADING_STATE_STYLE = {
   fontSize: '12px'
 };
 
-const SCROLL_AREA_STYLE = {
-  overflowX: 'auto' as const
-};
-
 interface CollectionsSidebarProps {
   onCreateCollection?: () => void;
 }
@@ -267,7 +263,7 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
       </div>
       
       {/* Collections List */}
-      <ScrollArea className="flex-1" style={SCROLL_AREA_STYLE}>
+      <ScrollArea className="flex-1">
         {collections.length === 0 ? (
           <EmptyState
             title="No collections"
