@@ -83,17 +83,7 @@ export function AutomateApp() {
     return recentAttempts.length < 5;
   }, [syncAttempts]);
   
-  // Show loading state during initialization
-  if (isLoading && brands.length === 0) {
-    return (
-      <div style={LOADING_CONTAINER_STYLE}>
-        <div style={LOADING_TITLE_STYLE}>Loading brands...</div>
-        <div style={LOADING_SUBTITLE_STYLE}>Initializing Automate tab</div>
-      </div>
-    );
-  }
-  
-  // Import/Export modals state
+  // Import/Export modals state - MUST be before any conditional returns (React rules of hooks)
   const [showExportModal, setShowExportModal] = useState(false);
   const [showImportPreview, setShowImportPreview] = useState(false);
   const [showImportResults, setShowImportResults] = useState(false);
@@ -290,6 +280,16 @@ export function AutomateApp() {
       mounted = false;
     };
   }, []);
+  
+  // Show loading state during initialization (MUST be AFTER all hooks - React rules)
+  if (isLoading && brands.length === 0) {
+    return (
+      <div style={LOADING_CONTAINER_STYLE}>
+        <div style={LOADING_TITLE_STYLE}>Loading brands...</div>
+        <div style={LOADING_SUBTITLE_STYLE}>Initializing Automate tab</div>
+      </div>
+    );
+  }
   
   return (
     <div className="h-full w-full flex flex-col bg-background relative overflow-hidden min-w-0">

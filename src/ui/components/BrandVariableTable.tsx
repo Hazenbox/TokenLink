@@ -94,10 +94,12 @@ export function BrandVariableTable() {
       }
       
       lastRefreshRef.current = refreshKey;
-      const groupId = hierarchyPath.length > 0 ? hierarchyPath[0] : 'all';
+      // Read hierarchyPath from store to avoid dependency issues
+      const currentHierarchyPath = useVariablesViewStore.getState().hierarchyPath;
+      const groupId = currentHierarchyPath.length > 0 ? currentHierarchyPath[0] : 'all';
       useBrandStore.getState().refreshFigmaVariables(activeCollectionId, groupId);
     }
-  }, [activeCollectionId, hierarchyPathKey, hierarchyPath]);
+  }, [activeCollectionId, hierarchyPathKey]); // Removed hierarchyPath - use hierarchyPathKey only
   
   // Get active collection
   const activeCollection = useMemo(() => 
