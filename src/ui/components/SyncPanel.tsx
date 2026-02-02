@@ -3,7 +3,7 @@
  * Manual sync controls and status
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useBrandStore } from '@/store/brand-store';
 import { BrandGenerator } from '@/lib/brand-generator';
 import { Button } from '@/components/ui/button';
