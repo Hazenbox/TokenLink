@@ -19,11 +19,22 @@ function generateId(): string {
 }
 
 /**
+ * Progress callback for import operations
+ */
+export type ImportProgressCallback = (progress: {
+  phase: 'palettes' | 'brands' | 'mappings';
+  current: number;
+  total: number;
+  message: string;
+}) => void;
+
+/**
  * Execute full import with proper ordering
  */
 export async function executeImport(
   data: VarCarExport,
-  options: ImportOptions
+  options: ImportOptions,
+  onProgress?: ImportProgressCallback
 ): Promise<ImportResult> {
   const result: ImportResult = {
     success: false,
@@ -47,7 +58,14 @@ export async function executeImport(
   try {
     // Step 1: Import palettes first (brands reference them)
     if (options.importPalettes !== false && data.palettes.length > 0) {
-      const paletteResult = await executePaletteImport(data.palettes, options);
+      onProgress?.({
+        phase: 'palettes',
+        current: 0,
+        total: data.palettes.length,
+        message: 'Importing palettes...'
+      });
+      
+      const paletteResult = await executePaletteImport(data.palettes, options, onProgress);
       result.stats.palettesCreated = paletteResult.created;
       result.stats.palettesUpdated = paletteResult.updated;
       result.stats.palettesSkipped = paletteResult.skipped;
@@ -56,7 +74,14 @@ export async function executeImport(
     }
 
     // Step 2: Import brands
-    const brandResult = await executeBrandImport(data.brands, options);
+    onProgress?.({
+      phase: 'brands',
+      current: 0,
+      total: data.brands.length,
+      message: 'Importing brands...'
+    });
+    
+    const brandResult = await executeBrandImport(data.brands, options, onProgress);
     result.stats.brandsCreated = brandResult.created;
     result.stats.brandsUpdated = brandResult.updated;
     result.stats.brandsSkipped = brandResult.skipped;
@@ -88,11 +113,12 @@ export async function executeImport(
 }
 
 /**
- * Execute palette import
+ * Execute palette import (optimized with batching and progress tracking)
  */
 async function executePaletteImport(
   palettes: Palette[],
-  options: ImportOptions
+  options: ImportOptions,
+  onProgress?: ImportProgressCallback
 ): Promise<{
   created: number;
   updated: number;
@@ -118,8 +144,26 @@ async function executePaletteImport(
       options.selectedPaletteIds!.includes(p.id)
     );
   }
+  
+  // Batch updates: collect all changes, save once at end
+  const palettesToAdd: Palette[] = [];
+  const palettesToUpdate: { index: number; palette: Palette }[] = [];
 
-  for (const palette of palettesToImport) {
+  for (let idx = 0; idx < palettesToImport.length; idx++) {
+    const palette = palettesToImport[idx];
+    
+    // Report progress
+    onProgress?.({
+      phase: 'palettes',
+      current: idx + 1,
+      total: palettesToImport.length,
+      message: `Importing palette: ${palette.name}`
+    });
+    
+    // Yield to UI every 10 items
+    if (idx % 10 === 0 && idx > 0) {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
     const existing = existingPalettes.find(
       (p) => p.name.toLowerCase() === palette.name.toLowerCase()
     );
@@ -139,39 +183,40 @@ async function executePaletteImport(
           createdAt: Date.now(),
         };
 
-        // Add directly to palette store
-        // Note: We're directly modifying the palettes array here
-        // In a production app, you'd want to use proper store actions
-        paletteStore.palettes.push(newPalette);
-        paletteStore.savePalettes();
+        // Collect for batch add
+        palettesToAdd.push(newPalette);
 
         result.created++;
         result.ids.push(newPalette.id);
         result.warnings.push(`Palette "${palette.name}" imported as "${newName}"`);
       } else if (options.mergeStrategy === 'overwrite') {
-        // Update existing palette
+        // Collect for batch update
         const index = paletteStore.palettes.findIndex((p) => p.id === existing.id);
         if (index !== -1) {
-          paletteStore.palettes[index] = {
-            ...palette,
-            id: existing.id, // Keep existing ID
-            createdAt: existing.createdAt,
-          };
-          paletteStore.savePalettes();
+          palettesToUpdate.push({
+            index,
+            palette: {
+              ...palette,
+              id: existing.id, // Keep existing ID
+              createdAt: existing.createdAt,
+            }
+          });
         }
 
         result.updated++;
         result.ids.push(existing.id);
         result.warnings.push(`Palette "${palette.name}" overwritten`);
       } else if (options.mergeStrategy === 'merge') {
-        // Merge palette steps (keep existing, add new ones)
+        // Collect for batch update (merge)
         const index = paletteStore.palettes.findIndex((p) => p.id === existing.id);
         if (index !== -1) {
-          paletteStore.palettes[index] = {
-            ...existing,
-            steps: { ...existing.steps, ...palette.steps },
-          };
-          paletteStore.savePalettes();
+          palettesToUpdate.push({
+            index,
+            palette: {
+              ...existing,
+              steps: { ...existing.steps, ...palette.steps },
+            }
+          });
         }
 
         result.updated++;
@@ -186,23 +231,39 @@ async function executePaletteImport(
         createdAt: Date.now(),
       };
 
-      paletteStore.palettes.push(newPalette);
-      paletteStore.savePalettes();
+      // Collect for batch add
+      palettesToAdd.push(newPalette);
 
       result.created++;
       result.ids.push(newPalette.id);
     }
+  }
+  
+  // Apply all updates in batch (single save operation)
+  if (palettesToAdd.length > 0) {
+    paletteStore.palettes.push(...palettesToAdd);
+  }
+  if (palettesToUpdate.length > 0) {
+    palettesToUpdate.forEach(({ index, palette }) => {
+      paletteStore.palettes[index] = palette;
+    });
+  }
+  
+  // Save once at the end if there were any changes
+  if (palettesToAdd.length > 0 || palettesToUpdate.length > 0) {
+    paletteStore.savePalettes();
   }
 
   return result;
 }
 
 /**
- * Execute brand import
+ * Execute brand import (optimized with batching and progress tracking)
  */
 async function executeBrandImport(
   brands: Brand[],
-  options: ImportOptions
+  options: ImportOptions,
+  onProgress?: ImportProgressCallback
 ): Promise<{
   created: number;
   updated: number;
@@ -228,8 +289,25 @@ async function executeBrandImport(
       options.selectedBrandIds!.includes(b.id)
     );
   }
+  
+  // Batch updates: collect all changes
+  const brandsToCreate: Brand[] = [];
 
-  for (const brand of brandsToImport) {
+  for (let idx = 0; idx < brandsToImport.length; idx++) {
+    const brand = brandsToImport[idx];
+    
+    // Report progress
+    onProgress?.({
+      phase: 'brands',
+      current: idx + 1,
+      total: brandsToImport.length,
+      message: `Importing brand: ${brand.name}`
+    });
+    
+    // Yield to UI every 10 items
+    if (idx % 10 === 0 && idx > 0) {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
     const existing = existingBrands.find(
       (b) => b.name.toLowerCase() === brand.name.toLowerCase()
     );
@@ -251,45 +329,35 @@ async function executeBrandImport(
           syncedAt: undefined,
         };
 
-        // Use brand store action to create brand
-        brandStore.brands.push(newBrand);
-        brandStore.saveBrands();
+        // Collect for batch creation
+        brandsToCreate.push(newBrand);
 
         result.created++;
         result.ids.push(newBrand.id);
         result.warnings.push(`Brand "${brand.name}" imported as "${newName}"`);
       } else if (options.mergeStrategy === 'overwrite') {
-        // Update existing brand
-        const index = brandStore.brands.findIndex((b) => b.id === existing.id);
-        if (index !== -1) {
-          brandStore.brands[index] = {
-            ...brand,
-            id: existing.id, // Keep existing ID
-            createdAt: existing.createdAt,
-            updatedAt: Date.now(),
-          };
-          brandStore.saveBrands();
-        }
+        // Update existing brand (use store action for proper Map maintenance)
+        brandStore.updateBrand(existing.id, {
+          ...brand,
+          id: existing.id, // Keep existing ID
+          createdAt: existing.createdAt,
+          updatedAt: Date.now(),
+        });
 
         result.updated++;
         result.ids.push(existing.id);
         result.warnings.push(`Brand "${brand.name}" overwritten`);
       } else if (options.mergeStrategy === 'merge') {
-        // Merge collections (keep existing, add new ones)
-        const index = brandStore.brands.findIndex((b) => b.id === existing.id);
-        if (index !== -1) {
-          const mergedCollections = [
-            ...(existing.collections || []),
-            ...(brand.collections || []),
-          ];
+        // Merge collections (keep existing, add new ones) - use store action
+        const mergedCollections = [
+          ...(existing.collections || []),
+          ...(brand.collections || []),
+        ];
 
-          brandStore.brands[index] = {
-            ...existing,
-            collections: mergedCollections,
-            updatedAt: Date.now(),
-          };
-          brandStore.saveBrands();
-        }
+        brandStore.updateBrand(existing.id, {
+          collections: mergedCollections,
+          updatedAt: Date.now(),
+        });
 
         result.updated++;
         result.ids.push(existing.id);
