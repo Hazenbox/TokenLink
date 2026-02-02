@@ -87,6 +87,7 @@ interface HistoryState {
 interface BrandStoreState {
   // Core state
   brands: Brand[];
+  brandsById: Map<string, Brand>; // O(1) lookup index for brands
   activeBrandId: string | null;
   syncStatus: SyncStatus;
   
@@ -258,6 +259,18 @@ function sanitizeBrandName(name: string): string {
 }
 
 /**
+ * Helper function to rebuild brandsById Map from brands array
+ * Used after bulk updates or when brands array is replaced
+ */
+function rebuildBrandsById(brands: Brand[]): Map<string, Brand> {
+  const map = new Map<string, Brand>();
+  brands.forEach((brand) => {
+    map.set(brand.id, brand);
+  });
+  return map;
+}
+
+/**
  * Validate brand name before creation/rename
  * Returns { valid: boolean, error?: string }
  */
@@ -340,6 +353,8 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
 
         set((state) => {
           const newBrands = [...state.brands, newBrand];
+          const newBrandsById = new Map(state.brandsById);
+          newBrandsById.set(newBrand.id, newBrand);
           
           // Add to history
           const newHistory = [
@@ -349,6 +364,7 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
 
           return {
             brands: newBrands,
+            brandsById: newBrandsById,
             activeBrandId: newBrand.id,
             history: newHistory,
             historyIndex: newHistory.length - 1,
@@ -394,6 +410,8 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
 
         set((state) => {
           const newBrands = [...state.brands, newBrand];
+          const newBrandsById = new Map(state.brandsById);
+          newBrandsById.set(newBrand.id, newBrand);
           
           const newHistory = [
             ...state.history.slice(0, state.historyIndex + 1),
@@ -402,6 +420,7 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
 
           return {
             brands: newBrands,
+            brandsById: newBrandsById,
             activeBrandId: newBrand.id,
             history: newHistory,
             historyIndex: newHistory.length - 1,
@@ -433,10 +452,13 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
 
         set((state) => {
           const newBrands = state.brands.filter((b) => b.id !== id);
+          const newBrandsById = new Map(state.brandsById);
+          newBrandsById.delete(id);
+          
           const newActiveId = state.activeBrandId === id
             ? (newBrands[0]?.id || null)
             : state.activeBrandId;
-
+          
           const newHistory = [
             ...state.history.slice(0, state.historyIndex + 1),
             { brands: deepClone(newBrands), timestamp: Date.now() }
@@ -444,6 +466,7 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
 
           return {
             brands: newBrands,
+            brandsById: newBrandsById,
             activeBrandId: newActiveId,
             history: newHistory,
             historyIndex: newHistory.length - 1,
@@ -479,7 +502,14 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
               ? { ...b, ...updates, updatedAt: Date.now(), version: b.version + 1 }
               : b
           );
-
+          
+          // Update brandsById Map
+          const newBrandsById = new Map(state.brandsById);
+          const updatedBrand = newBrands.find((b) => b.id === id);
+          if (updatedBrand) {
+            newBrandsById.set(id, updatedBrand);
+          }
+          
           const newHistory = [
             ...state.history.slice(0, state.historyIndex + 1),
             { brands: deepClone(newBrands), timestamp: Date.now() }
@@ -487,6 +517,7 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
 
           return {
             brands: newBrands,
+            brandsById: newBrandsById,
             history: newHistory,
             historyIndex: newHistory.length - 1,
             isDirty: true
@@ -542,14 +573,15 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
         get().saveBrands(); // Save active brand selection
       },
 
-      // Get active brand
+      // Get active brand (optimized with O(1) Map lookup)
       getActiveBrand: () => {
         const state = get();
         // Return null for "All" selection to indicate unified view
         if (state.activeBrandId === '__all__') {
           return null;
         }
-        return state.brands.find((b) => b.id === state.activeBrandId) || null;
+        // Use O(1) Map lookup instead of O(n) array find
+        return state.brandsById.get(state.activeBrandId || '') || null;
       },
 
       // Update brand palette
@@ -1276,9 +1308,17 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
 
           const newIndex = state.historyIndex - 1;
           const historyState = state.history[newIndex];
+          const restoredBrands = deepClone(historyState.brands);
+          
+          // Rebuild brandsById Map from restored brands
+          const newBrandsById = new Map<string, Brand>();
+          restoredBrands.forEach((brand) => {
+            newBrandsById.set(brand.id, brand);
+          });
 
           return {
-            brands: deepClone(historyState.brands),
+            brands: restoredBrands,
+            brandsById: newBrandsById,
             historyIndex: newIndex,
             isDirty: true
           };
@@ -1295,9 +1335,17 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
 
           const newIndex = state.historyIndex + 1;
           const historyState = state.history[newIndex];
+          const restoredBrands = deepClone(historyState.brands);
+          
+          // Rebuild brandsById Map from restored brands
+          const newBrandsById = new Map<string, Brand>();
+          restoredBrands.forEach((brand) => {
+            newBrandsById.set(brand.id, brand);
+          });
 
           return {
-            brands: deepClone(historyState.brands),
+            brands: restoredBrands,
+            brandsById: newBrandsById,
             historyIndex: newIndex,
             isDirty: true
           };
@@ -1394,6 +1442,10 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
 
           set((state) => {
             const newBrands = [...state.brands, ...importedBrands];
+            const newBrandsById = new Map(state.brandsById);
+            importedBrands.forEach((brand) => {
+              newBrandsById.set(brand.id, brand);
+            });
             
             const newHistory = [
               ...state.history.slice(0, state.historyIndex + 1),
@@ -1402,6 +1454,7 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
 
             return {
               brands: newBrands,
+              brandsById: newBrandsById,
               history: newHistory,
               historyIndex: newHistory.length - 1,
               isDirty: true
@@ -1511,9 +1564,16 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
               }
             }
             
+            // Build brandsById Map from loaded brands
+            const brandsById = new Map<string, Brand>();
+            brands.forEach((brand) => {
+              brandsById.set(brand.id, brand);
+            });
+            
             // Set state FIRST with migrated data
             set({
               brands,
+              brandsById,
               activeBrandId: data.activeBrandId || null,
               backups: data.backups || [],
               auditLog: data.auditLog || []
@@ -1866,7 +1926,14 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
             return b;
           });
           
-          return { brands: newBrands, isDirty: true };
+          // Update brandsById Map (only affected brand changed)
+          const newBrandsById = new Map(state.brandsById);
+          const updatedBrand = newBrands.find((b) => b.id === brandId);
+          if (updatedBrand) {
+            newBrandsById.set(brandId, updatedBrand);
+          }
+          
+          return { brands: newBrands, brandsById: newBrandsById, isDirty: true };
         });
         
         invalidateBrandCache(brandId);
@@ -1898,7 +1965,14 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
             return b;
           });
           
-          return { brands: newBrands, isDirty: true };
+          // Update brandsById Map (only affected brand changed)
+          const newBrandsById = new Map(state.brandsById);
+          const updatedBrand = newBrands.find((b) => b.id === brandId);
+          if (updatedBrand) {
+            newBrandsById.set(brandId, updatedBrand);
+          }
+          
+          return { brands: newBrands, brandsById: newBrandsById, isDirty: true };
         });
         
         invalidateBrandCache(brandId);
@@ -1932,7 +2006,14 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
             return b;
           });
           
-          return { brands: newBrands, isDirty: true };
+          // Update brandsById Map (only affected brand changed)
+          const newBrandsById = new Map(state.brandsById);
+          const updatedBrand = newBrands.find((b) => b.id === brandId);
+          if (updatedBrand) {
+            newBrandsById.set(brandId, updatedBrand);
+          }
+          
+          return { brands: newBrands, brandsById: newBrandsById, isDirty: true };
         });
         
         invalidateBrandCache(brandId);
@@ -1964,7 +2045,14 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
             return b;
           });
           
-          return { brands: newBrands, isDirty: true };
+          // Update brandsById Map (only affected brand changed)
+          const newBrandsById = new Map(state.brandsById);
+          const updatedBrand = newBrands.find((b) => b.id === brandId);
+          if (updatedBrand) {
+            newBrandsById.set(brandId, updatedBrand);
+          }
+          
+          return { brands: newBrands, brandsById: newBrandsById, isDirty: true };
         });
         
         invalidateBrandCache(brandId);
