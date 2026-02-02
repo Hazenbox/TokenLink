@@ -343,10 +343,10 @@ export function BrandVariableTable() {
         </div>
       ) : shouldVirtualize ? (
         // Virtualized rendering for large lists (> 100 variables)
-        // Header is OUTSIDE scroll container to maintain sticky behavior
-        <div className="flex-1 flex flex-col min-h-0">
-          {/* Fixed Header - Outside scroll container */}
-          <div className="flex-shrink-0 border-b border-border/40 bg-background overflow-x-auto">
+        // Single scroll container - header uses sticky positioning for vertical scroll
+        <div ref={tableContainerRef} className="flex-1 overflow-auto">
+          {/* Sticky Header - scrolls horizontally with body, sticks vertically */}
+          <div className="sticky top-0 z-30 bg-background border-b border-border/40">
             <table className="border-collapse text-xs" style={{ tableLayout: 'fixed', minWidth: `${250 + modes.length * 280}px` }}>
               <thead>
                 <tr>
@@ -370,87 +370,85 @@ export function BrandVariableTable() {
             </table>
           </div>
           
-          {/* Scrollable Body - Contains only virtualized rows */}
-          <div ref={tableContainerRef} className="flex-1 overflow-auto min-h-0">
-            <div style={{ position: 'relative', height: `${rowVirtualizer.getTotalSize()}px`, minWidth: `${250 + modes.length * 280}px` }}>
-              <table className="border-collapse text-xs" style={{ tableLayout: 'fixed', minWidth: `${250 + modes.length * 280}px` }}>
-                <tbody>
-                  {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                    const row = flattenedRows[virtualRow.index];
-                    
-                    if (row.type === 'group') {
-                      return (
-                        <tr 
-                          key={`group-${virtualRow.index}`}
-                          className="bg-surface"
-                          style={{
-                            ...VIRTUALIZED_ROW_STYLE_BASE,
-                            height: `${virtualRow.size}px`,
-                            transform: `translateY(${virtualRow.start}px)`,
-                          }}
-                        >
-                          <td className="sticky left-0 z-20 bg-surface px-3 py-1.5 border-b border-border/50 border-r border-border/20 w-[250px] overflow-hidden">
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-semibold text-foreground uppercase tracking-wide truncate">
-                                {row.groupName}
-                              </span>
-                              <span className="text-[9px] text-foreground-tertiary flex-shrink-0">
-                                ({row.count})
-                              </span>
-                            </div>
-                          </td>
-                          {modes.map((mode) => (
-                            <td 
-                              key={mode.modeId}
-                              className="bg-surface border-b border-border/50 border-r border-border/40 w-[280px]"
-                            />
-                          ))}
-                        </tr>
-                      );
-                    } else {
-                      const variable = row.variable;
-                      return (
-                        <tr 
-                          key={`var-${variable.id}`}
-                          className="border-b border-border/40 hover:bg-interactive-hover transition-colors group"
-                          style={{
-                            ...VIRTUALIZED_ROW_STYLE_BASE,
-                            height: `${virtualRow.size}px`,
-                            transform: `translateY(${virtualRow.start}px)`,
-                          }}
-                        >
-                          <td className="sticky left-0 z-10 bg-background group-hover:bg-interactive-hover px-3 py-1.5 border-r border-border/40 transition-colors w-[250px] overflow-hidden">
-                            <span className="text-[11px] text-foreground block truncate" title={variable.name}>
-                              {HierarchyParser.getLastSegment(variable.name)}
+          {/* Virtualized Body */}
+          <div style={{ position: 'relative', height: `${rowVirtualizer.getTotalSize()}px`, minWidth: `${250 + modes.length * 280}px` }}>
+            <table className="border-collapse text-xs" style={{ tableLayout: 'fixed', minWidth: `${250 + modes.length * 280}px` }}>
+              <tbody>
+                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                  const row = flattenedRows[virtualRow.index];
+                  
+                  if (row.type === 'group') {
+                    return (
+                      <tr 
+                        key={`group-${virtualRow.index}`}
+                        className="bg-surface"
+                        style={{
+                          ...VIRTUALIZED_ROW_STYLE_BASE,
+                          height: `${virtualRow.size}px`,
+                          transform: `translateY(${virtualRow.start}px)`,
+                        }}
+                      >
+                        <td className="sticky left-0 z-20 bg-surface px-3 py-1.5 border-b border-border/50 border-r border-border/20 w-[250px] overflow-hidden">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-semibold text-foreground uppercase tracking-wide truncate">
+                              {row.groupName}
                             </span>
-                          </td>
+                            <span className="text-[9px] text-foreground-tertiary flex-shrink-0">
+                              ({row.count})
+                            </span>
+                          </div>
+                        </td>
+                        {modes.map((mode) => (
+                          <td 
+                            key={mode.modeId}
+                            className="bg-surface border-b border-border/50 border-r border-border/40 w-[280px]"
+                          />
+                        ))}
+                      </tr>
+                    );
+                  } else {
+                    const variable = row.variable;
+                    return (
+                      <tr 
+                        key={`var-${variable.id}`}
+                        className="border-b border-border/40 hover:bg-interactive-hover transition-colors group"
+                        style={{
+                          ...VIRTUALIZED_ROW_STYLE_BASE,
+                          height: `${virtualRow.size}px`,
+                          transform: `translateY(${virtualRow.start}px)`,
+                        }}
+                      >
+                        <td className="sticky left-0 z-10 bg-background group-hover:bg-interactive-hover px-3 py-1.5 border-r border-border/40 transition-colors w-[250px] overflow-hidden">
+                          <span className="text-[11px] text-foreground block truncate" title={variable.name}>
+                            {HierarchyParser.getLastSegment(variable.name)}
+                          </span>
+                        </td>
+                        
+                        {modes.map((mode) => {
+                          const value = variable.valuesByMode[mode.modeId];
+                          const resolvedColor = variable.resolvedValuesByMode[mode.modeId];
                           
-                          {modes.map((mode) => {
-                            const value = variable.valuesByMode[mode.modeId];
-                            const resolvedColor = variable.resolvedValuesByMode[mode.modeId];
-                            
-                            return (
-                              <td 
-                                key={mode.modeId} 
-                                className="border-r border-border/40 align-middle w-[280px] overflow-hidden"
-                              >
-                                {value ? (
-                                  <ModeCell value={value} color={resolvedColor} />
-                                ) : (
-                                  <div className="px-3 py-1.5 text-foreground-tertiary/30">
-                                    —
-                                  </div>
-                                )}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      );
-                    }
-                  })}
-                </tbody>
-              </table>
-            </div>
+                          return (
+                            <td 
+                              key={mode.modeId} 
+                              className="border-r border-border/40 align-middle w-[280px] overflow-hidden"
+                            >
+                              {value ? (
+                                <ModeCell value={value} color={resolvedColor} />
+                              ) : (
+                                <div className="px-3 py-1.5 text-foreground-tertiary/30">
+                                  —
+                                </div>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  }
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       ) : (
