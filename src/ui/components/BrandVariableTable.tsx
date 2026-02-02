@@ -335,19 +335,22 @@ export function BrandVariableTable() {
       </div>
 
       {/* Variables Table with Group Headers - Virtualized when > 100 items */}
-      <div ref={tableContainerRef} className="flex-1 overflow-x-auto overflow-y-auto relative">
-        {filteredVariables.length === 0 ? (
+      {filteredVariables.length === 0 ? (
+        <div className="flex-1 flex items-center justify-center">
           <div className="text-center py-12 text-foreground-secondary text-xs">
             {searchQuery ? 'No variables match your search' : 'No variables in this collection'}
           </div>
-        ) : shouldVirtualize ? (
-          // Virtualized rendering for large lists (> 100 variables)
-          // Uses table-layout: fixed to ensure header and body columns align properly
-          <div style={{ position: 'relative', height: `${rowVirtualizer.getTotalSize()}px` }}>
-            <table className="w-full border-collapse text-xs" style={{ tableLayout: 'fixed' }}>
-              <thead className="sticky top-0 z-30 bg-background">
-                <tr className="border-b border-border/40">
-                  <th className="sticky left-0 z-40 bg-background text-left px-3 py-2 border-r border-border/20 w-[180px]">
+        </div>
+      ) : shouldVirtualize ? (
+        // Virtualized rendering for large lists (> 100 variables)
+        // Header is OUTSIDE scroll container to maintain sticky behavior
+        <div className="flex-1 flex flex-col min-h-0">
+          {/* Fixed Header - Outside scroll container */}
+          <div className="flex-shrink-0 border-b border-border/40 bg-background overflow-x-auto">
+            <table className="border-collapse text-xs" style={{ tableLayout: 'fixed', minWidth: `${250 + modes.length * 280}px` }}>
+              <thead>
+                <tr>
+                  <th className="sticky left-0 z-40 bg-background text-left px-3 py-2 border-r border-border/20 w-[250px]">
                     <span className="text-[11px] font-medium text-foreground-secondary">
                       Name
                     </span>
@@ -355,7 +358,7 @@ export function BrandVariableTable() {
                   {modes.map((mode) => (
                     <th 
                       key={mode.modeId} 
-                      className="text-left px-3 py-2 w-[220px] border-r border-border/40 whitespace-nowrap"
+                      className="text-left px-3 py-2 w-[280px] border-r border-border/40 whitespace-nowrap"
                     >
                       <span className="text-[11px] font-medium text-foreground-secondary">
                         {mode.name}
@@ -364,90 +367,99 @@ export function BrandVariableTable() {
                   ))}
                 </tr>
               </thead>
-              
-              <tbody>
-                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                  const row = flattenedRows[virtualRow.index];
-                  
-                  if (row.type === 'group') {
-                    return (
-                      <tr 
-                        key={`group-${virtualRow.index}`}
-                        className="bg-surface"
-                        style={{
-                          ...VIRTUALIZED_ROW_STYLE_BASE,
-                          height: `${virtualRow.size}px`,
-                          transform: `translateY(${virtualRow.start}px)`,
-                        }}
-                      >
-                        <td className="sticky left-0 z-20 bg-surface px-3 py-1.5 border-b border-border/50 border-r border-border/20 w-[180px]">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-semibold text-foreground uppercase tracking-wide whitespace-nowrap">
-                              {row.groupName}
-                            </span>
-                            <span className="text-[9px] text-foreground-tertiary">
-                              ({row.count})
-                            </span>
-                          </div>
-                        </td>
-                        {modes.map((mode) => (
-                          <td 
-                            key={mode.modeId}
-                            className="bg-surface border-b border-border/50 border-r border-border/40 w-[220px]"
-                          />
-                        ))}
-                      </tr>
-                    );
-                  } else {
-                    const variable = row.variable;
-                    return (
-                      <tr 
-                        key={`var-${variable.id}`}
-                        className="border-b border-border/40 hover:bg-interactive-hover transition-colors group"
-                        style={{
-                          ...VIRTUALIZED_ROW_STYLE_BASE,
-                          height: `${virtualRow.size}px`,
-                          transform: `translateY(${virtualRow.start}px)`,
-                        }}
-                      >
-                        <td className="sticky left-0 z-10 bg-background group-hover:bg-interactive-hover px-3 py-1.5 border-r border-border/40 transition-colors w-[180px]">
-                          <span className="text-[11px] text-foreground whitespace-nowrap truncate block" title={variable.name}>
-                            {HierarchyParser.getLastSegment(variable.name)}
-                          </span>
-                        </td>
-                        
-                        {modes.map((mode) => {
-                          const value = variable.valuesByMode[mode.modeId];
-                          const resolvedColor = variable.resolvedValuesByMode[mode.modeId];
-                          
-                          return (
-                            <td 
-                              key={mode.modeId} 
-                              className="border-r border-border/40 align-middle w-[220px]"
-                            >
-                              {value ? (
-                                <ModeCell value={value} color={resolvedColor} />
-                              ) : (
-                                <div className="px-3 py-1.5 text-foreground-tertiary/30">
-                                  —
-                                </div>
-                              )}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    );
-                  }
-                })}
-              </tbody>
             </table>
           </div>
-        ) : (
-          // Non-virtualized rendering for small lists (≤ 100 variables)
-          <table className="w-full border-collapse text-xs">
+          
+          {/* Scrollable Body - Contains only virtualized rows */}
+          <div ref={tableContainerRef} className="flex-1 overflow-auto min-h-0">
+            <div style={{ position: 'relative', height: `${rowVirtualizer.getTotalSize()}px`, minWidth: `${250 + modes.length * 280}px` }}>
+              <table className="border-collapse text-xs" style={{ tableLayout: 'fixed', minWidth: `${250 + modes.length * 280}px` }}>
+                <tbody>
+                  {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                    const row = flattenedRows[virtualRow.index];
+                    
+                    if (row.type === 'group') {
+                      return (
+                        <tr 
+                          key={`group-${virtualRow.index}`}
+                          className="bg-surface"
+                          style={{
+                            ...VIRTUALIZED_ROW_STYLE_BASE,
+                            height: `${virtualRow.size}px`,
+                            transform: `translateY(${virtualRow.start}px)`,
+                          }}
+                        >
+                          <td className="sticky left-0 z-20 bg-surface px-3 py-1.5 border-b border-border/50 border-r border-border/20 w-[250px] overflow-hidden">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-semibold text-foreground uppercase tracking-wide truncate">
+                                {row.groupName}
+                              </span>
+                              <span className="text-[9px] text-foreground-tertiary flex-shrink-0">
+                                ({row.count})
+                              </span>
+                            </div>
+                          </td>
+                          {modes.map((mode) => (
+                            <td 
+                              key={mode.modeId}
+                              className="bg-surface border-b border-border/50 border-r border-border/40 w-[280px]"
+                            />
+                          ))}
+                        </tr>
+                      );
+                    } else {
+                      const variable = row.variable;
+                      return (
+                        <tr 
+                          key={`var-${variable.id}`}
+                          className="border-b border-border/40 hover:bg-interactive-hover transition-colors group"
+                          style={{
+                            ...VIRTUALIZED_ROW_STYLE_BASE,
+                            height: `${virtualRow.size}px`,
+                            transform: `translateY(${virtualRow.start}px)`,
+                          }}
+                        >
+                          <td className="sticky left-0 z-10 bg-background group-hover:bg-interactive-hover px-3 py-1.5 border-r border-border/40 transition-colors w-[250px] overflow-hidden">
+                            <span className="text-[11px] text-foreground block truncate" title={variable.name}>
+                              {HierarchyParser.getLastSegment(variable.name)}
+                            </span>
+                          </td>
+                          
+                          {modes.map((mode) => {
+                            const value = variable.valuesByMode[mode.modeId];
+                            const resolvedColor = variable.resolvedValuesByMode[mode.modeId];
+                            
+                            return (
+                              <td 
+                                key={mode.modeId} 
+                                className="border-r border-border/40 align-middle w-[280px] overflow-hidden"
+                              >
+                                {value ? (
+                                  <ModeCell value={value} color={resolvedColor} />
+                                ) : (
+                                  <div className="px-3 py-1.5 text-foreground-tertiary/30">
+                                    —
+                                  </div>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    }
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      ) : (
+        // Non-virtualized rendering for small lists (≤ 100 variables)
+        <div ref={tableContainerRef} className="flex-1 overflow-auto">
+          <table className="border-collapse text-xs" style={{ tableLayout: 'fixed', minWidth: `${250 + modes.length * 280}px` }}>
             <thead className="sticky top-0 z-30 bg-background">
               <tr className="border-b border-border/40">
-                <th className="sticky left-0 z-40 bg-background text-left px-3 py-2 border-r border-border/20">
+                <th className="sticky left-0 z-40 bg-background text-left px-3 py-2 border-r border-border/20 w-[250px]">
                   <span className="text-[11px] font-medium text-foreground-secondary">
                     Name
                   </span>
@@ -455,7 +467,7 @@ export function BrandVariableTable() {
                 {modes.map((mode) => (
                   <th 
                     key={mode.modeId} 
-                    className="text-left px-3 py-2 min-w-[200px] border-r border-border/40 whitespace-nowrap"
+                    className="text-left px-3 py-2 w-[280px] border-r border-border/40 whitespace-nowrap"
                   >
                     <span className="text-[11px] font-medium text-foreground-secondary">
                       {mode.name}
@@ -471,12 +483,12 @@ export function BrandVariableTable() {
                 .map(([groupName, variables]) => (
                 <React.Fragment key={groupName}>
                   <tr className="bg-surface sticky top-[31px] z-20">
-                    <td className="sticky left-0 z-20 bg-surface px-3 py-1.5 border-b border-border/50 border-r border-border/20">
+                    <td className="sticky left-0 z-20 bg-surface px-3 py-1.5 border-b border-border/50 border-r border-border/20 w-[250px] overflow-hidden">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-semibold text-foreground uppercase tracking-wide whitespace-nowrap">
+                        <span className="text-[10px] font-semibold text-foreground uppercase tracking-wide truncate">
                           {groupName}
                         </span>
-                        <span className="text-[9px] text-foreground-tertiary">
+                        <span className="text-[9px] text-foreground-tertiary flex-shrink-0">
                           ({variables.length})
                         </span>
                       </div>
@@ -484,7 +496,7 @@ export function BrandVariableTable() {
                     {modes.map((mode) => (
                       <td 
                         key={mode.modeId}
-                        className="bg-surface border-b border-border/50 border-r border-border/40"
+                        className="bg-surface border-b border-border/50 border-r border-border/40 w-[280px]"
                       />
                     ))}
                   </tr>
@@ -494,8 +506,8 @@ export function BrandVariableTable() {
                       key={variable.id} 
                       className="border-b border-border/40 hover:bg-interactive-hover transition-colors group"
                     >
-                      <td className="sticky left-0 z-10 bg-background group-hover:bg-interactive-hover px-3 py-1.5 border-r border-border/40 transition-colors">
-                        <span className="text-[11px] text-foreground whitespace-nowrap truncate" title={variable.name}>
+                      <td className="sticky left-0 z-10 bg-background group-hover:bg-interactive-hover px-3 py-1.5 border-r border-border/40 transition-colors w-[250px] overflow-hidden">
+                        <span className="text-[11px] text-foreground block truncate" title={variable.name}>
                           {HierarchyParser.getLastSegment(variable.name)}
                         </span>
                       </td>
@@ -507,7 +519,7 @@ export function BrandVariableTable() {
                         return (
                           <td 
                             key={mode.modeId} 
-                            className="border-r border-border/40 align-middle min-w-[200px]"
+                            className="border-r border-border/40 align-middle w-[280px] overflow-hidden"
                           >
                             {value ? (
                               <ModeCell value={value} color={resolvedColor} />
@@ -525,8 +537,8 @@ export function BrandVariableTable() {
               ))}
             </tbody>
           </table>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Footer Stats - Minimal */}
       <div className="px-3 py-2 border-t border-border/40 flex-shrink-0 bg-background">
