@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { X, Trash2, Copy, Search, Terminal, AlertCircle, Info, AlertTriangle } from 'lucide-react';
+import { X, Trash2, Copy, Search, Terminal, AlertCircle, Info, AlertTriangle, Check } from 'lucide-react';
 import { LogEntry } from '../hooks/useConsoleLogs';
 
 interface ConsoleLogViewerProps {
@@ -17,6 +17,7 @@ interface ConsoleLogViewerProps {
 export function ConsoleLogViewer({ logs, isVisible, onClose, onClear }: ConsoleLogViewerProps) {
   const [filter, setFilter] = useState<'all' | 'log' | 'warn' | 'error'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const logsEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
@@ -46,25 +47,35 @@ export function ConsoleLogViewer({ logs, isVisible, onClose, onClear }: ConsoleL
     });
   }, [logs, filter, searchQuery]);
 
-  const copyToClipboard = () => {
-    const text = filteredLogs
-      .map(log => {
-        const time = new Date(log.timestamp).toLocaleTimeString();
-        return `[${time}] [${log.level.toUpperCase()}] ${log.message}`;
-      })
-      .join('\n');
-    
-    navigator.clipboard.writeText(text);
+  const copyToClipboard = async () => {
+    try {
+      const text = filteredLogs
+        .map(log => {
+          const time = new Date(log.timestamp).toLocaleTimeString();
+          return `[${time}] [${log.level.toUpperCase()}] ${log.message}`;
+        })
+        .join('\n');
+      
+      await navigator.clipboard.writeText(text);
+      setCopyStatus('success');
+      
+      // Reset after 2 seconds
+      setTimeout(() => setCopyStatus('idle'), 2000);
+    } catch (error) {
+      console.error('Failed to copy logs:', error);
+      setCopyStatus('error');
+      setTimeout(() => setCopyStatus('idle'), 2000);
+    }
   };
 
   const getLogIcon = (level: string) => {
     switch (level) {
       case 'error':
-        return <AlertCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />;
+        return <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0" />;
       case 'warn':
-        return <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />;
+        return <AlertTriangle className="w-3 h-3 text-amber-500 flex-shrink-0" />;
       default:
-        return <Info className="w-3.5 h-3.5 text-foreground-tertiary flex-shrink-0" />;
+        return <Info className="w-3 h-3 text-foreground-tertiary flex-shrink-0" />;
     }
   };
 
@@ -81,7 +92,7 @@ export function ConsoleLogViewer({ logs, isVisible, onClose, onClear }: ConsoleL
 
   const getFilterButtonStyle = (buttonFilter: string) => {
     const isActive = filter === buttonFilter;
-    return `px-3 py-1 text-xs rounded transition-colors ${
+    return `px-2 py-0.5 text-[10px] rounded transition-colors ${
       isActive
         ? 'bg-surface-elevated text-foreground'
         : 'bg-surface-elevated text-foreground-secondary hover:bg-surface-elevated/80'
@@ -96,21 +107,21 @@ export function ConsoleLogViewer({ logs, isVisible, onClose, onClear }: ConsoleL
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-2xl" style={{ zIndex: 2000, height: '40vh' }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-surface-elevated">
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-surface-elevated">
         <div className="flex items-center gap-2">
-          <Terminal className="w-4 h-4 text-foreground-secondary" />
-          <h3 className="text-sm font-semibold text-foreground">Console</h3>
-          <div className="flex items-center gap-1 text-xs">
-            <span className="px-2 py-0.5 rounded bg-surface text-foreground-secondary">
+          <Terminal className="w-3.5 h-3.5 text-foreground-secondary" />
+          <h3 className="text-xs font-semibold text-foreground">Console</h3>
+          <div className="flex items-center gap-1 text-[10px]">
+            <span className="px-1.5 py-0.5 rounded bg-surface text-foreground-secondary">
               {filteredLogs.length} logs
             </span>
             {errorCount > 0 && (
-              <span className="px-2 py-0.5 rounded bg-red-950/30 text-red-400">
+              <span className="px-1.5 py-0.5 rounded bg-red-950/30 text-red-400">
                 {errorCount} errors
               </span>
             )}
             {warnCount > 0 && (
-              <span className="px-2 py-0.5 rounded bg-amber-950/30 text-amber-400">
+              <span className="px-1.5 py-0.5 rounded bg-amber-950/30 text-amber-400">
                 {warnCount} warnings
               </span>
             )}
@@ -123,10 +134,10 @@ export function ConsoleLogViewer({ logs, isVisible, onClose, onClear }: ConsoleL
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-foreground-tertiary" />
             <input
               type="text"
-              placeholder="Search logs..."
+              placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 pr-3 py-1 text-xs bg-surface border border-border rounded focus:outline-none focus:ring-1 focus:ring-border-strong w-48"
+              className="pl-7 pr-2 py-0.5 text-xs bg-surface border border-border rounded focus:outline-none focus:ring-1 focus:ring-border-strong w-32"
             />
           </div>
 
@@ -150,23 +161,35 @@ export function ConsoleLogViewer({ logs, isVisible, onClose, onClear }: ConsoleL
           <button
             onClick={copyToClipboard}
             className="p-1.5 hover:bg-surface-elevated rounded transition-colors"
-            title="Copy to clipboard"
+            title={
+              copyStatus === 'success' 
+                ? 'Copied!' 
+                : copyStatus === 'error'
+                ? 'Failed to copy'
+                : 'Copy to clipboard'
+            }
           >
-            <Copy className="w-4 h-4 text-foreground-secondary" />
+            {copyStatus === 'success' ? (
+              <Check className="w-3.5 h-3.5 text-green-500" />
+            ) : copyStatus === 'error' ? (
+              <AlertCircle className="w-3.5 h-3.5 text-red-500" />
+            ) : (
+              <Copy className="w-3.5 h-3.5 text-foreground-secondary" />
+            )}
           </button>
           <button
             onClick={onClear}
             className="p-1.5 hover:bg-surface-elevated rounded transition-colors"
             title="Clear logs"
           >
-            <Trash2 className="w-4 h-4 text-foreground-secondary" />
+            <Trash2 className="w-3.5 h-3.5 text-foreground-secondary" />
           </button>
           <button
             onClick={onClose}
             className="p-1.5 hover:bg-surface-elevated rounded transition-colors"
             title="Close console"
           >
-            <X className="w-4 h-4 text-foreground-secondary" />
+            <X className="w-3.5 h-3.5 text-foreground-secondary" />
           </button>
         </div>
       </div>
@@ -175,13 +198,13 @@ export function ConsoleLogViewer({ logs, isVisible, onClose, onClear }: ConsoleL
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="overflow-y-auto p-2 space-y-1 font-mono text-xs"
-        style={{ height: 'calc(40vh - 48px)' }}
+        className="overflow-y-auto p-1.5 space-y-0.5 font-mono text-xs"
+        style={{ height: 'calc(40vh - 40px)' }}
       >
         {filteredLogs.length === 0 ? (
           <div className="flex items-center justify-center h-full text-foreground-tertiary">
             <div className="text-center">
-              <Terminal className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <Terminal className="w-6 h-6 mx-auto mb-1.5 opacity-50" />
               <p>{searchQuery ? 'No logs match your search' : 'No logs yet'}</p>
             </div>
           </div>
@@ -189,7 +212,7 @@ export function ConsoleLogViewer({ logs, isVisible, onClose, onClear }: ConsoleL
           filteredLogs.map(log => (
             <div
               key={log.id}
-              className={`flex items-start gap-2 p-2 rounded ${getLogColor(log.level)}`}
+              className={`flex items-start gap-1.5 p-1.5 rounded ${getLogColor(log.level)}`}
             >
               {getLogIcon(log.level)}
               <div className="flex-1 min-w-0">
@@ -218,7 +241,7 @@ export function ConsoleLogViewer({ logs, isVisible, onClose, onClear }: ConsoleL
             setAutoScroll(true);
             logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
           }}
-          className="absolute bottom-4 right-4 px-3 py-1.5 bg-surface-elevated text-foreground text-xs rounded shadow-lg hover:bg-interactive-hover transition-colors"
+          className="absolute bottom-2 right-2 px-2 py-1 bg-surface-elevated text-foreground text-[10px] rounded shadow-lg hover:bg-interactive-hover transition-colors"
         >
           Scroll to bottom
         </button>
