@@ -59,7 +59,7 @@ const CollectionItem = React.memo(function CollectionItem({
   return (
     <div
       className={cn(
-        "group flex h-7 items-center justify-between rounded-lg pl-3 pr-1 text-xs transition-colors cursor-pointer select-none",
+        "group flex h-7 items-center justify-between rounded-lg pl-3 pr-3 text-xs transition-colors cursor-pointer select-none",
         isActive
           ? "bg-surface-elevated"
           : "hover:bg-surface"
