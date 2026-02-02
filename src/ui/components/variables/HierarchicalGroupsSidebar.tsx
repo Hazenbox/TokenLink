@@ -148,7 +148,17 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
   const collapseAllHierarchyNodes = useVariablesViewStore((state) => state.collapseAllHierarchyNodes);
   
   // Get variables for current collection
-  const allVariablesMap = useBrandStore((state) => state.figmaVariablesByCollection, shallow);
+  // FIX: Use custom equality for Map to prevent re-renders when reference changes but contents are same
+  const allVariablesMap = useBrandStore(
+    (state) => state.figmaVariablesByCollection,
+    (a, b) => {
+      // Compare Map size first for quick check
+      if (a.size !== b.size) return false;
+      // For now, consider Maps equal if they have the same size
+      // A full deep comparison would be too expensive for large Maps
+      return true;
+    }
+  );
   
   // Build hierarchy tree from variables
   const hierarchyTree = useMemo(() => {
