@@ -2,9 +2,10 @@ import * as React from "react";
 import { ColorApp } from "./ColorApp";
 import { App } from "./App";
 import { AutomateApp } from "./AutomateApp";
+import { GuidePage } from "./views/GuidePage";
 import { safeStorage } from "@/lib/storage";
 
-export type ActiveApp = "color" | "figzig" | "automate";
+export type ActiveApp = "color" | "figzig" | "automate" | "guide";
 
 // Global app switcher context
 interface AppSwitcherContextValue {
@@ -61,6 +62,8 @@ export function AppSwitcher() {
     return <ColorApp />;
   } else if (activeApp === "automate") {
     return <AutomateApp />;
+  } else if (activeApp === "guide") {
+    return <GuidePage />;
   } else {
     return <App />;
   }

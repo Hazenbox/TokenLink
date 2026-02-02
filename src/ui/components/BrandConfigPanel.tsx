@@ -91,7 +91,7 @@ export function BrandConfigPanel() {
         
         {/* Collapse Button */}
         <div className="pl-4 pr-4 py-2 border-b border-border/40 flex items-center justify-between flex-shrink-0">
-          <h2 className="text-sm font-semibold text-foreground">
+          <h2 className="text-[11px] font-semibold text-foreground-secondary">
             {activeBrandId === '__all__' ? 'All Brands' : 'Configuration'}
           </h2>
           <button

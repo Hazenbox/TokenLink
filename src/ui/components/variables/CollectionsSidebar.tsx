@@ -4,14 +4,17 @@
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, MoreHorizontal } from 'lucide-react';
 import { shallow } from 'zustand/shallow';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { IconButton } from '../common/IconButton';
 import { useBrandStore } from '@/store/brand-store';
 import { useVariablesViewStore } from '@/store/variables-view-store';
 import { FigmaCollection } from '@/models/brand';
 import { EmptyState } from '../EmptyState';
-import { SidebarItem } from '../common/SidebarItem';
+import { cn } from '@colors/utils';
 
 interface CollectionsSidebarProps {
   onCreateCollection?: () => void;
@@ -20,21 +23,100 @@ interface CollectionsSidebarProps {
 interface CollectionItemProps {
   collection: FigmaCollection;
   isActive: boolean;
+  isEditing: boolean;
+  editingName: string;
   onClick: () => void;
+  onStartEdit: () => void;
+  onEditChange: (name: string) => void;
+  onEditSave: () => void;
+  onEditCancel: () => void;
 }
 
-function CollectionItem({ collection, isActive, onClick }: CollectionItemProps) {
+function CollectionItem({ 
+  collection, 
+  isActive, 
+  isEditing,
+  editingName,
+  onClick, 
+  onStartEdit,
+  onEditChange,
+  onEditSave,
+  onEditCancel
+}: CollectionItemProps) {
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  
   return (
-    <SidebarItem isActive={isActive} onClick={onClick}>
-      <div className="flex-1 min-w-0">
-        <div className={`font-normal truncate ${isActive ? 'text-foreground' : 'text-foreground-secondary'}`}>
-          {collection.name}
-        </div>
+    <div
+      className={cn(
+        "group flex h-7 items-center justify-between rounded-lg pl-3 pr-1 text-xs transition-colors cursor-pointer select-none",
+        isActive
+          ? "bg-surface-elevated"
+          : "hover:bg-surface"
+      )}
+      onClick={onClick}
+    >
+      <div className="flex items-center justify-between gap-2 w-full">
+        {isEditing ? (
+          <Input
+            value={editingName}
+            onChange={(e) => onEditChange(e.target.value)}
+            onBlur={onEditSave}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") onEditSave();
+              if (e.key === "Escape") onEditCancel();
+            }}
+            className="h-5 px-1 py-0 text-xs rounded-lg flex-1"
+            autoFocus
+            onClick={(e) => e.stopPropagation()}
+          />
+        ) : (
+          <>
+            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+              <span className={`truncate text-xs font-normal ${isActive ? 'text-foreground' : 'text-foreground-secondary'}`}>
+                {collection.name}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] text-foreground-tertiary">
+                {collection.variableCount}
+              </span>
+              <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+                <PopoverTrigger asChild>
+                  <IconButton
+                    icon={MoreHorizontal}
+                    variant="ghost"
+                    size="sm"
+                    aria-label="More options"
+                    className={cn(
+                      "h-5 w-5 transition-opacity",
+                      menuOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                    )}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMenuOpen(true);
+                    }}
+                  />
+                </PopoverTrigger>
+                <PopoverContent className="w-32 p-1" align="end" side="right">
+                  <div className="flex flex-col">
+                    <button
+                      className="rounded px-2 py-1.5 text-xs hover:bg-accent text-left cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuOpen(false);
+                        onStartEdit();
+                      }}
+                    >
+                      Rename
+                    </button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+          </>
+        )}
       </div>
-      <div className="ml-2 text-[10px] text-foreground-tertiary">
-        {collection.variableCount}
-      </div>
-    </SidebarItem>
+    </div>
   );
 }
 
@@ -44,9 +126,15 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
   const activeCollectionId = useVariablesViewStore((state) => state.activeCollectionId);
   const setActiveCollection = useVariablesViewStore((state) => state.setActiveCollection);
   const collectionsCollapsed = useVariablesViewStore((state) => state.collectionsCollapsed);
+  const updateCollection = useBrandStore((state) => state.updateCollection);
+  const activeBrandId = useBrandStore((state) => state.activeBrandId);
   
   // Initialization guard to prevent infinite loop
   const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Editing state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
   
   // Auto-select first collection if none selected (only once on mount)
   useEffect(() => {
@@ -60,6 +148,20 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
   const handleCollectionClick = useCallback((id: string) => {
     setActiveCollection(id);
   }, [setActiveCollection]);
+  
+  // Handle rename
+  const handleRename = (collectionId: string) => {
+    if (editingName.trim() && activeBrandId) {
+      updateCollection(activeBrandId, collectionId, { name: editingName.trim() });
+    }
+    setEditingId(null);
+    setEditingName("");
+  };
+  
+  const startEditing = (id: string, name: string) => {
+    setEditingId(id);
+    setEditingName(name);
+  };
   
   // Handle cleanup of ml_ prefixed collections
   const handleCleanupMlCollections = useCallback(() => {
@@ -115,7 +217,16 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
                 key={collection.id}
                 collection={collection}
                 isActive={activeCollectionId === collection.id}
+                isEditing={editingId === collection.id}
+                editingName={editingName}
                 onClick={() => handleCollectionClick(collection.id)}
+                onStartEdit={() => startEditing(collection.id, collection.name)}
+                onEditChange={setEditingName}
+                onEditSave={() => handleRename(collection.id)}
+                onEditCancel={() => {
+                  setEditingId(null);
+                  setEditingName("");
+                }}
               />
             ))}
           </div>

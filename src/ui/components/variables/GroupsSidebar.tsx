@@ -4,12 +4,15 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { ChevronsUpDown, ChevronRight, ChevronDown, Search, X } from 'lucide-react';
+import { ChevronsUpDown, ChevronRight, ChevronDown, Search, X, MoreHorizontal } from 'lucide-react';
 import { shallow } from 'zustand/shallow';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { IconButton } from '../common/IconButton';
 import { useBrandStore } from '@/store/brand-store';
 import { useVariablesViewStore } from '@/store/variables-view-store';
+import { cn } from '@colors/utils';
 
 interface GroupsSidebarProps {
   onCreateGroup?: () => void;
@@ -31,6 +34,10 @@ export function GroupsSidebar({ onCreateGroup }: GroupsSidebarProps) {
   
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Editing state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
   
   // Refresh groups when collection changes
   useEffect(() => {
@@ -72,6 +79,25 @@ export function GroupsSidebar({ onCreateGroup }: GroupsSidebarProps) {
   
   // Calculate total count for "All" option
   const totalCount = groups.reduce((sum, group) => sum + (group.variableCount || 0), 0);
+  
+  // Handle rename - Note: Groups are derived from variable names
+  // This would require renaming all variables in the group or storing display name overrides
+  const handleRename = (groupId: string) => {
+    if (editingName.trim()) {
+      // TODO: Implement group rename functionality
+      // This would require either:
+      // 1. Renaming all variables in the group (complex, affects Figma)
+      // 2. Storing display name overrides (simpler, UI-only)
+      console.log(`Renaming group ${groupId} to ${editingName}`);
+    }
+    setEditingId(null);
+    setEditingName("");
+  };
+  
+  const startEditing = (id: string, name: string) => {
+    setEditingId(id);
+    setEditingName(name);
+  };
   
   // Filter groups and steps by search query
   const filteredGroupsWithSteps = useMemo(() => {
@@ -173,45 +199,107 @@ export function GroupsSidebar({ onCreateGroup }: GroupsSidebarProps) {
               const isActiveGroup = activeGroupId === group.id;
               const hasSteps = group.steps && group.steps.length > 0;
               
+              const isEditing = editingId === group.id;
+              
               return (
                 <div key={group.id}>
                   {/* Group Header - Clickable */}
-                  <button
-                    onClick={() => {
-                      if (hasSteps) {
-                        toggleGroupExpanded(group.id);
-                      }
-                      setActiveGroup(group.id);
-                      setSelectedStep('all');
-                    }}
-                    className={`
-                      w-full px-3 py-2 flex items-center gap-2
-                      text-left text-[11px] transition-colors
-                      hover:bg-surface/50
-                      ${isActiveGroup && selectedStep === 'all' ? 'bg-surface-selected border-l-2 border-l-border-strong' : ''}
-                    `}
-                  >
-                    {/* Chevron icon (only if has steps) */}
-                    {hasSteps && (
-                      isExpanded ? (
-                        <ChevronDown className="w-3 h-3 text-foreground-tertiary flex-shrink-0" />
-                      ) : (
-                        <ChevronRight className="w-3 h-3 text-foreground-tertiary flex-shrink-0" />
-                      )
+                  <div
+                    className={cn(
+                      "group w-full px-3 py-2 flex items-center gap-2 text-left text-[11px] transition-colors hover:bg-surface/50",
+                      isActiveGroup && selectedStep === 'all' ? 'bg-surface-selected border-l-2 border-l-border-strong' : ''
                     )}
-                    
-                    {/* Group name */}
-                    <div className="flex-1 min-w-0">
-                      <div className={`font-medium truncate ${isActiveGroup ? 'text-foreground' : 'text-foreground-secondary'}`}>
-                        {group.name}
-                      </div>
-                    </div>
-                    
-                    {/* Count */}
-                    <div className="ml-2 text-[10px] text-foreground-tertiary">
-                      {group.variableCount || 0}
-                    </div>
-                  </button>
+                  >
+                    {isEditing ? (
+                      <>
+                        {hasSteps && (
+                          <div className="w-3 h-3 flex-shrink-0" />
+                        )}
+                        <Input
+                          value={editingName}
+                          onChange={(e) => setEditingName(e.target.value)}
+                          onBlur={() => handleRename(group.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleRename(group.id);
+                            if (e.key === "Escape") {
+                              setEditingId(null);
+                              setEditingName("");
+                            }
+                          }}
+                          className="h-5 px-1 py-0 text-xs rounded-lg flex-1"
+                          autoFocus
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => {
+                            if (hasSteps) {
+                              toggleGroupExpanded(group.id);
+                            }
+                            setActiveGroup(group.id);
+                            setSelectedStep('all');
+                          }}
+                          className="flex items-center gap-2 flex-1 min-w-0"
+                        >
+                          {/* Chevron icon (only if has steps) */}
+                          {hasSteps && (
+                            isExpanded ? (
+                              <ChevronDown className="w-3 h-3 text-foreground-tertiary flex-shrink-0" />
+                            ) : (
+                              <ChevronRight className="w-3 h-3 text-foreground-tertiary flex-shrink-0" />
+                            )
+                          )}
+                          
+                          {/* Group name */}
+                          <div className="flex-1 min-w-0">
+                            <div className={`font-medium truncate ${isActiveGroup ? 'text-foreground' : 'text-foreground-secondary'}`}>
+                              {group.name}
+                            </div>
+                          </div>
+                        </button>
+                        
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          {/* Count */}
+                          <div className="text-[10px] text-foreground-tertiary">
+                            {group.variableCount || 0}
+                          </div>
+                          
+                          {/* More menu */}
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <IconButton
+                                icon={MoreHorizontal}
+                                variant="ghost"
+                                size="sm"
+                                aria-label="More options"
+                                className={cn(
+                                  "h-5 w-5 transition-opacity opacity-0 group-hover:opacity-100"
+                                )}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                }}
+                              />
+                            </PopoverTrigger>
+                            <PopoverContent className="w-32 p-1" align="end" side="right">
+                              <div className="flex flex-col">
+                                <button
+                                  className="rounded px-2 py-1.5 text-xs hover:bg-accent text-left cursor-pointer"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    startEditing(group.id, group.name);
+                                  }}
+                                >
+                                  Rename
+                                </button>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                      </>
+                    )}
+                  </div>
                   
                   {/* Steps List (when expanded) */}
                   {isExpanded && hasSteps && (

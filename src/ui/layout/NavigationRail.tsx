@@ -2,11 +2,9 @@ import * as React from "react";
 import { Palette, Network, Sparkles, HelpCircle } from "lucide-react";
 import { useAppSwitcher } from "@/ui/AppSwitcher";
 import { NavRailItem } from "./NavRailItem";
-import { HowItWorksPanel } from "../components/HowItWorksPanel";
 
 export function NavigationRail() {
   const { activeApp, switchToApp } = useAppSwitcher();
-  const [showGuide, setShowGuide] = React.useState(false);
 
   const navItems = [
     {
@@ -32,7 +30,7 @@ export function NavigationRail() {
   return (
     <>
       <nav
-        className="w-18 bg-background border-r border-border-subtle flex flex-col items-center py-5 gap-2"
+        className="w-20 bg-background border-r border-border-subtle flex flex-col items-center py-5 gap-2"
         role="navigation"
         aria-label="Main navigation"
       >
@@ -65,14 +63,11 @@ export function NavigationRail() {
         <NavRailItem
           icon={HelpCircle}
           label="Guide"
-          isActive={showGuide}
+          isActive={activeApp === "guide"}
           ariaLabel="How it works guide"
-          onClick={() => setShowGuide(!showGuide)}
+          onClick={() => switchToApp("guide")}
         />
       </nav>
-      
-      {/* How It Works Panel */}
-      <HowItWorksPanel isOpen={showGuide} onClose={() => setShowGuide(false)} />
     </>
   );
 }
