@@ -15,8 +15,10 @@ import { BrandGenerator } from '@/lib/brand-generator';
 import { EmptyState } from './EmptyState';
 
 export function BrandConfigPanel() {
-  const activeBrand = useBrandStore((state) => state.getActiveBrand());
+  // Subscribe to primitive data only - no function calls
   const activeBrandId = useBrandStore((state) => state.activeBrandId);
+  const brandsById = useBrandStore((state) => state.brandsById);
+  const brands = useBrandStore((state) => state.brands);
   const updateBrandPalette = useBrandStore((state) => state.updateBrandPalette);
   
   const configPanelCollapsed = useVariablesViewStore((state) => state.configPanelCollapsed);
@@ -25,6 +27,13 @@ export function BrandConfigPanel() {
   const setConfigPanelWidth = useVariablesViewStore((state) => state.setConfigPanelWidth);
   
   const [isResizing, setIsResizing] = useState(false);
+
+  // Compute activeBrand with useMemo to prevent infinite loops
+  const activeBrand = useMemo(() => {
+    if (activeBrandId === '__all__') return null;
+    if (!brandsById) return brands.find((b) => b.id === activeBrandId) || null;
+    return brandsById.get(activeBrandId || '') || null;
+  }, [activeBrandId, brandsById, brands]);
 
   // Move useMemo BEFORE any early returns to comply with Rules of Hooks
   const validation = useMemo(

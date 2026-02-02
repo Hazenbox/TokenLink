@@ -22,8 +22,10 @@ import { EmptyState } from './EmptyState';
 const VIRTUALIZATION_THRESHOLD = 100;
 
 export function BrandVariableTable() {
-  const activeBrand = useBrandStore((state) => state.getActiveBrand());
+  // Subscribe to primitive data only - no function calls
   const activeBrandId = useBrandStore((state) => state.activeBrandId);
+  const brandsById = useBrandStore((state) => state.brandsById);
+  const brands = useBrandStore((state) => state.brands);
   const activeCollectionId = useVariablesViewStore((state) => state.activeCollectionId);
   const hierarchyPath = useVariablesViewStore((state) => state.hierarchyPath);
   const searchQuery = useVariablesViewStore((state) => state.searchQuery);
@@ -32,6 +34,13 @@ export function BrandVariableTable() {
   // Simple state selectors - no function calls
   const collections = useBrandStore((state) => state.figmaCollections, shallow);
   const allVariablesMap = useBrandStore((state) => state.figmaVariablesByCollection, shallow);
+  
+  // Compute activeBrand with useMemo to prevent infinite loops
+  const activeBrand = useMemo(() => {
+    if (activeBrandId === '__all__') return null;
+    if (!brandsById) return brands.find((b) => b.id === activeBrandId) || null;
+    return brandsById.get(activeBrandId || '') || null;
+  }, [activeBrandId, brandsById, brands]);
   
   // Create stable dependency for hierarchyPath to avoid infinite re-renders
   const hierarchyPathKey = useMemo(() => hierarchyPath.join('/'), [hierarchyPath]);

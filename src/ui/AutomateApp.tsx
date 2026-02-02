@@ -33,24 +33,39 @@ export function AutomateApp() {
   // Console logs
   const { logs, isVisible, clearLogs, toggleVisibility, closeConsole } = useConsoleLogs();
   
-  // Optimized: Combine store subscriptions with shallow comparison to prevent unnecessary re-renders
+  // Optimized: Subscribe to primitive data only - no function calls to prevent infinite re-renders
   const { 
-    activeBrand,
-    activeBrandId, 
+    activeBrandId,
+    brandsById,
     brands, 
     syncBrandWithLayers, 
     syncAllBrands, 
     syncStatus,
-    canSync 
+    syncAttempts
   } = useBrandStore((state) => ({
-    activeBrand: state.getActiveBrand(),
     activeBrandId: state.activeBrandId,
+    brandsById: state.brandsById,
     brands: state.brands,
     syncBrandWithLayers: state.syncBrandWithLayers,
     syncAllBrands: state.syncAllBrands,
     syncStatus: state.syncStatus,
-    canSync: state.canSync(),
+    syncAttempts: state.syncAttempts,
   }), shallow);
+  
+  // Compute derived values with useMemo to prevent infinite loops
+  const activeBrand = useMemo(() => {
+    if (activeBrandId === '__all__') return null;
+    if (!brandsById) return brands.find((b) => b.id === activeBrandId) || null;
+    return brandsById.get(activeBrandId || '') || null;
+  }, [activeBrandId, brandsById, brands]);
+  
+  const canSync = useMemo(() => {
+    const oneMinuteAgo = Date.now() - 60000;
+    const recentAttempts = syncAttempts.filter(
+      (a) => a.timestamp > oneMinuteAgo
+    );
+    return recentAttempts.length < 5;
+  }, [syncAttempts]);
   
   // Import/Export modals state
   const [showExportModal, setShowExportModal] = useState(false);

@@ -20,21 +20,38 @@ import {
 } from 'lucide-react';
 
 export function SyncPanel() {
-  const activeBrand = useBrandStore((state) => state.getActiveBrand());
+  // Subscribe to primitive data only - no function calls
   const activeBrandId = useBrandStore((state) => state.activeBrandId);
+  const brandsById = useBrandStore((state) => state.brandsById);
   const brands = useBrandStore((state) => state.brands);
   const syncBrand = useBrandStore((state) => state.syncBrand);
   const syncAllBrands = useBrandStore((state) => state.syncAllBrands);
   const syncStatus = useBrandStore((state) => state.syncStatus);
-  const canSync = useBrandStore((state) => state.canSync());
-  const canUndo = useBrandStore((state) => state.canUndo());
-  const canRedo = useBrandStore((state) => state.canRedo());
+  const syncAttempts = useBrandStore((state) => state.syncAttempts);
+  const historyIndex = useBrandStore((state) => state.historyIndex);
+  const history = useBrandStore((state) => state.history);
   const undo = useBrandStore((state) => state.undo);
   const redo = useBrandStore((state) => state.redo);
   const exportBrands = useBrandStore((state) => state.exportBrands);
   const importBrands = useBrandStore((state) => state.importBrands);
 
   const [showPreview, setShowPreview] = useState(false);
+
+  // Compute derived values with useMemo to prevent infinite loops
+  const activeBrand = useMemo(() => {
+    if (activeBrandId === '__all__') return null;
+    if (!brandsById) return brands.find((b) => b.id === activeBrandId) || null;
+    return brandsById.get(activeBrandId || '') || null;
+  }, [activeBrandId, brandsById, brands]);
+
+  const canSync = useMemo(() => {
+    const oneMinuteAgo = Date.now() - 60000;
+    const recentAttempts = syncAttempts.filter((a) => a.timestamp > oneMinuteAgo);
+    return recentAttempts.length < 5;
+  }, [syncAttempts]);
+
+  const canUndo = useMemo(() => historyIndex > 0, [historyIndex]);
+  const canRedo = useMemo(() => historyIndex < history.length - 1, [historyIndex, history.length]);
 
   const handleSync = async () => {
     // Check if syncing all brands

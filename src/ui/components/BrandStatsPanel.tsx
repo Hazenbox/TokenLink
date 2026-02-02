@@ -3,14 +3,24 @@
  * Displays statistics and metadata about the generated brand
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useBrandStore } from '@/store/brand-store';
 import { BrandGenerator } from '@/lib/brand-generator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { BarChart3, Palette, Package, AlertCircle } from 'lucide-react';
 
 export function BrandStatsPanel() {
-  const activeBrand = useBrandStore((state) => state.getActiveBrand());
+  // Subscribe to primitive data only - no function calls
+  const activeBrandId = useBrandStore((state) => state.activeBrandId);
+  const brandsById = useBrandStore((state) => state.brandsById);
+  const brands = useBrandStore((state) => state.brands);
+
+  // Compute activeBrand with useMemo to prevent infinite loops
+  const activeBrand = useMemo(() => {
+    if (activeBrandId === '__all__') return null;
+    if (!brandsById) return brands.find((b) => b.id === activeBrandId) || null;
+    return brandsById.get(activeBrandId || '') || null;
+  }, [activeBrandId, brandsById, brands]);
 
   if (!activeBrand) {
     return (
