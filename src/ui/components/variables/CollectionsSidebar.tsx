@@ -181,6 +181,11 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
     setEditingName("");
   }, []);
   
+  // Wrap setEditingName in useCallback for stable reference
+  const handleEditChange = useCallback((name: string) => {
+    setEditingName(name);
+  }, []);
+  
   // Handle cleanup of ml_ prefixed collections
   const handleCleanupMlCollections = useCallback(() => {
     const mlCollections = collections.filter(c => c.name.startsWith('ml_'));
@@ -269,7 +274,7 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
                 editingName={editingName}
                 onClick={handleClick}
                 onStartEdit={handleStartEditCollection}
-                onEditChange={setEditingName}
+                onEditChange={handleEditChange}
                 onEditSave={handleSaveEditCollection}
                 onEditCancel={handleCancelEditCollection}
               />

@@ -206,6 +206,14 @@ const BrandItem = React.memo(function BrandItem({
   );
 });
 
+// Stable constant for "All" brand to prevent re-renders
+const ALL_BRAND_ITEM = {
+  id: '__all__',
+  name: 'All',
+  updatedAt: 0, // Stable timestamp
+  syncedAt: undefined
+};
+
 export function BrandSidebar() {
   // Optimized: Use shallow comparison to prevent unnecessary re-renders
   const {
@@ -272,6 +280,11 @@ export function BrandSidebar() {
   const handleDuplicateBrand = React.useCallback((brandId: string) => {
     duplicateBrand(brandId);
   }, [duplicateBrand]);
+  
+  // Wrap setEditingName in useCallback for stable reference
+  const handleEditChange = React.useCallback((name: string) => {
+    setEditingName(name);
+  }, []);
 
   // Memoize sorted brands to avoid re-sorting on every render
   const sortedBrands = React.useMemo(() => 
@@ -369,18 +382,13 @@ export function BrandSidebar() {
                 <>
                   <BrandItem
                     key="__all__"
-                    brand={{ 
-                      id: '__all__', 
-                      name: 'All', 
-                      updatedAt: Date.now(),
-                      syncedAt: undefined
-                    }}
+                    brand={ALL_BRAND_ITEM}
                     isActive={activeBrandId === '__all__'}
                     isEditing={false}
                     editingName=""
                     onSelect={handleSelectBrand}
                     onStartEdit={handleStartEdit}
-                    onEditChange={setEditingName}
+                    onEditChange={handleEditChange}
                     onEditSave={handleSaveEdit}
                     onEditCancel={handleCancelEdit}
                     onDelete={handleDeleteBrand}
@@ -400,7 +408,7 @@ export function BrandSidebar() {
                   editingName={editingName}
                   onSelect={handleSelectBrand}
                   onStartEdit={handleStartEdit}
-                  onEditChange={setEditingName}
+                  onEditChange={handleEditChange}
                   onEditSave={handleSaveEdit}
                   onEditCancel={handleCancelEdit}
                   onDelete={handleDeleteBrand}

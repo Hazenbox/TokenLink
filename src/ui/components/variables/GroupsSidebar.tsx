@@ -293,6 +293,11 @@ export function GroupsSidebar({ onCreateGroup }: GroupsSidebarProps) {
     setEditingName("");
   }, []);
   
+  // Wrap setEditingName in useCallback for stable reference
+  const handleEditChange = useCallback((name: string) => {
+    setEditingName(name);
+  }, []);
+  
   // Filter groups and steps by search query
   const filteredGroupsWithSteps = useMemo(() => {
     if (!searchQuery) return groupsWithSteps;
@@ -409,7 +414,7 @@ export function GroupsSidebar({ onCreateGroup }: GroupsSidebarProps) {
                   onStepClick={handleStepClick}
                   onStartEdit={handleStartEditGroup}
                   onRename={handleRename}
-                  onEditChange={setEditingName}
+                  onEditChange={handleEditChange}
                   onCancelEdit={handleCancelEdit}
                 />
               );
