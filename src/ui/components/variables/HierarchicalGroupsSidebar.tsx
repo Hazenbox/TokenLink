@@ -16,6 +16,112 @@ interface HierarchicalGroupsSidebarProps {
   onCreateGroup?: () => void;
 }
 
+// Memoized HierarchyNodeItem component to prevent inline arrow functions in map
+interface HierarchyNodeItemProps {
+  node: HierarchyNode;
+  hasChildren: boolean;
+  isSelected: boolean;
+  isAncestor: boolean;
+  isExpanded: boolean;
+  expandedHierarchyNodes: Set<string>;
+  onNodeClick: (node: HierarchyNode, hasChildren: boolean) => void;
+  onChevronClick: (fullPath: string, e: React.MouseEvent) => void;
+  isPathSelected: (path: string[]) => boolean;
+  isAncestorOfSelected: (path: string[]) => boolean;
+}
+
+const HierarchyNodeItem = React.memo(function HierarchyNodeItem({
+  node,
+  hasChildren,
+  isSelected,
+  isAncestor,
+  isExpanded,
+  expandedHierarchyNodes,
+  onNodeClick,
+  onChevronClick,
+  isPathSelected,
+  isAncestorOfSelected
+}: HierarchyNodeItemProps) {
+  const indentLevel = node.level;
+  const paddingLeft = 4 + (indentLevel * 6); // 4px base + 6px per level
+  
+  return (
+    <div style={{ paddingLeft: `${Math.max(0, paddingLeft - 4)}px` }}>
+      <SidebarItem
+        isActive={isSelected}
+        onClick={() => onNodeClick(node, hasChildren)}
+        className={isAncestor && !isSelected ? 'bg-surface/20' : ''}
+      >
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          {/* Chevron for expandable nodes */}
+          {hasChildren ? (
+            <div 
+              className="flex-shrink-0 w-3.5 h-3.5 flex items-center justify-center text-foreground-tertiary"
+              onClick={(e) => onChevronClick(node.fullPath, e)}
+            >
+              {isExpanded ? (
+                <ChevronDown className="w-3.5 h-3.5" />
+              ) : (
+                <ChevronRight className="w-3.5 h-3.5" />
+              )}
+            </div>
+          ) : (
+            <div className="w-3.5 h-3.5 flex-shrink-0" />
+          )}
+          
+          {/* Node name */}
+          <div className={`font-normal truncate ${isSelected ? 'text-foreground' : 'text-foreground-secondary'}`}>
+            {node.name}
+          </div>
+        </div>
+        
+        {/* Variable count badge */}
+        <div className="text-[10px] text-foreground-tertiary flex-shrink-0">
+          {node.variableCount}
+        </div>
+      </SidebarItem>
+      
+      {/* Children (if expanded) */}
+      {hasChildren && isExpanded && (
+        <div>
+          {Array.from(node.children.values())
+            .sort((a, b) => {
+              // Sort: numeric steps descending, then alphabetically
+              const aNum = parseInt(a.name);
+              const bNum = parseInt(b.name);
+              if (!isNaN(aNum) && !isNaN(bNum)) {
+                return bNum - aNum; // Descending for numbers (2500, 2400, 2300)
+              }
+              return a.name.localeCompare(b.name);
+            })
+            .map(child => {
+              const childHasChildren = child.children.size > 0;
+              const childIsExpanded = expandedHierarchyNodes.has(child.fullPath);
+              const childIsSelected = isPathSelected(child.path);
+              const childIsAncestor = isAncestorOfSelected(child.path);
+              
+              return (
+                <HierarchyNodeItem
+                  key={child.fullPath}
+                  node={child}
+                  hasChildren={childHasChildren}
+                  isSelected={childIsSelected}
+                  isAncestor={childIsAncestor}
+                  isExpanded={childIsExpanded}
+                  expandedHierarchyNodes={expandedHierarchyNodes}
+                  onNodeClick={onNodeClick}
+                  onChevronClick={onChevronClick}
+                  isPathSelected={isPathSelected}
+                  isAncestorOfSelected={isAncestorOfSelected}
+                />
+              );
+            })}
+        </div>
+      )}
+    </div>
+  );
+});
+
 export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsSidebarProps) {
   const activeCollectionId = useVariablesViewStore((state) => state.activeCollectionId);
   const hierarchyPath = useVariablesViewStore((state) => state.hierarchyPath);
@@ -67,72 +173,6 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
     toggleHierarchyNode(fullPath);
   }, [toggleHierarchyNode]);
   
-  // Render a single node
-  const renderNode = (node: HierarchyNode): React.ReactNode => {
-    const hasChildren = node.children.size > 0;
-    const isExpanded = expandedHierarchyNodes.has(node.fullPath);
-    const isSelected = isPathSelected(node.path);
-    const isAncestor = isAncestorOfSelected(node.path);
-    
-    const indentLevel = node.level;
-    const paddingLeft = 4 + (indentLevel * 6); // 4px base + 6px per level
-    
-    return (
-      <div key={node.fullPath} style={{ paddingLeft: `${Math.max(0, paddingLeft - 4)}px` }}>
-        <SidebarItem
-          isActive={isSelected}
-          onClick={() => handleNodeClick(node, hasChildren)}
-          className={isAncestor && !isSelected ? 'bg-surface/20' : ''}
-        >
-          <div className="flex items-center gap-1.5 flex-1 min-w-0">
-            {/* Chevron for expandable nodes */}
-            {hasChildren ? (
-              <div 
-                className="flex-shrink-0 w-3.5 h-3.5 flex items-center justify-center text-foreground-tertiary"
-                onClick={(e) => handleChevronClick(node.fullPath, e)}
-              >
-                {isExpanded ? (
-                  <ChevronDown className="w-3.5 h-3.5" />
-                ) : (
-                  <ChevronRight className="w-3.5 h-3.5" />
-                )}
-              </div>
-            ) : (
-              <div className="w-3.5 h-3.5 flex-shrink-0" />
-            )}
-            
-            {/* Node name */}
-            <div className={`font-normal truncate ${isSelected ? 'text-foreground' : 'text-foreground-secondary'}`}>
-              {node.name}
-            </div>
-          </div>
-          
-          {/* Variable count badge */}
-          <div className="text-[10px] text-foreground-tertiary flex-shrink-0">
-            {node.variableCount}
-          </div>
-        </SidebarItem>
-        
-        {/* Children (if expanded) */}
-        {hasChildren && isExpanded && (
-          <div>
-            {Array.from(node.children.values())
-              .sort((a, b) => {
-                // Sort: numeric steps descending, then alphabetically
-                const aNum = parseInt(a.name);
-                const bNum = parseInt(b.name);
-                if (!isNaN(aNum) && !isNaN(bNum)) {
-                  return bNum - aNum; // Descending for numbers (2500, 2400, 2300)
-                }
-                return a.name.localeCompare(b.name);
-              })
-              .map(child => renderNode(child))}
-          </div>
-        )}
-      </div>
-    );
-  };
-  
   return (
     <div className="h-full flex flex-col bg-background">
       {/* Header */}
@@ -179,7 +219,28 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
         <div className="px-2 pt-1 pb-2 space-y-0.5 min-w-max">
           {Array.from(hierarchyTree.values())
             .sort((a, b) => a.name.localeCompare(b.name))
-            .map(node => renderNode(node))}
+            .map(node => {
+              const hasChildren = node.children.size > 0;
+              const isExpanded = expandedHierarchyNodes.has(node.fullPath);
+              const isSelected = isPathSelected(node.path);
+              const isAncestor = isAncestorOfSelected(node.path);
+              
+              return (
+                <HierarchyNodeItem
+                  key={node.fullPath}
+                  node={node}
+                  hasChildren={hasChildren}
+                  isSelected={isSelected}
+                  isAncestor={isAncestor}
+                  isExpanded={isExpanded}
+                  expandedHierarchyNodes={expandedHierarchyNodes}
+                  onNodeClick={handleNodeClick}
+                  onChevronClick={handleChevronClick}
+                  isPathSelected={isPathSelected}
+                  isAncestorOfSelected={isAncestorOfSelected}
+                />
+              );
+            })}
         </div>
       </ScrollArea>
     </div>
