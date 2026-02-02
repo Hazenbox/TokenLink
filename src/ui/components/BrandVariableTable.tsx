@@ -342,11 +342,12 @@ export function BrandVariableTable() {
           </div>
         ) : shouldVirtualize ? (
           // Virtualized rendering for large lists (> 100 variables)
+          // Uses table-layout: fixed to ensure header and body columns align properly
           <div style={{ position: 'relative', height: `${rowVirtualizer.getTotalSize()}px` }}>
-            <table className="w-full border-collapse text-xs">
+            <table className="w-full border-collapse text-xs" style={{ tableLayout: 'fixed' }}>
               <thead className="sticky top-0 z-30 bg-background">
                 <tr className="border-b border-border/40">
-                  <th className="sticky left-0 z-40 bg-background text-left px-3 py-2 border-r border-border/20">
+                  <th className="sticky left-0 z-40 bg-background text-left px-3 py-2 border-r border-border/20 w-[180px]">
                     <span className="text-[11px] font-medium text-foreground-secondary">
                       Name
                     </span>
@@ -354,7 +355,7 @@ export function BrandVariableTable() {
                   {modes.map((mode) => (
                     <th 
                       key={mode.modeId} 
-                      className="text-left px-3 py-2 min-w-[200px] border-r border-border/40 whitespace-nowrap"
+                      className="text-left px-3 py-2 w-[220px] border-r border-border/40 whitespace-nowrap"
                     >
                       <span className="text-[11px] font-medium text-foreground-secondary">
                         {mode.name}
@@ -379,7 +380,7 @@ export function BrandVariableTable() {
                           transform: `translateY(${virtualRow.start}px)`,
                         }}
                       >
-                        <td className="sticky left-0 z-20 bg-surface px-3 py-1.5 border-b border-border/50 border-r border-border/20">
+                        <td className="sticky left-0 z-20 bg-surface px-3 py-1.5 border-b border-border/50 border-r border-border/20 w-[180px]">
                           <div className="flex items-center gap-2">
                             <span className="text-[10px] font-semibold text-foreground uppercase tracking-wide whitespace-nowrap">
                               {row.groupName}
@@ -392,7 +393,7 @@ export function BrandVariableTable() {
                         {modes.map((mode) => (
                           <td 
                             key={mode.modeId}
-                            className="bg-surface border-b border-border/50 border-r border-border/40"
+                            className="bg-surface border-b border-border/50 border-r border-border/40 w-[220px]"
                           />
                         ))}
                       </tr>
@@ -409,8 +410,8 @@ export function BrandVariableTable() {
                           transform: `translateY(${virtualRow.start}px)`,
                         }}
                       >
-                        <td className="sticky left-0 z-10 bg-background group-hover:bg-interactive-hover px-3 py-1.5 border-r border-border/40 transition-colors">
-                          <span className="text-[11px] text-foreground whitespace-nowrap truncate" title={variable.name}>
+                        <td className="sticky left-0 z-10 bg-background group-hover:bg-interactive-hover px-3 py-1.5 border-r border-border/40 transition-colors w-[180px]">
+                          <span className="text-[11px] text-foreground whitespace-nowrap truncate block" title={variable.name}>
                             {HierarchyParser.getLastSegment(variable.name)}
                           </span>
                         </td>
@@ -422,7 +423,7 @@ export function BrandVariableTable() {
                           return (
                             <td 
                               key={mode.modeId} 
-                              className="border-r border-border/40 align-middle min-w-[200px]"
+                              className="border-r border-border/40 align-middle w-[220px]"
                             >
                               {value ? (
                                 <ModeCell value={value} color={resolvedColor} />
