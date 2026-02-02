@@ -153,39 +153,7 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
   const editingNameRef = useRef(editingName);
   editingNameRef.current = editingName;
   
-  // Auto-select first collection if none selected (MUST be before any conditional returns)
-  // Uses ref to ensure this only runs once and doesn't cause infinite loops
-  // FIX: Removed activeCollectionId and setActiveCollection from dependencies to prevent
-  // infinite loop (React error #185). The effect was triggering repeatedly because it
-  // depends on activeCollectionId but also updates it via setActiveCollection.
-  // Zustand actions are stable references, so setActiveCollection doesn't need to be a dep.
-  useEffect(() => {
-    // Only auto-select if:
-    // 1. Not already initialized
-    // 2. Collections exist
-    // 3. No collection is currently selected (read from store directly to avoid dep)
-    const currentActiveCollection = useVariablesViewStore.getState().activeCollectionId;
-    if (!isInitializedRef.current && collections.length > 0 && !currentActiveCollection) {
-      isInitializedRef.current = true;
-      useVariablesViewStore.getState().setActiveCollection(collections[0].id);
-    }
-    // Mark as initialized even if conditions weren't met, to prevent future runs
-    if (collections.length > 0) {
-      isInitializedRef.current = true;
-    }
-  }, [collections.length]);
-  
-  // Defensive check: prevent rendering with undefined/empty collections during loading
-  // (This is now AFTER the useEffect to comply with React's rules of hooks)
-  if (!collections || (collections.length === 0 && isLoading)) {
-    return (
-      <div className="flex flex-col h-full p-4">
-        <div style={LOADING_STATE_STYLE}>
-          {isLoading ? 'Loading collections...' : 'No collections yet'}
-        </div>
-      </div>
-    );
-  }
+  // ALL HOOKS MUST BE BEFORE ANY CONDITIONAL RETURNS (React rules of hooks)
   
   // Create stable callbacks to prevent new function references on every render
   const handleClick = useCallback((collectionId: string) => {
@@ -230,6 +198,36 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
       }, '*');
     }
   }, [collections]);
+  
+  // Auto-select first collection if none selected
+  // Uses ref to ensure this only runs once and doesn't cause infinite loops
+  useEffect(() => {
+    // Only auto-select if:
+    // 1. Not already initialized
+    // 2. Collections exist
+    // 3. No collection is currently selected (read from store directly to avoid dep)
+    const currentActiveCollection = useVariablesViewStore.getState().activeCollectionId;
+    if (!isInitializedRef.current && collections.length > 0 && !currentActiveCollection) {
+      isInitializedRef.current = true;
+      useVariablesViewStore.getState().setActiveCollection(collections[0].id);
+    }
+    // Mark as initialized even if conditions weren't met, to prevent future runs
+    if (collections.length > 0) {
+      isInitializedRef.current = true;
+    }
+  }, [collections.length]);
+  
+  // Defensive check: prevent rendering with undefined/empty collections during loading
+  // NOW AFTER ALL HOOKS to comply with React's rules of hooks
+  if (!collections || (collections.length === 0 && isLoading)) {
+    return (
+      <div className="flex flex-col h-full p-4">
+        <div style={LOADING_STATE_STYLE}>
+          {isLoading ? 'Loading collections...' : 'No collections yet'}
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="h-full flex flex-col bg-background">

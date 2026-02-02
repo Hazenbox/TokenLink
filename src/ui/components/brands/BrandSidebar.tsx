@@ -237,38 +237,8 @@ export function BrandSidebar() {
   const editingNameRef = React.useRef(editingName);
   editingNameRef.current = editingName;
 
-  // Defensive check: prevent rendering with undefined/null brands during loading
-  if (!brands) {
-    return (
-      <div className="flex flex-col h-full">
-        <div style={LOADING_STATE_STYLE}>
-          {isLoading ? 'Loading brands...' : 'No brands available'}
-        </div>
-      </div>
-    );
-  }
-
-  const handleCreate = () => {
-    if (newBrandName.trim()) {
-      createBrand(newBrandName.trim());
-      setNewBrandName("");
-      setDialogOpen(false);
-    }
-  };
-
-  const handleRename = (id: string) => {
-    if (editingName.trim()) {
-      renameBrand(id, editingName.trim());
-    }
-    setEditingId(null);
-    setEditingName("");
-  };
-
-  const startEditing = (id: string, name: string) => {
-    setEditingId(id);
-    setEditingName(name);
-  };
-
+  // ALL HOOKS MUST BE BEFORE ANY CONDITIONAL RETURNS (React rules of hooks)
+  
   // Create stable callbacks to prevent new function references on every render
   // This fixes infinite render loop by ensuring memoized BrandItem doesn't re-render unnecessarily
   const handleSelectBrand = React.useCallback((brandId: string) => {
@@ -276,7 +246,8 @@ export function BrandSidebar() {
   }, [setActiveBrand]);
   
   const handleStartEdit = React.useCallback((brandId: string, brandName: string) => {
-    startEditing(brandId, brandName);
+    setEditingId(brandId);
+    setEditingName(brandName);
   }, []);
   
   // Fix: Read editingName from ref inside callback to avoid dependency on frequently changing state
@@ -304,9 +275,37 @@ export function BrandSidebar() {
 
   // Memoize sorted brands to avoid re-sorting on every render
   const sortedBrands = React.useMemo(() => 
-    [...brands].sort((a, b) => a.name.localeCompare(b.name)),
+    brands ? [...brands].sort((a, b) => a.name.localeCompare(b.name)) : [],
     [brands]
   );
+
+  // Defensive check: prevent rendering with undefined/null brands during loading
+  // NOW AFTER ALL HOOKS to comply with React's rules of hooks
+  if (!brands) {
+    return (
+      <div className="flex flex-col h-full">
+        <div style={LOADING_STATE_STYLE}>
+          {isLoading ? 'Loading brands...' : 'No brands available'}
+        </div>
+      </div>
+    );
+  }
+
+  const handleCreate = () => {
+    if (newBrandName.trim()) {
+      createBrand(newBrandName.trim());
+      setNewBrandName("");
+      setDialogOpen(false);
+    }
+  };
+
+  const handleRename = (id: string) => {
+    if (editingName.trim()) {
+      renameBrand(id, editingName.trim());
+    }
+    setEditingId(null);
+    setEditingName("");
+  };
 
   return (
     <div className="flex h-full w-[220px] flex-col bg-background border-r border-border/40 relative z-10 flex-shrink-0">
