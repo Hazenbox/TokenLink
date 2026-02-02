@@ -80,40 +80,6 @@ export function findMatchingVariables(
   return matched;
 }
 
-/**
- * Checks if a variable matches the rule condition
- */
-function matchesCondition(
-  graph: VariableGraph,
-  variable: Variable,
-  rule: Rule
-): boolean {
-  const { when } = rule;
-
-  // Get variable's group and collection
-  const group = getGroupForVariable(graph, variable.id);
-  if (!group) return false;
-
-  const collection = getCollectionForGroup(graph, group.id);
-  if (!collection) return false;
-
-  // Check collection condition
-  if (when.collection) {
-    if (collection.name !== when.collection) {
-      return false;
-    }
-  }
-
-  // Check group condition
-  if (when.group) {
-    if (group.name !== when.group) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
 // ============================================================================
 // Target Variable Resolution
 // ============================================================================
