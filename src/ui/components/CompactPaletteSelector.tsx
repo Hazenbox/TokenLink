@@ -13,6 +13,47 @@ import { ChevronDown, Search } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@colors/utils';
 
+interface PaletteItemProps {
+  palette: any;
+  isSelected: boolean;
+  isFocused: boolean;
+  onSelect: (id: string, name: string) => void;
+}
+
+// Memoized palette item to prevent unnecessary re-renders
+const PaletteItem = React.memo(function PaletteItem({
+  palette,
+  isSelected,
+  isFocused,
+  onSelect
+}: PaletteItemProps) {
+  return (
+    <div
+      className={`
+        p-1.5 rounded-md cursor-pointer transition-colors
+        ${
+          isSelected
+            ? 'bg-surface-elevated'
+            : 'hover:bg-surface'
+        }
+        ${isFocused ? 'ring-2 ring-primary' : ''}
+      `}
+      onClick={() => onSelect(palette.id, palette.name)}
+    >
+      <div className="flex items-center gap-1.5">
+        <div
+          className="h-3.5 w-3.5 rounded border border-border/50 flex-shrink-0"
+          style={{ backgroundColor: (palette?.steps as any)?.[1200] || '#ccc' }}
+          title="Step 1200"
+        />
+        <span className="text-xs font-normal text-foreground">
+          {palette.name}
+        </span>
+      </div>
+    </div>
+  );
+});
+
 interface CompactPaletteSelectorProps {
   label: string;
   value: string; // palette ID
@@ -150,30 +191,13 @@ export function CompactPaletteSelector({
                 </div>
               ) : (
                 filteredPalettes.map((palette, index) => (
-                  <div
+                  <PaletteItem
                     key={palette.id}
-                    className={`
-                      p-1.5 rounded-md cursor-pointer transition-colors
-                      ${
-                        value === palette.id
-                          ? 'bg-surface-elevated'
-                          : 'hover:bg-surface'
-                      }
-                      ${focusedIndex === index ? 'ring-2 ring-primary' : ''}
-                    `}
-                    onClick={() => handleSelect(palette.id, palette.name)}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <div
-                        className="h-3.5 w-3.5 rounded border border-border/50 flex-shrink-0"
-                        style={{ backgroundColor: (palette?.steps as any)?.[1200] || '#ccc' }}
-                        title="Step 1200"
-                      />
-                      <span className="text-xs font-normal text-foreground">
-                        {palette.name}
-                      </span>
-                    </div>
-                  </div>
+                    palette={palette}
+                    isSelected={value === palette.id}
+                    isFocused={focusedIndex === index}
+                    onSelect={handleSelect}
+                  />
                 ))
               )}
             </div>
