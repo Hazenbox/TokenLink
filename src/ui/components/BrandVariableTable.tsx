@@ -46,6 +46,23 @@ const VIRTUALIZED_ROW_STYLE_BASE = {
 // Uniform row height to prevent virtualizer measurement loops
 const ROW_HEIGHT = 32;
 
+// Column width constants
+const NAME_COLUMN_WIDTH = 250;
+const MODE_COLUMN_WIDTH = 280;
+
+// Memoized ColGroup component to enforce consistent column widths
+// This is critical for virtualized tables where absolute-positioned rows
+// prevent normal table-layout: fixed from determining column widths
+const TableColGroup = React.memo(({ modeCount }: { modeCount: number }) => (
+  <colgroup>
+    <col style={{ width: NAME_COLUMN_WIDTH }} />
+    {Array.from({ length: modeCount }).map((_, i) => (
+      <col key={i} style={{ width: MODE_COLUMN_WIDTH }} />
+    ))}
+  </colgroup>
+));
+TableColGroup.displayName = 'TableColGroup';
+
 export function BrandVariableTable() {
   // FIX: Subscribe with custom equality functions to prevent infinite re-renders
   // Primitive values - stable
@@ -347,7 +364,8 @@ export function BrandVariableTable() {
         <div ref={tableContainerRef} className="flex-1 overflow-auto">
           {/* Sticky Header - scrolls horizontally with body, sticks vertically */}
           <div className="sticky top-0 z-30 bg-background border-b border-border/40">
-            <table className="border-collapse text-xs" style={{ tableLayout: 'fixed', minWidth: `${250 + modes.length * 280}px` }}>
+            <table className="border-collapse text-xs" style={{ tableLayout: 'fixed', minWidth: `${NAME_COLUMN_WIDTH + modes.length * MODE_COLUMN_WIDTH}px` }}>
+              <TableColGroup modeCount={modes.length} />
               <thead>
                 <tr>
                   <th className="sticky left-0 z-40 bg-background text-left px-3 py-2 border-r border-border/20 w-[250px]">
@@ -371,8 +389,9 @@ export function BrandVariableTable() {
           </div>
           
           {/* Virtualized Body */}
-          <div style={{ position: 'relative', height: `${rowVirtualizer.getTotalSize()}px`, minWidth: `${250 + modes.length * 280}px` }}>
-            <table className="border-collapse text-xs" style={{ tableLayout: 'fixed', minWidth: `${250 + modes.length * 280}px` }}>
+          <div style={{ position: 'relative', height: `${rowVirtualizer.getTotalSize()}px`, minWidth: `${NAME_COLUMN_WIDTH + modes.length * MODE_COLUMN_WIDTH}px` }}>
+            <table className="border-collapse text-xs" style={{ tableLayout: 'fixed', minWidth: `${NAME_COLUMN_WIDTH + modes.length * MODE_COLUMN_WIDTH}px` }}>
+              <TableColGroup modeCount={modes.length} />
               <tbody>
                 {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                   const row = flattenedRows[virtualRow.index];
@@ -454,7 +473,8 @@ export function BrandVariableTable() {
       ) : (
         // Non-virtualized rendering for small lists (≤ 100 variables)
         <div ref={tableContainerRef} className="flex-1 overflow-auto">
-          <table className="border-collapse text-xs" style={{ tableLayout: 'fixed', minWidth: `${250 + modes.length * 280}px` }}>
+          <table className="border-collapse text-xs" style={{ tableLayout: 'fixed', minWidth: `${NAME_COLUMN_WIDTH + modes.length * MODE_COLUMN_WIDTH}px` }}>
+            <TableColGroup modeCount={modes.length} />
             <thead className="sticky top-0 z-30 bg-background">
               <tr className="border-b border-border/40">
                 <th className="sticky left-0 z-40 bg-background text-left px-3 py-2 border-r border-border/20 w-[250px]">
