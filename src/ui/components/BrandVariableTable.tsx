@@ -4,7 +4,8 @@
  * Filtering handled by hierarchical Groups sidebar
  */
 
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { shallow } from 'zustand/shallow';
 import { useBrandStore } from '@/store/brand-store';
 import { useVariablesViewStore } from '@/store/variables-view-store';
@@ -16,6 +17,9 @@ import { ModeCell } from './variables/ModeCell';
 import { brandToFigmaAdapter } from '@/adapters/brandToFigmaVariables';
 import { HierarchyParser } from '@/lib/hierarchy-parser';
 import { EmptyState } from './EmptyState';
+
+// Threshold for enabling virtualization
+const VIRTUALIZATION_THRESHOLD = 100;
 
 export function BrandVariableTable() {
   const activeBrand = useBrandStore((state) => state.getActiveBrand());
@@ -107,6 +111,40 @@ export function BrandVariableTable() {
     return groups;
   }, [filteredVariables]);
   
+  // Flatten grouped variables for virtualization (only if needed)
+  const flattenedRows = useMemo(() => {
+    const rows: Array<{ type: 'group'; groupName: string; count: number } | { type: 'variable'; variable: any }> = [];
+    
+    Object.entries(groupedVariables)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .forEach(([groupName, variables]) => {
+        rows.push({ type: 'group', groupName, count: variables.length });
+        variables.forEach((variable) => {
+          rows.push({ type: 'variable', variable });
+        });
+      });
+    
+    return rows;
+  }, [groupedVariables]);
+  
+  // Determine if we should use virtualization
+  const shouldVirtualize = filteredVariables.length > VIRTUALIZATION_THRESHOLD;
+  
+  // Ref for scrollable container
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Setup virtualizer only if needed
+  const rowVirtualizer = useVirtualizer({
+    count: flattenedRows.length,
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: (index) => {
+      const row = flattenedRows[index];
+      return row.type === 'group' ? 28 : 32; // Group header: 28px, Variable row: 32px
+    },
+    overscan: 10, // Render 10 extra rows above/below viewport
+    enabled: shouldVirtualize,
+  });
+  
   // Handle different states
   if (!activeBrand && activeBrandId !== '__all__') {
     return (
@@ -179,24 +217,129 @@ export function BrandVariableTable() {
         </div>
       </div>
 
-      {/* Variables Table with Group Headers - Native Scrolling */}
-      <div className="flex-1 overflow-x-auto overflow-y-auto relative">
+      {/* Variables Table with Group Headers - Virtualized when > 100 items */}
+      <div ref={tableContainerRef} className="flex-1 overflow-x-auto overflow-y-auto relative">
         {filteredVariables.length === 0 ? (
           <div className="text-center py-12 text-foreground-secondary text-xs">
             {searchQuery ? 'No variables match your search' : 'No variables in this collection'}
           </div>
+        ) : shouldVirtualize ? (
+          // Virtualized rendering for large lists (> 100 variables)
+          <div style={{ position: 'relative', height: `${rowVirtualizer.getTotalSize()}px` }}>
+            <table className="w-full border-collapse text-xs">
+              <thead className="sticky top-0 z-30 bg-background">
+                <tr className="border-b border-border/40">
+                  <th className="sticky left-0 z-40 bg-background text-left px-3 py-2 border-r border-border/20">
+                    <span className="text-[11px] font-medium text-foreground-secondary">
+                      Name
+                    </span>
+                  </th>
+                  {modes.map((mode) => (
+                    <th 
+                      key={mode.modeId} 
+                      className="text-left px-3 py-2 min-w-[200px] border-r border-border/40 whitespace-nowrap"
+                    >
+                      <span className="text-[11px] font-medium text-foreground-secondary">
+                        {mode.name}
+                      </span>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              
+              <tbody>
+                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                  const row = flattenedRows[virtualRow.index];
+                  
+                  if (row.type === 'group') {
+                    return (
+                      <tr 
+                        key={`group-${virtualRow.index}`}
+                        className="bg-surface"
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          height: `${virtualRow.size}px`,
+                          transform: `translateY(${virtualRow.start}px)`,
+                        }}
+                      >
+                        <td className="sticky left-0 z-20 bg-surface px-3 py-1.5 border-b border-border/50 border-r border-border/20">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-semibold text-foreground uppercase tracking-wide whitespace-nowrap">
+                              {row.groupName}
+                            </span>
+                            <span className="text-[9px] text-foreground-tertiary">
+                              ({row.count})
+                            </span>
+                          </div>
+                        </td>
+                        {modes.map((mode) => (
+                          <td 
+                            key={mode.modeId}
+                            className="bg-surface border-b border-border/50 border-r border-border/40"
+                          />
+                        ))}
+                      </tr>
+                    );
+                  } else {
+                    const variable = row.variable;
+                    return (
+                      <tr 
+                        key={`var-${variable.id}`}
+                        className="border-b border-border/40 hover:bg-interactive-hover transition-colors group"
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          height: `${virtualRow.size}px`,
+                          transform: `translateY(${virtualRow.start}px)`,
+                        }}
+                      >
+                        <td className="sticky left-0 z-10 bg-background group-hover:bg-interactive-hover px-3 py-1.5 border-r border-border/40 transition-colors">
+                          <span className="text-[11px] text-foreground whitespace-nowrap truncate" title={variable.name}>
+                            {HierarchyParser.getLastSegment(variable.name)}
+                          </span>
+                        </td>
+                        
+                        {modes.map((mode) => {
+                          const value = variable.valuesByMode[mode.modeId];
+                          const resolvedColor = variable.resolvedValuesByMode[mode.modeId];
+                          
+                          return (
+                            <td 
+                              key={mode.modeId} 
+                              className="border-r border-border/40 align-middle min-w-[200px]"
+                            >
+                              {value ? (
+                                <ModeCell value={value} color={resolvedColor} />
+                              ) : (
+                                <div className="px-3 py-1.5 text-foreground-tertiary/30">
+                                  —
+                                </div>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  }
+                })}
+              </tbody>
+            </table>
+          </div>
         ) : (
+          // Non-virtualized rendering for small lists (≤ 100 variables)
           <table className="w-full border-collapse text-xs">
             <thead className="sticky top-0 z-30 bg-background">
               <tr className="border-b border-border/40">
-                {/* Variable Name Column - Sticky Header + Sticky Column */}
                 <th className="sticky left-0 z-40 bg-background text-left px-3 py-2 border-r border-border/20">
                   <span className="text-[11px] font-medium text-foreground-secondary">
                     Name
                   </span>
                 </th>
-                
-                {/* Mode Columns */}
                 {modes.map((mode) => (
                   <th 
                     key={mode.modeId} 
@@ -215,9 +358,7 @@ export function BrandVariableTable() {
                 .sort(([a], [b]) => a.localeCompare(b))
                 .map(([groupName, variables]) => (
                 <React.Fragment key={groupName}>
-                  {/* Group Header Row */}
                   <tr className="bg-surface sticky top-[31px] z-20">
-                    {/* Sticky left column for group name */}
                     <td className="sticky left-0 z-20 bg-surface px-3 py-1.5 border-b border-border/50 border-r border-border/20">
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-semibold text-foreground uppercase tracking-wide whitespace-nowrap">
@@ -228,7 +369,6 @@ export function BrandVariableTable() {
                         </span>
                       </div>
                     </td>
-                    {/* Scrolling columns - empty cells to maintain alignment */}
                     {modes.map((mode) => (
                       <td 
                         key={mode.modeId}
@@ -237,20 +377,17 @@ export function BrandVariableTable() {
                     ))}
                   </tr>
                   
-                  {/* Variables in this group */}
                   {variables.map((variable) => (
                     <tr 
                       key={variable.id} 
                       className="border-b border-border/40 hover:bg-interactive-hover transition-colors group"
                     >
-                      {/* Variable Name - Sticky Column with hover state */}
                       <td className="sticky left-0 z-10 bg-background group-hover:bg-interactive-hover px-3 py-1.5 border-r border-border/40 transition-colors">
                         <span className="text-[11px] text-foreground whitespace-nowrap truncate" title={variable.name}>
                           {HierarchyParser.getLastSegment(variable.name)}
                         </span>
                       </td>
                       
-                      {/* Mode Values */}
                       {modes.map((mode) => {
                         const value = variable.valuesByMode[mode.modeId];
                         const resolvedColor = variable.resolvedValuesByMode[mode.modeId];
