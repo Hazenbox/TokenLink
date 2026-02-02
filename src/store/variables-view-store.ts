@@ -238,14 +238,22 @@ export const useVariablesViewStore = create<VariablesViewState>()(
         selectedStep: state.selectedStep,
         expandedGroups: Array.from(state.expandedGroups) // Convert Set to Array for JSON
       }),
-      // Rehydrate Set from Array
+      // FIX: Rehydrate Set from Array without causing loops
+      // Use onRehydrateStorage side-effect to convert arrays to Sets after persistence loads
       onRehydrateStorage: () => (state) => {
         if (state) {
+          // Only convert if they're actually arrays (not already Sets)
+          // This prevents unnecessary mutations that could trigger re-renders
           if (Array.isArray((state as any).expandedGroups)) {
-            state.expandedGroups = new Set((state as any).expandedGroups);
+            (state as any).expandedGroups = new Set((state as any).expandedGroups);
+          } else if (!(state.expandedGroups instanceof Set)) {
+            (state as any).expandedGroups = new Set();
           }
+          
           if (Array.isArray((state as any).expandedHierarchyNodes)) {
-            state.expandedHierarchyNodes = new Set((state as any).expandedHierarchyNodes);
+            (state as any).expandedHierarchyNodes = new Set((state as any).expandedHierarchyNodes);
+          } else if (!(state.expandedHierarchyNodes instanceof Set)) {
+            (state as any).expandedHierarchyNodes = new Set();
           }
         }
       }

@@ -1747,7 +1747,7 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
           }
         }, 300);
         
-        set({ saveQueue: saveQueueTimer });
+        set({ saveQueue: timeoutId });
       },
       
       // Figma data refresh actions

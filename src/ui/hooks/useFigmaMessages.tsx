@@ -45,6 +45,12 @@ export function useFigmaMessages() {
   const updateSyncStatus = useBrandStore((state) => state.updateSyncStatusFromPlugin);
 
   const handleMessage = useCallback((event: MessageEvent) => {
+    // FIX: Skip processing during initialization to prevent triggering refreshFigmaData loops
+    if (!(window as any).__VARCAR_INITIALIZED__) {
+      console.log('[useFigmaMessages] Skipping message during initialization');
+      return;
+    }
+    
     const msg = event.data.pluginMessage;
     if (!msg) return;
 
