@@ -217,20 +217,13 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
   // Auto-select first collection if none selected
   // Uses ref to ensure this only runs once and doesn't cause infinite loops
   useEffect(() => {
-    // DIAGNOSTIC: Log effect trigger
     const currentActiveCollection = useVariablesViewStore.getState().activeCollectionId;
-    console.log('[CollectionsSidebar] Auto-select effect triggered', {
-      isInitialized: isInitializedRef.current,
-      collectionsLength: collections.length,
-      currentActiveCollection
-    });
     
     // Only auto-select if:
     // 1. Not already initialized
     // 2. Collections exist
     // 3. No collection is currently selected (read from store directly to avoid dep)
     if (!isInitializedRef.current && collections.length > 0 && !currentActiveCollection) {
-      console.log('[CollectionsSidebar] Auto-selecting first collection:', collections[0].id);
       isInitializedRef.current = true;
       useVariablesViewStore.getState().setActiveCollection(collections[0].id);
     }
