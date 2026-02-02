@@ -33,10 +33,11 @@ export function BulkAliasPicker({
   const [targetVariableId, setTargetVariableId] = useState<string>('');
   const [modeMappings, setModeMappings] = useState<Map<string, string>>(new Map());
 
-  if (!isOpen) return null;
-
+  // ALL HOOKS MUST BE BEFORE ANY CONDITIONAL RETURNS (React rules of hooks)
+  
   // Get source modes from selected items
   const sourceModes = useMemo(() => {
+    if (!isOpen) return []; // Early return inside memo is fine
     const modes: Array<{ variableId: string; modeId: string; variableName: string; modeName: string }> = [];
     
     selectedItems.forEach(item => {
@@ -67,7 +68,7 @@ export function BulkAliasPicker({
     });
     
     return modes;
-  }, [selectedItems, variables]);
+  }, [isOpen, selectedItems, variables]);
 
   // Get target variables in selected collection
   const targetVariables = useMemo(() => {
@@ -85,6 +86,9 @@ export function BulkAliasPicker({
     const variable = variables.find(v => v.id === targetVariableId);
     return variable?.modes || [];
   }, [targetVariableId, variables]);
+
+  // NOW we can have conditional returns (after all hooks)
+  if (!isOpen) return null;
 
   // Auto-match modes by name
   const autoMatchModes = () => {

@@ -59,15 +59,7 @@ export function BrandVariableTable() {
   const collections = useBrandStore((state) => state.figmaCollections, shallow);
   const allVariablesMap = useBrandStore((state) => state.figmaVariablesByCollection, shallow);
   
-  // Defensive check: show loading state during initialization
-  if (isLoading && brands.length === 0) {
-    return (
-      <div style={LOADING_CONTAINER_STYLE}>
-        <div style={LOADING_TITLE_STYLE}>Loading variables...</div>
-        <div style={LOADING_SUBTITLE_STYLE}>Initializing brand data</div>
-      </div>
-    );
-  }
+  // ALL HOOKS MUST BE BEFORE ANY CONDITIONAL RETURNS (React rules of hooks)
   
   // Compute activeBrand with useMemo to prevent infinite loops
   const activeBrand = useMemo(() => {
@@ -99,7 +91,7 @@ export function BrandVariableTable() {
       const groupId = currentHierarchyPath.length > 0 ? currentHierarchyPath[0] : 'all';
       useBrandStore.getState().refreshFigmaVariables(activeCollectionId, groupId);
     }
-  }, [activeCollectionId, hierarchyPathKey]); // Removed hierarchyPath - use hierarchyPathKey only
+  }, [activeCollectionId, hierarchyPathKey]);
   
   // Get active collection
   const activeCollection = useMemo(() => 
@@ -141,7 +133,6 @@ export function BrandVariableTable() {
   }, [activeBrand, activeBrandId]);
   
   // Group variables by parent path (all segments except last)
-  // NOTE: This useMemo must be before early returns to avoid React error #310
   const groupedVariables = useMemo(() => {
     const groups: { [key: string]: typeof filteredVariables } = {};
     
@@ -201,6 +192,18 @@ export function BrandVariableTable() {
     overscan: 10, // Render 10 extra rows above/below viewport
     enabled: shouldVirtualize,
   });
+  
+  // NOW we can have conditional returns (after all hooks)
+  
+  // Show loading state during initialization
+  if (isLoading && brands.length === 0) {
+    return (
+      <div style={LOADING_CONTAINER_STYLE}>
+        <div style={LOADING_TITLE_STYLE}>Loading variables...</div>
+        <div style={LOADING_SUBTITLE_STYLE}>Initializing brand data</div>
+      </div>
+    );
+  }
   
   // Handle different states
   if (!activeBrand && activeBrandId !== '__all__') {
