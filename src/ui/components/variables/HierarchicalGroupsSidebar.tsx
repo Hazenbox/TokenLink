@@ -3,7 +3,7 @@
  * Displays multi-level accordion for hierarchical variable navigation
  */
 
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { ChevronsUpDown, ChevronRight, ChevronDown } from 'lucide-react';
 import { shallow } from 'zustand/shallow';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -120,13 +120,29 @@ const HierarchyNodeItem = React.memo(function HierarchyNodeItem({
       )}
     </div>
   );
+}, (prevProps, nextProps) => {
+  // FIX: Custom comparison to prevent re-renders from Set/function prop changes
+  // Only re-render if these specific props change
+  return (
+    prevProps.node.fullPath === nextProps.node.fullPath &&
+    prevProps.hasChildren === nextProps.hasChildren &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.isAncestor === nextProps.isAncestor &&
+    prevProps.isExpanded === nextProps.isExpanded
+    // Intentionally skip expandedHierarchyNodes (Set), callbacks comparison
+    // The callbacks are now stable (use refs), and Set changes are handled by isExpanded
+  );
 });
 
 export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsSidebarProps) {
   const activeCollectionId = useVariablesViewStore((state) => state.activeCollectionId);
   const hierarchyPath = useVariablesViewStore((state) => state.hierarchyPath);
   const setHierarchyPath = useVariablesViewStore((state) => state.setHierarchyPath);
-  const expandedHierarchyNodes = useVariablesViewStore((state) => state.expandedHierarchyNodes);
+  // FIX: Use custom equality for Set to prevent re-renders when contents are the same
+  const expandedHierarchyNodes = useVariablesViewStore(
+    (state) => state.expandedHierarchyNodes,
+    (a, b) => a.size === b.size && [...a].every(x => b.has(x))
+  );
   const toggleHierarchyNode = useVariablesViewStore((state) => state.toggleHierarchyNode);
   const expandAllHierarchyNodes = useVariablesViewStore((state) => state.expandAllHierarchyNodes);
   const collapseAllHierarchyNodes = useVariablesViewStore((state) => state.collapseAllHierarchyNodes);
@@ -146,17 +162,24 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
     [hierarchyTree]
   );
   
+  // FIX: Use ref for hierarchyPath to create stable callback references
+  // This prevents the entire tree from re-rendering when hierarchyPath changes
+  const hierarchyPathRef = useRef(hierarchyPath);
+  hierarchyPathRef.current = hierarchyPath;
+  
   // Memoize path comparison functions to prevent unnecessary re-renders of memoized children
   const isPathSelected = useCallback((path: string[]): boolean => {
-    if (hierarchyPath.length !== path.length) return false;
-    return path.every((segment, index) => hierarchyPath[index] === segment);
-  }, [hierarchyPath]);
+    const current = hierarchyPathRef.current;
+    if (current.length !== path.length) return false;
+    return path.every((segment, index) => current[index] === segment);
+  }, []); // Empty deps - uses ref
   
   // Check if a path is ancestor of selected path
   const isAncestorOfSelected = useCallback((path: string[]): boolean => {
-    if (path.length >= hierarchyPath.length) return false;
-    return path.every((segment, index) => hierarchyPath[index] === segment);
-  }, [hierarchyPath]);
+    const current = hierarchyPathRef.current;
+    if (path.length >= current.length) return false;
+    return path.every((segment, index) => current[index] === segment);
+  }, []); // Empty deps - uses ref
   
   // Create stable callbacks to prevent new function references on every render
   const handleNodeClick = useCallback((node: HierarchyNode, hasChildren: boolean) => {

@@ -90,6 +90,9 @@ export function AutomateApp() {
   const [importPreview, setImportPreview] = useState<ImportPreview | null>(null);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   
+  // Track initialization state to prevent premature rendering (FIX for React error #185)
+  const [isInitialized, setIsInitialized] = useState(false);
+  
   // Memoize computed values to prevent recalculation on every render
   const isAllBrands = useMemo(() => activeBrandId === '__all__', [activeBrandId]);
   
@@ -275,6 +278,11 @@ export function AutomateApp() {
         useBrandStore.getState().refreshFigmaData();
         console.log('[Init] UI refreshed');
         
+        // Mark as initialized to allow rendering
+        if (mounted) {
+          setIsInitialized(true);
+        }
+        
         console.log('[Init] Initialization complete ✓');
       } catch (error) {
         console.error('[Init] Error during initialization:', error);
@@ -282,6 +290,8 @@ export function AutomateApp() {
         // Error boundary will catch any rendering errors
         if (mounted) {
           console.error('[Init] Failed to initialize. Please reload the plugin.');
+          // Still mark as initialized to show error state
+          setIsInitialized(true);
         }
       }
     };
@@ -294,7 +304,8 @@ export function AutomateApp() {
   }, []);
   
   // Show loading state during initialization (MUST be AFTER all hooks - React rules)
-  if (isLoading && brands.length === 0) {
+  // FIX: Check isInitialized first to prevent premature rendering before data loads
+  if (!isInitialized || (isLoading && brands.length === 0)) {
     return (
       <div style={LOADING_CONTAINER_STYLE}>
         <div style={LOADING_TITLE_STYLE}>Loading brands...</div>
