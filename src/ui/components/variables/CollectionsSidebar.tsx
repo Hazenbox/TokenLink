@@ -275,7 +275,7 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
             className="py-4"
           />
         ) : (
-          <div className="px-2 pt-2 pb-1 space-y-0.5 min-w-max">
+          <div className="px-1 pt-2 pb-1 space-y-0.5">
             {collections.map((collection) => (
               <CollectionItem
                 key={collection.id}
