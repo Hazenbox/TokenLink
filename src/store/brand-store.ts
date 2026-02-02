@@ -1793,8 +1793,12 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
           if (collections.length > 0) {
             get().refreshFigmaGroups(collections[0].id);
             
-            // Auto-select first collection to show variables immediately
-            useVariablesViewStore.getState().setActiveCollection(collections[0].id);
+            // Auto-select first collection ONLY if no collection is currently selected
+            // This prevents infinite loops when CollectionsSidebar's useEffect also tries to select
+            const currentActiveCollection = useVariablesViewStore.getState().activeCollectionId;
+            if (!currentActiveCollection) {
+              useVariablesViewStore.getState().setActiveCollection(collections[0].id);
+            }
           }
           
           console.log(`[Multi-Layer Preview] ${collections.length} collections, ${variablesByCollection.size} variable sets for ${brandsToGenerate.length} brand(s)`);

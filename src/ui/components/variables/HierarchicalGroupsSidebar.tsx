@@ -146,17 +146,17 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
     [hierarchyTree]
   );
   
-  // Check if current path is selected
-  const isPathSelected = (path: string[]): boolean => {
+  // Memoize path comparison functions to prevent unnecessary re-renders of memoized children
+  const isPathSelected = useCallback((path: string[]): boolean => {
     if (hierarchyPath.length !== path.length) return false;
     return path.every((segment, index) => hierarchyPath[index] === segment);
-  };
+  }, [hierarchyPath]);
   
   // Check if a path is ancestor of selected path
-  const isAncestorOfSelected = (path: string[]): boolean => {
+  const isAncestorOfSelected = useCallback((path: string[]): boolean => {
     if (path.length >= hierarchyPath.length) return false;
     return path.every((segment, index) => hierarchyPath[index] === segment);
-  };
+  }, [hierarchyPath]);
   
   // Create stable callbacks to prevent new function references on every render
   const handleNodeClick = useCallback((node: HierarchyNode, hasChildren: boolean) => {

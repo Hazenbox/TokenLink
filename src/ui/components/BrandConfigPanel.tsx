@@ -140,49 +140,58 @@ export function BrandConfigPanel() {
     updateBrandPalette(activeBrand.id, 'neutral', paletteId, paletteName);
   }, [activeBrand.id, updateBrandPalette]);
 
+  // Fix: Read activeBrand.colors from store inside callback to avoid dependency on object reference
   const handleUpdatePositive = useCallback((paletteId: string, paletteName: string) => {
+    const brand = useBrandStore.getState().brandsById?.get(activeBrand.id);
+    if (!brand) return;
     const newColors = {
-      ...activeBrand.colors,
+      ...brand.colors,
       semantic: {
-        ...activeBrand.colors.semantic,
+        ...brand.colors.semantic,
         positive: { paletteId, paletteName }
       }
     };
     useBrandStore.getState().updateBrand(activeBrand.id, { colors: newColors });
-  }, [activeBrand.id, activeBrand.colors]);
+  }, [activeBrand.id]);
 
   const handleUpdateNegative = useCallback((paletteId: string, paletteName: string) => {
+    const brand = useBrandStore.getState().brandsById?.get(activeBrand.id);
+    if (!brand) return;
     const newColors = {
-      ...activeBrand.colors,
+      ...brand.colors,
       semantic: {
-        ...activeBrand.colors.semantic,
+        ...brand.colors.semantic,
         negative: { paletteId, paletteName }
       }
     };
     useBrandStore.getState().updateBrand(activeBrand.id, { colors: newColors });
-  }, [activeBrand.id, activeBrand.colors]);
+  }, [activeBrand.id]);
 
   const handleUpdateWarning = useCallback((paletteId: string, paletteName: string) => {
+    const brand = useBrandStore.getState().brandsById?.get(activeBrand.id);
+    if (!brand) return;
     const newColors = {
-      ...activeBrand.colors,
+      ...brand.colors,
       semantic: {
-        ...activeBrand.colors.semantic,
+        ...brand.colors.semantic,
         warning: { paletteId, paletteName }
       }
     };
     useBrandStore.getState().updateBrand(activeBrand.id, { colors: newColors });
-  }, [activeBrand.id, activeBrand.colors]);
+  }, [activeBrand.id]);
 
   const handleUpdateInformative = useCallback((paletteId: string, paletteName: string) => {
+    const brand = useBrandStore.getState().brandsById?.get(activeBrand.id);
+    if (!brand) return;
     const newColors = {
-      ...activeBrand.colors,
+      ...brand.colors,
       semantic: {
-        ...activeBrand.colors.semantic,
+        ...brand.colors.semantic,
         informative: { paletteId, paletteName }
       }
     };
     useBrandStore.getState().updateBrand(activeBrand.id, { colors: newColors });
-  }, [activeBrand.id, activeBrand.colors]);
+  }, [activeBrand.id]);
 
   return (
     <div 

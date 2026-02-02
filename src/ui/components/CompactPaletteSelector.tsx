@@ -3,7 +3,7 @@
  * Custom dropdown component with palette preview using Popover
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { usePaletteStore } from '@/store/palette-store';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -84,12 +84,13 @@ export function CompactPaletteSelector({
     p.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleSelect = (id: string, name: string) => {
+  // Memoize handleSelect to prevent unnecessary re-renders of memoized PaletteItem children
+  const handleSelect = useCallback((id: string, name: string) => {
     onChange(id, name);
     setOpen(false);
     setSearchQuery('');
     setFocusedIndex(-1);
-  };
+  }, [onChange]);
 
   // Keyboard navigation handler
   const handleKeyDown = (e: React.KeyboardEvent) => {

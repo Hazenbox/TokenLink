@@ -232,6 +232,10 @@ export function BrandSidebar() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [editingName, setEditingName] = React.useState("");
+  
+  // Store editingName in a ref so callbacks don't need it as dependency
+  const editingNameRef = React.useRef(editingName);
+  editingNameRef.current = editingName;
 
   // Defensive check: prevent rendering with undefined/null brands during loading
   if (!brands) {
@@ -275,9 +279,15 @@ export function BrandSidebar() {
     startEditing(brandId, brandName);
   }, []);
   
+  // Fix: Read editingName from ref inside callback to avoid dependency on frequently changing state
   const handleSaveEdit = React.useCallback((brandId: string) => {
-    handleRename(brandId);
-  }, [editingName, renameBrand]);
+    const currentEditingName = editingNameRef.current;
+    if (currentEditingName.trim()) {
+      renameBrand(brandId, currentEditingName.trim());
+    }
+    setEditingId(null);
+    setEditingName("");
+  }, [renameBrand]);
   
   const handleCancelEdit = React.useCallback(() => {
     setEditingId(null);

@@ -4,7 +4,7 @@
  * Filtering handled by hierarchical Groups sidebar
  */
 
-import React, { useMemo, useEffect, useRef } from 'react';
+import React, { useMemo, useEffect, useRef, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { shallow } from 'zustand/shallow';
 import { useBrandStore } from '@/store/brand-store';
@@ -79,13 +79,25 @@ export function BrandVariableTable() {
   // Create stable dependency for hierarchyPath to avoid infinite re-renders
   const hierarchyPathKey = useMemo(() => hierarchyPath.join('/'), [hierarchyPath]);
   
+  // Track last refreshed state to prevent redundant calls
+  const lastRefreshRef = useRef<string | null>(null);
+  
   // Refresh variables when collection or hierarchy path changes
+  // Uses ref to prevent redundant calls when dependencies haven't actually changed
   useEffect(() => {
     if (activeCollectionId) {
+      const refreshKey = `${activeCollectionId}:${hierarchyPathKey}`;
+      
+      // Skip if we've already refreshed for this exact state
+      if (lastRefreshRef.current === refreshKey) {
+        return;
+      }
+      
+      lastRefreshRef.current = refreshKey;
       const groupId = hierarchyPath.length > 0 ? hierarchyPath[0] : 'all';
       useBrandStore.getState().refreshFigmaVariables(activeCollectionId, groupId);
     }
-  }, [activeCollectionId, hierarchyPathKey]);
+  }, [activeCollectionId, hierarchyPathKey, hierarchyPath]);
   
   // Get active collection
   const activeCollection = useMemo(() => 

@@ -3,7 +3,7 @@
  * Displays list of collections for Figma-style Variables UI
  */
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Trash2, MoreHorizontal } from 'lucide-react';
 import { shallow } from 'zustand/shallow';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -142,14 +142,36 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
   const activeBrandId = useBrandStore((state) => state.activeBrandId);
   const isLoading = useBrandStore((state) => state.isLoading);
   
-  // Initialization guard to prevent infinite loop
-  const [isInitialized, setIsInitialized] = useState(false);
+  // Use ref for initialization to prevent re-renders and avoid hook-after-conditional-return issue
+  const isInitializedRef = useRef(false);
   
   // Editing state
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
   
+  // Store editingName in a ref so callbacks don't need it as dependency
+  const editingNameRef = useRef(editingName);
+  editingNameRef.current = editingName;
+  
+  // Auto-select first collection if none selected (MUST be before any conditional returns)
+  // Uses ref to ensure this only runs once and doesn't cause infinite loops
+  useEffect(() => {
+    // Only auto-select if:
+    // 1. Not already initialized
+    // 2. Collections exist
+    // 3. No collection is currently selected
+    if (!isInitializedRef.current && collections.length > 0 && !activeCollectionId) {
+      isInitializedRef.current = true;
+      setActiveCollection(collections[0].id);
+    }
+    // Mark as initialized even if conditions weren't met, to prevent future runs
+    if (collections.length > 0) {
+      isInitializedRef.current = true;
+    }
+  }, [collections.length, activeCollectionId, setActiveCollection]);
+  
   // Defensive check: prevent rendering with undefined/empty collections during loading
+  // (This is now AFTER the useEffect to comply with React's rules of hooks)
   if (!collections || (collections.length === 0 && isLoading)) {
     return (
       <div className="flex flex-col h-full p-4">
@@ -160,45 +182,26 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
     );
   }
   
-  // Auto-select first collection if none selected (only once on mount)
-  useEffect(() => {
-    if (!isInitialized && collections.length > 0 && !activeCollectionId) {
-      setActiveCollection(collections[0].id);
-      setIsInitialized(true);
-    }
-  }, [collections, activeCollectionId, setActiveCollection, isInitialized]);
-  
-  // Handle collection click
-  const handleCollectionClick = useCallback((id: string) => {
-    setActiveCollection(id);
+  // Create stable callbacks to prevent new function references on every render
+  const handleClick = useCallback((collectionId: string) => {
+    setActiveCollection(collectionId);
   }, [setActiveCollection]);
   
-  // Handle rename
-  const handleRename = (collectionId: string) => {
-    if (editingName.trim() && activeBrandId) {
-      updateCollection(activeBrandId, collectionId, { name: editingName.trim() });
+  const handleStartEditCollection = useCallback((collectionId: string, collectionName: string) => {
+    setEditingId(collectionId);
+    setEditingName(collectionName);
+  }, []);
+  
+  // Fix: Read editingName from ref inside callback to avoid dependency on frequently changing state
+  const handleSaveEditCollection = useCallback((collectionId: string) => {
+    const currentEditingName = editingNameRef.current;
+    const currentActiveBrandId = useBrandStore.getState().activeBrandId;
+    if (currentEditingName.trim() && currentActiveBrandId) {
+      useBrandStore.getState().updateCollection(currentActiveBrandId, collectionId, { name: currentEditingName.trim() });
     }
     setEditingId(null);
     setEditingName("");
-  };
-  
-  const startEditing = (id: string, name: string) => {
-    setEditingId(id);
-    setEditingName(name);
-  };
-  
-  // Create stable callbacks to prevent new function references on every render
-  const handleClick = useCallback((collectionId: string) => {
-    handleCollectionClick(collectionId);
-  }, [handleCollectionClick]);
-  
-  const handleStartEditCollection = useCallback((collectionId: string, collectionName: string) => {
-    startEditing(collectionId, collectionName);
-  }, []);
-  
-  const handleSaveEditCollection = useCallback((collectionId: string) => {
-    handleRename(collectionId);
-  }, [editingName, updateCollection, activeBrandId]);
+  }, []); // No dependencies - reads from refs and getState()
   
   const handleCancelEditCollection = useCallback(() => {
     setEditingId(null);
