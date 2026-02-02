@@ -16,9 +16,10 @@ import { downloadExport, exportEverything } from '@/services/export-service';
 export interface ExportModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onNotification?: (notification: { type: 'success' | 'error'; message: string; duration?: number }) => void;
 }
 
-export function ExportModal({ isOpen, onClose }: ExportModalProps) {
+export function ExportModal({ isOpen, onClose, onNotification }: ExportModalProps) {
   const [options, setOptions] = useState<ExportOptions>({
     includePalettes: true,
     includeRules: false,
@@ -29,6 +30,7 @@ export function ExportModal({ isOpen, onClose }: ExportModalProps) {
   
   const [isExporting, setIsExporting] = useState(false);
   const [exportSuccess, setExportSuccess] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const brands = useBrandStore((state) => state.brands);
   const palettes = usePaletteStore((state) => state.getAllPalettes());
@@ -44,11 +46,13 @@ export function ExportModal({ isOpen, onClose }: ExportModalProps) {
         description: '',
       });
       setExportSuccess(false);
+      setExportError(null);
     }
   }, [isOpen]);
 
   const handleExport = () => {
     setIsExporting(true);
+    setExportError(null);
     
     try {
       downloadExport(options);
@@ -60,7 +64,12 @@ export function ExportModal({ isOpen, onClose }: ExportModalProps) {
       }, 1500);
     } catch (error) {
       console.error('Export failed:', error);
-      alert('Export failed. Please try again.');
+      setExportError('Export failed. Please try again.');
+      onNotification?.({
+        type: 'error',
+        message: 'Export failed\nPlease try again.',
+        duration: 6000
+      });
     } finally {
       setIsExporting(false);
     }
@@ -69,7 +78,11 @@ export function ExportModal({ isOpen, onClose }: ExportModalProps) {
   const handlePreview = () => {
     const exportData = exportEverything(options);
     console.log('Export Preview:', exportData);
-    alert(`Export will include:\n- ${exportData.stats.brandsCount} brands\n- ${exportData.stats.palettesCount} palettes\n- ${exportData.stats.totalVariables} variables\n- ${exportData.stats.totalCollections} collections`);
+    onNotification?.({
+      type: 'success',
+      message: `Export Preview\n${exportData.stats.brandsCount} brands, ${exportData.stats.palettesCount} palettes\n${exportData.stats.totalVariables} variables, ${exportData.stats.totalCollections} collections`,
+      duration: 5000
+    });
   };
 
   if (!isOpen) return null;
@@ -113,6 +126,14 @@ export function ExportModal({ isOpen, onClose }: ExportModalProps) {
               <div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/30 rounded-md">
                 <CheckCircle className="w-5 h-5 text-green-500" />
                 <p className="text-sm text-green-600">Export successful!</p>
+              </div>
+            )}
+            
+            {/* Error Message */}
+            {exportError && (
+              <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-md">
+                <AlertCircle className="w-5 h-5 text-red-500" />
+                <p className="text-sm text-red-600">{exportError}</p>
               </div>
             )}
 

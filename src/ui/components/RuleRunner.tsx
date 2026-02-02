@@ -35,16 +35,21 @@ interface RuleRunnerProps {
   rules: Rule[];
   onDryRun: (rulesJSON: string) => void;
   onApply: (rulesJSON: string) => void;
+  onNotification?: (notification: { type: 'success' | 'error'; message: string; duration?: number }) => void;
 }
 
-export function RuleRunner({ rules, onDryRun, onApply }: RuleRunnerProps) {
+export function RuleRunner({ rules, onDryRun, onApply, onNotification }: RuleRunnerProps) {
   const [result, setResult] = useState<FormattedResult | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set());
 
   const handleDryRun = () => {
     if (rules.length === 0) {
-      alert('No rules to evaluate. Please add some rules first.');
+      onNotification?.({
+        type: 'error',
+        message: 'No rules to evaluate\nPlease add some rules first.',
+        duration: 5000
+      });
       return;
     }
 
@@ -56,7 +61,11 @@ export function RuleRunner({ rules, onDryRun, onApply }: RuleRunnerProps) {
 
   const handleApply = () => {
     if (rules.length === 0) {
-      alert('No rules to apply. Please add some rules first.');
+      onNotification?.({
+        type: 'error',
+        message: 'No rules to apply\nPlease add some rules first.',
+        duration: 5000
+      });
       return;
     }
 

@@ -213,7 +213,7 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
     const mlCollections = collections.filter(c => c.name.startsWith('ml_'));
     
     if (mlCollections.length === 0) {
-      alert('No ml_ prefixed collections found.');
+      console.log('[Collections] No ml_ prefixed collections found to clean up.');
       return;
     }
     

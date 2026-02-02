@@ -184,9 +184,30 @@ export function useFigmaMessages() {
     setNotification(null);
   }, []);
 
+  /**
+   * Manually show a notification (use instead of alert())
+   */
+  const showNotification = useCallback((options: ToastNotification) => {
+    setNotification(options);
+    
+    // Auto-clear after duration if specified
+    if (options.duration) {
+      setTimeout(() => {
+        setNotification((current) => {
+          // Only clear if it's still the same notification
+          if (current?.message === options.message) {
+            return null;
+          }
+          return current;
+        });
+      }, options.duration);
+    }
+  }, []);
+
   return {
     notification,
     progress,
-    clearNotification
+    clearNotification,
+    showNotification
   };
 }

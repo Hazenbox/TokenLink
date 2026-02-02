@@ -42,7 +42,7 @@ const LOADING_SUBTITLE_STYLE = { fontSize: '12px' };
 
 export function AutomateApp() {
   // Handle Figma plugin messages for sync responses
-  const { notification, progress, clearNotification } = useFigmaMessages();
+  const { notification, progress, clearNotification, showNotification } = useFigmaMessages();
   
   // Console logs
   const { logs, isVisible, clearLogs, toggleVisibility, closeConsole } = useConsoleLogs();
@@ -200,7 +200,11 @@ export function AutomateApp() {
           const parseResult = await parseImportFile(file);
           
           if (!parseResult.success || !parseResult.data) {
-            alert(`Failed to parse import file:\n${parseResult.errors.join('\n')}`);
+            showNotification({
+              type: 'error',
+              message: `Failed to parse import file\n${parseResult.errors.join('\n')}`,
+              duration: 8000
+            });
             return;
           }
           
@@ -210,7 +214,11 @@ export function AutomateApp() {
           setShowImportPreview(true);
         } catch (error) {
           console.error('Import error:', error);
-          alert('Failed to import file. Please check the file format.');
+          showNotification({
+            type: 'error',
+            message: 'Failed to import file\nPlease check the file format.',
+            duration: 6000
+          });
         }
       }
     };
@@ -231,9 +239,13 @@ export function AutomateApp() {
       useBrandStore.getState().refreshFigmaData();
     } catch (error) {
       console.error('Import execution error:', error);
-      alert('Import failed. Please try again.');
+      showNotification({
+        type: 'error',
+        message: 'Import failed\nPlease try again.',
+        duration: 6000
+      });
     }
-  }, [importPreview]);
+  }, [importPreview, showNotification]);
   
   // Initialize palettes and brands on mount (order matters!)
   useEffect(() => {
@@ -384,6 +396,7 @@ export function AutomateApp() {
       <ExportModal
         isOpen={showExportModal}
         onClose={handleCloseExportModal}
+        onNotification={showNotification}
       />
       
       {/* Import Preview Modal */}
