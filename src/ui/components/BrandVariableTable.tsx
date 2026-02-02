@@ -39,21 +39,40 @@ const LOADING_SUBTITLE_STYLE = {
 // Uniform row height to prevent virtualizer measurement loops
 const ROW_HEIGHT = 32;
 
-// Column width constants
-const NAME_COLUMN_WIDTH = 250;
-const MODE_COLUMN_WIDTH = 280;
+// Column width constants - minimums for scrollable layout
+const MIN_NAME_WIDTH = 200;
+const MIN_MODE_WIDTH = 180;
+
+// Threshold for switching to responsive (percentage-based) layout
+// When 2 or fewer modes, use full-width responsive layout
+const RESPONSIVE_MODE_THRESHOLD = 2;
 
 // Memoized ColGroup component to enforce consistent column widths
-// This is critical for virtualized tables where absolute-positioned rows
-// prevent normal table-layout: fixed from determining column widths
-const TableColGroup = React.memo(({ modeCount }: { modeCount: number }) => (
-  <colgroup>
-    <col style={{ width: NAME_COLUMN_WIDTH }} />
-    {Array.from({ length: modeCount }).map((_, i) => (
-      <col key={i} style={{ width: MODE_COLUMN_WIDTH }} />
-    ))}
-  </colgroup>
-));
+// Supports both responsive (percentage) and fixed (pixel) layouts
+const TableColGroup = React.memo(({ modeCount, isResponsive }: { modeCount: number; isResponsive: boolean }) => {
+  if (isResponsive && modeCount > 0) {
+    // Responsive layout: Name column gets 30%, modes share remaining 70% equally
+    const modeWidthPercent = 70 / modeCount;
+    return (
+      <colgroup>
+        <col style={{ width: '30%', minWidth: MIN_NAME_WIDTH }} />
+        {Array.from({ length: modeCount }).map((_, i) => (
+          <col key={i} style={{ width: `${modeWidthPercent}%`, minWidth: MIN_MODE_WIDTH }} />
+        ))}
+      </colgroup>
+    );
+  }
+  
+  // Fixed layout: Use minimum pixel widths for horizontal scroll
+  return (
+    <colgroup>
+      <col style={{ width: MIN_NAME_WIDTH }} />
+      {Array.from({ length: modeCount }).map((_, i) => (
+        <col key={i} style={{ width: MIN_MODE_WIDTH }} />
+      ))}
+    </colgroup>
+  );
+});
 TableColGroup.displayName = 'TableColGroup';
 
 export function BrandVariableTable() {
@@ -361,22 +380,37 @@ export function BrandVariableTable() {
             ? rowVirtualizer.getTotalSize() - virtualItems[virtualItems.length - 1].end 
             : 0;
           
+          // Use responsive layout for 1-2 modes, fixed layout for more
+          const isResponsive = modes.length <= RESPONSIVE_MODE_THRESHOLD;
+          
           return (
             <div ref={tableContainerRef} className="flex-1 overflow-auto">
-              {/* IMPORTANT: Use border-separate, NOT border-collapse - border-collapse breaks position:sticky on thead */}
-              <table className="text-xs" style={{ borderCollapse: 'separate', borderSpacing: 0, tableLayout: 'fixed', minWidth: `${NAME_COLUMN_WIDTH + modes.length * MODE_COLUMN_WIDTH}px` }}>
-                <TableColGroup modeCount={modes.length} />
-                <thead className="sticky top-0 z-30" style={{ backgroundColor: 'var(--background)' }}>
+              {/* IMPORTANT: Use border-separate, NOT border-collapse - border-collapse breaks position:sticky */}
+              <table 
+                className="text-xs" 
+                style={{ 
+                  borderCollapse: 'separate', 
+                  borderSpacing: 0, 
+                  tableLayout: 'fixed',
+                  width: isResponsive ? '100%' : 'auto',
+                  minWidth: isResponsive ? 'auto' : `${MIN_NAME_WIDTH + modes.length * MIN_MODE_WIDTH}px`
+                }}
+              >
+                <TableColGroup modeCount={modes.length} isResponsive={isResponsive} />
+                {/* NOTE: sticky must be on <th> cells, NOT on <thead> - CSS spec limitation */}
+                <thead>
                   <tr className="border-b border-border/40">
-                    <th className="sticky left-0 z-40 bg-background text-left px-3 py-2 border-r border-border/20 w-[250px]">
+                    {/* Name column: sticky both vertically (top:0) and horizontally (left:0) */}
+                    <th className="sticky top-0 left-0 z-40 bg-background text-left px-3 py-2 border-r border-border/20">
                       <span className="text-[11px] font-medium text-foreground-secondary">
                         Name
                       </span>
                     </th>
+                    {/* Mode columns: sticky vertically only */}
                     {modes.map((mode) => (
                       <th 
                         key={mode.modeId} 
-                        className="text-left px-3 py-2 w-[280px] border-r border-border/40 whitespace-nowrap"
+                        className="sticky top-0 z-30 bg-background text-left px-3 py-2 border-r border-border/40 whitespace-nowrap"
                       >
                         <span className="text-[11px] font-medium text-foreground-secondary">
                           {mode.name}
@@ -407,7 +441,7 @@ export function BrandVariableTable() {
                           className="bg-surface"
                           style={{ height: ROW_HEIGHT }}
                         >
-                          <td className="sticky left-0 z-20 bg-surface px-3 py-1.5 border-b border-border/50 border-r border-border/20 w-[250px] overflow-hidden">
+                          <td className="sticky left-0 z-20 bg-surface px-3 py-1.5 border-b border-border/50 border-r border-border/20 overflow-hidden">
                             <div className="flex items-center gap-2">
                               <span className="text-[10px] font-semibold text-foreground uppercase tracking-wide truncate">
                                 {row.groupName}
@@ -420,7 +454,7 @@ export function BrandVariableTable() {
                           {modes.map((mode) => (
                             <td 
                               key={mode.modeId}
-                              className="bg-surface border-b border-border/50 border-r border-border/40 w-[280px]"
+                              className="bg-surface border-b border-border/50 border-r border-border/40"
                             />
                           ))}
                         </tr>
@@ -433,7 +467,7 @@ export function BrandVariableTable() {
                           className="border-b border-border/40 hover:bg-interactive-hover transition-colors group"
                           style={{ height: ROW_HEIGHT }}
                         >
-                          <td className="sticky left-0 z-10 bg-background group-hover:bg-interactive-hover px-3 py-1.5 border-r border-border/40 transition-colors w-[250px] overflow-hidden">
+                          <td className="sticky left-0 z-10 bg-background group-hover:bg-interactive-hover px-3 py-1.5 border-r border-border/40 transition-colors overflow-hidden">
                             <span className="text-[11px] text-foreground block truncate" title={variable.name}>
                               {HierarchyParser.getLastSegment(variable.name)}
                             </span>
@@ -446,7 +480,7 @@ export function BrandVariableTable() {
                             return (
                               <td 
                                 key={mode.modeId} 
-                                className="border-r border-border/40 align-middle w-[280px] overflow-hidden"
+                                className="border-r border-border/40 align-middle overflow-hidden"
                               >
                                 {value ? (
                                   <ModeCell value={value} color={resolvedColor} />
@@ -479,91 +513,111 @@ export function BrandVariableTable() {
         })()
       ) : (
         // Non-virtualized rendering for small lists (≤ 100 variables)
-        <div ref={tableContainerRef} className="flex-1 overflow-auto">
-          {/* IMPORTANT: Use border-separate, NOT border-collapse - border-collapse breaks position:sticky on thead */}
-          <table className="text-xs" style={{ borderCollapse: 'separate', borderSpacing: 0, tableLayout: 'fixed', minWidth: `${NAME_COLUMN_WIDTH + modes.length * MODE_COLUMN_WIDTH}px` }}>
-            <TableColGroup modeCount={modes.length} />
-            <thead className="sticky top-0 z-30" style={{ backgroundColor: 'var(--background)' }}>
-              <tr className="border-b border-border/40">
-                <th className="sticky left-0 z-40 bg-background text-left px-3 py-2 border-r border-border/20 w-[250px]">
-                  <span className="text-[11px] font-medium text-foreground-secondary">
-                    Name
-                  </span>
-                </th>
-                {modes.map((mode) => (
-                  <th 
-                    key={mode.modeId} 
-                    className="text-left px-3 py-2 w-[280px] border-r border-border/40 whitespace-nowrap"
-                  >
-                    <span className="text-[11px] font-medium text-foreground-secondary">
-                      {mode.name}
-                    </span>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            
-            <tbody>
-              {Object.entries(groupedVariables)
-                .sort(([a], [b]) => a.localeCompare(b))
-                .map(([groupName, variables]) => (
-                <React.Fragment key={groupName}>
-                  <tr className="bg-surface sticky top-[31px] z-20">
-                    <td className="sticky left-0 z-20 bg-surface px-3 py-1.5 border-b border-border/50 border-r border-border/20 w-[250px] overflow-hidden">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-semibold text-foreground uppercase tracking-wide truncate">
-                          {groupName}
-                        </span>
-                        <span className="text-[9px] text-foreground-tertiary flex-shrink-0">
-                          ({variables.length})
-                        </span>
-                      </div>
-                    </td>
+        (() => {
+          // Use responsive layout for 1-2 modes, fixed layout for more
+          const isResponsive = modes.length <= RESPONSIVE_MODE_THRESHOLD;
+          
+          return (
+            <div ref={tableContainerRef} className="flex-1 overflow-auto">
+              {/* IMPORTANT: Use border-separate, NOT border-collapse - border-collapse breaks position:sticky */}
+              <table 
+                className="text-xs" 
+                style={{ 
+                  borderCollapse: 'separate', 
+                  borderSpacing: 0, 
+                  tableLayout: 'fixed',
+                  width: isResponsive ? '100%' : 'auto',
+                  minWidth: isResponsive ? 'auto' : `${MIN_NAME_WIDTH + modes.length * MIN_MODE_WIDTH}px`
+                }}
+              >
+                <TableColGroup modeCount={modes.length} isResponsive={isResponsive} />
+                {/* NOTE: sticky must be on <th> cells, NOT on <thead> - CSS spec limitation */}
+                <thead>
+                  <tr className="border-b border-border/40">
+                    {/* Name column: sticky both vertically (top:0) and horizontally (left:0) */}
+                    <th className="sticky top-0 left-0 z-40 bg-background text-left px-3 py-2 border-r border-border/20">
+                      <span className="text-[11px] font-medium text-foreground-secondary">
+                        Name
+                      </span>
+                    </th>
+                    {/* Mode columns: sticky vertically only */}
                     {modes.map((mode) => (
-                      <td 
-                        key={mode.modeId}
-                        className="bg-surface border-b border-border/50 border-r border-border/40 w-[280px]"
-                      />
+                      <th 
+                        key={mode.modeId} 
+                        className="sticky top-0 z-30 bg-background text-left px-3 py-2 border-r border-border/40 whitespace-nowrap"
+                      >
+                        <span className="text-[11px] font-medium text-foreground-secondary">
+                          {mode.name}
+                        </span>
+                      </th>
                     ))}
                   </tr>
-                  
-                  {variables.map((variable) => (
-                    <tr 
-                      key={variable.id} 
-                      className="border-b border-border/40 hover:bg-interactive-hover transition-colors group"
-                    >
-                      <td className="sticky left-0 z-10 bg-background group-hover:bg-interactive-hover px-3 py-1.5 border-r border-border/40 transition-colors w-[250px] overflow-hidden">
-                        <span className="text-[11px] text-foreground block truncate" title={variable.name}>
-                          {HierarchyParser.getLastSegment(variable.name)}
-                        </span>
-                      </td>
-                      
-                      {modes.map((mode) => {
-                        const value = variable.valuesByMode[mode.modeId];
-                        const resolvedColor = variable.resolvedValuesByMode[mode.modeId];
-                        
-                        return (
+                </thead>
+                
+                <tbody>
+                  {Object.entries(groupedVariables)
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([groupName, variables]) => (
+                    <React.Fragment key={groupName}>
+                      {/* Group header row - sticky below main header */}
+                      <tr className="bg-surface">
+                        <td className="sticky top-[33px] left-0 z-20 bg-surface px-3 py-1.5 border-b border-border/50 border-r border-border/20 overflow-hidden">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-semibold text-foreground uppercase tracking-wide truncate">
+                              {groupName}
+                            </span>
+                            <span className="text-[9px] text-foreground-tertiary flex-shrink-0">
+                              ({variables.length})
+                            </span>
+                          </div>
+                        </td>
+                        {modes.map((mode) => (
                           <td 
-                            key={mode.modeId} 
-                            className="border-r border-border/40 align-middle w-[280px] overflow-hidden"
-                          >
-                            {value ? (
-                              <ModeCell value={value} color={resolvedColor} />
-                            ) : (
-                              <div className="px-3 py-1.5 text-foreground-tertiary/30">
-                                —
-                              </div>
-                            )}
+                            key={mode.modeId}
+                            className="sticky top-[33px] z-15 bg-surface border-b border-border/50 border-r border-border/40"
+                          />
+                        ))}
+                      </tr>
+                      
+                      {variables.map((variable) => (
+                        <tr 
+                          key={variable.id} 
+                          className="border-b border-border/40 hover:bg-interactive-hover transition-colors group"
+                        >
+                          <td className="sticky left-0 z-10 bg-background group-hover:bg-interactive-hover px-3 py-1.5 border-r border-border/40 transition-colors overflow-hidden">
+                            <span className="text-[11px] text-foreground block truncate" title={variable.name}>
+                              {HierarchyParser.getLastSegment(variable.name)}
+                            </span>
                           </td>
-                        );
-                      })}
-                    </tr>
+                          
+                          {modes.map((mode) => {
+                            const value = variable.valuesByMode[mode.modeId];
+                            const resolvedColor = variable.resolvedValuesByMode[mode.modeId];
+                            
+                            return (
+                              <td 
+                                key={mode.modeId} 
+                                className="border-r border-border/40 align-middle overflow-hidden"
+                              >
+                                {value ? (
+                                  <ModeCell value={value} color={resolvedColor} />
+                                ) : (
+                                  <div className="px-3 py-1.5 text-foreground-tertiary/30">
+                                    —
+                                  </div>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </React.Fragment>
                   ))}
-                </React.Fragment>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                </tbody>
+              </table>
+            </div>
+          );
+        })()
       )}
 
       {/* Footer Stats - Minimal */}
