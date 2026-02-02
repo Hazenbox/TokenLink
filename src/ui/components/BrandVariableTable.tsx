@@ -39,30 +39,34 @@ const LOADING_SUBTITLE_STYLE = {
 // Uniform row height to prevent virtualizer measurement loops
 const ROW_HEIGHT = 32;
 
-// Column width constants - FIXED pixel widths for consistent layout
-const NAME_COLUMN_WIDTH = 220;
-const MODE_COLUMN_WIDTH = 200;
+// Column width configuration - PERCENTAGE based for responsive layout
+// Industry standard: Name column gets more space, mode columns share the rest equally
+const NAME_COLUMN_PERCENT = 28; // Name column always gets 28% of table width
 
-// Calculate total table width for a given mode count
-const getTableWidth = (modeCount: number) => NAME_COLUMN_WIDTH + (modeCount * MODE_COLUMN_WIDTH);
+// Calculate mode column percentage based on how many modes exist
+// Remaining space (72%) is divided equally among mode columns
+const getModeColumnPercent = (modeCount: number) => {
+  if (modeCount === 0) return 0;
+  return (100 - NAME_COLUMN_PERCENT) / modeCount;
+};
 
 // Memoized ColGroup component to enforce consistent column widths
-// Uses BOTH width attribute AND style for maximum browser compatibility
-// IMPORTANT: For table-layout:fixed to work, columns need explicit pixel widths
-const TableColGroup = React.memo(({ modeCount }: { modeCount: number }) => (
-  <colgroup>
-    {/* Name column - fixed width */}
-    <col width={NAME_COLUMN_WIDTH} style={{ width: NAME_COLUMN_WIDTH, minWidth: NAME_COLUMN_WIDTH, maxWidth: NAME_COLUMN_WIDTH }} />
-    {/* Mode columns - all same fixed width */}
-    {Array.from({ length: modeCount }).map((_, i) => (
-      <col 
-        key={i} 
-        width={MODE_COLUMN_WIDTH} 
-        style={{ width: MODE_COLUMN_WIDTH, minWidth: MODE_COLUMN_WIDTH, maxWidth: MODE_COLUMN_WIDTH }} 
-      />
-    ))}
-  </colgroup>
-));
+// Uses percentage widths for responsive layout that fills container
+// IMPORTANT: With table-layout:fixed and width:100%, percentages are stable
+const TableColGroup = React.memo(({ modeCount }: { modeCount: number }) => {
+  const modePercent = getModeColumnPercent(modeCount);
+  
+  return (
+    <colgroup>
+      {/* Name column - fixed percentage of table width */}
+      <col style={{ width: `${NAME_COLUMN_PERCENT}%` }} />
+      {/* Mode columns - share remaining space equally */}
+      {Array.from({ length: modeCount }).map((_, i) => (
+        <col key={i} style={{ width: `${modePercent}%` }} />
+      ))}
+    </colgroup>
+  );
+});
 TableColGroup.displayName = 'TableColGroup';
 
 export function BrandVariableTable() {
@@ -417,22 +421,16 @@ export function BrandVariableTable() {
             ? rowVirtualizer.getTotalSize() - virtualItems[virtualItems.length - 1].end 
             : 0;
           
-          // Calculate exact table width for fixed layout
-          const tableWidth = getTableWidth(modes.length);
-          
           return (
             <div ref={tableContainerRef} className="flex-1 overflow-auto relative">
               {/* IMPORTANT: Use border-separate, NOT border-collapse - border-collapse breaks position:sticky */}
-              {/* IMPORTANT: table-layout:fixed REQUIRES explicit width (not auto) to lock column widths */}
+              {/* IMPORTANT: table-layout:fixed with width:100% ensures stable percentage columns */}
               <table 
-                className="text-xs" 
+                className="text-xs w-full" 
                 style={{ 
                   borderCollapse: 'separate', 
                   borderSpacing: 0, 
-                  tableLayout: 'fixed',
-                  width: tableWidth,
-                  minWidth: tableWidth,
-                  maxWidth: tableWidth
+                  tableLayout: 'fixed'
                 }}
               >
                 <TableColGroup modeCount={modes.length} />
@@ -580,22 +578,16 @@ export function BrandVariableTable() {
       ) : (
         // Non-virtualized rendering for small lists (≤ 100 variables)
         (() => {
-          // Calculate exact table width for fixed layout
-          const tableWidth = getTableWidth(modes.length);
-          
           return (
             <div ref={tableContainerRef} className="flex-1 overflow-auto">
               {/* IMPORTANT: Use border-separate, NOT border-collapse - border-collapse breaks position:sticky */}
-              {/* IMPORTANT: table-layout:fixed REQUIRES explicit width (not auto) to lock column widths */}
+              {/* IMPORTANT: table-layout:fixed with width:100% ensures stable percentage columns */}
               <table 
-                className="text-xs" 
+                className="text-xs w-full" 
                 style={{ 
                   borderCollapse: 'separate', 
                   borderSpacing: 0, 
-                  tableLayout: 'fixed',
-                  width: tableWidth,
-                  minWidth: tableWidth,
-                  maxWidth: tableWidth
+                  tableLayout: 'fixed'
                 }}
               >
                 <TableColGroup modeCount={modes.length} />
