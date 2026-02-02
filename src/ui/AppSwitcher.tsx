@@ -1,7 +1,7 @@
 import * as React from "react";
 import { ColorApp } from "./ColorApp";
 import { App } from "./App";
-import { AutomateApp } from "./AutomateApp";
+import { AutomateAppWrapper } from "./AutomateAppWrapper";
 import { GuidePage } from "./views/GuidePage";
 import { safeStorage } from "@/lib/storage";
 import { AutomateErrorBoundary } from "./components/AutomateErrorBoundary";
@@ -64,7 +64,7 @@ export function AppSwitcher() {
   } else if (activeApp === "automate") {
     return (
       <AutomateErrorBoundary>
-        <AutomateApp />
+        <AutomateAppWrapper />
       </AutomateErrorBoundary>
     );
   } else if (activeApp === "guide") {

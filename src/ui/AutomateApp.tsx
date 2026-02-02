@@ -41,20 +41,13 @@ const LOADING_TITLE_STYLE = { fontSize: '14px', fontWeight: 500 };
 const LOADING_SUBTITLE_STYLE = { fontSize: '12px' };
 
 export function AutomateApp() {
-  console.log('[DEBUG] AutomateApp render START', Date.now());
-  
-  // Track initialization state to prevent premature rendering (FIX for React error #185)
-  // MUST be first to prevent store subscription loops during init
-  const [isInitialized, setIsInitialized] = useState(false);
-  
   // Handle Figma plugin messages for sync responses
   const { notification, progress, clearNotification, showNotification } = useFigmaMessages();
   
   // Console logs
   const { logs, isVisible, clearLogs, toggleVisibility, closeConsole } = useConsoleLogs();
   
-  // FIX: Defer store subscriptions until initialized to prevent re-render loops
-  // During initialization, return empty/default values to avoid triggering updates
+  // Optimized: Subscribe to primitive data only - no function calls to prevent infinite re-renders
   const { 
     activeBrandId,
     brandsById,
@@ -64,7 +57,7 @@ export function AutomateApp() {
     syncStatus,
     syncAttempts,
     isLoading
-  } = useBrandStore((state) => isInitialized ? ({
+  } = useBrandStore((state) => ({
     activeBrandId: state.activeBrandId,
     brandsById: state.brandsById,
     brands: state.brands,
@@ -73,17 +66,7 @@ export function AutomateApp() {
     syncStatus: state.syncStatus,
     syncAttempts: state.syncAttempts,
     isLoading: state.isLoading,
-  }) : {
-    // Return empty/default values during loading to prevent subscription updates
-    activeBrandId: null,
-    brandsById: new Map(),
-    brands: [],
-    syncBrandWithLayers: () => Promise.resolve(),
-    syncAllBrands: () => Promise.resolve(),
-    syncStatus: 'idle' as const,
-    syncAttempts: [],
-    isLoading: false,
-  }, shallow);
+  }), shallow);
   
   // Compute derived values with useMemo to prevent infinite loops
   const activeBrand = useMemo(() => {
@@ -100,7 +83,7 @@ export function AutomateApp() {
     return recentAttempts.length < 5;
   }, [syncAttempts]);
   
-  // Import/Export modals state - MUST be before any conditional returns (React rules of hooks)
+  // Import/Export modals state
   const [showExportModal, setShowExportModal] = useState(false);
   const [showImportPreview, setShowImportPreview] = useState(false);
   const [showImportResults, setShowImportResults] = useState(false);
@@ -263,73 +246,6 @@ export function AutomateApp() {
       });
     }
   }, [importPreview, showNotification]);
-  
-  // Initialize palettes and brands on mount (order matters!)
-  useEffect(() => {
-    let mounted = true;
-    
-    const loadData = async () => {
-      try {
-        console.log('[Init] Starting data load...');
-        console.log('[Init] Environment: First load detection in progress');
-        
-        // Load palettes first (brands reference them)
-        await usePaletteStore.getState().loadPalettes();
-        if (!mounted) return;
-        console.log('[Init] Palettes loaded and initialized');
-        
-        // Then load brands
-        await useBrandStore.getState().loadBrands();
-        if (!mounted) return;
-        console.log('[Init] Brands loaded');
-        
-        // Check if this was a first-time initialization
-        const paletteCount = usePaletteStore.getState().palettes.length;
-        const brandCount = useBrandStore.getState().brands.length;
-        console.log(`[Init] State: ${paletteCount} palettes, ${brandCount} brands`);
-        
-        // FIX: Mark as initialized FIRST to enable store subscriptions
-        // This prevents refreshFigmaData from causing re-render loops
-        if (mounted) {
-          (window as any).__VARCAR_INITIALIZED__ = true;
-          setIsInitialized(true);
-        }
-        
-        // Now safe to refresh UI - components can handle updates
-        useBrandStore.getState().refreshFigmaData();
-        console.log('[Init] UI refreshed');
-        
-        console.log('[Init] Initialization complete ✓');
-      } catch (error) {
-        console.error('[Init] Error during initialization:', error);
-        // Don't call refreshFigmaData on error - let loading state persist
-        // Error boundary will catch any rendering errors
-        if (mounted) {
-          console.error('[Init] Failed to initialize. Please reload the plugin.');
-          // Still mark as initialized to show error state
-          (window as any).__VARCAR_INITIALIZED__ = true;
-          setIsInitialized(true);
-        }
-      }
-    };
-    
-    loadData();
-    
-    return () => {
-      mounted = false;
-    };
-  }, []);
-  
-  // Show loading state during initialization (MUST be AFTER all hooks - React rules)
-  // FIX: Check isInitialized first to prevent premature rendering before data loads
-  if (!isInitialized || (isLoading && brands.length === 0)) {
-    return (
-      <div style={LOADING_CONTAINER_STYLE}>
-        <div style={LOADING_TITLE_STYLE}>Loading brands...</div>
-        <div style={LOADING_SUBTITLE_STYLE}>Initializing Automate tab</div>
-      </div>
-    );
-  }
   
   return (
     <div className="h-full w-full flex flex-col bg-background relative overflow-hidden min-w-0">
