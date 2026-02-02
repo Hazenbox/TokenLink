@@ -3,7 +3,7 @@
  * Configuration interface for brand colors and palette selection
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useBrandStore } from '@/store/brand-store';
 import { useVariablesViewStore } from '@/store/variables-view-store';
 import { CompactPaletteSelector } from './CompactPaletteSelector';
@@ -123,28 +123,66 @@ export function BrandConfigPanel() {
     );
   }
 
-  const handleUpdatePalette = (
-    role: 'primary' | 'secondary' | 'sparkle' | 'neutral',
-    paletteId: string,
-    paletteName: string
-  ) => {
-    updateBrandPalette(activeBrand.id, role, paletteId, paletteName);
-  };
+  // Memoize palette update handlers to prevent recreation on every render
+  const handleUpdatePrimary = useCallback((paletteId: string, paletteName: string) => {
+    updateBrandPalette(activeBrand.id, 'primary', paletteId, paletteName);
+  }, [activeBrand.id, updateBrandPalette]);
 
-  const handleUpdateSemantic = (
-    role: 'positive' | 'negative' | 'warning' | 'informative',
-    paletteId: string,
-    paletteName: string
-  ) => {
+  const handleUpdateSecondary = useCallback((paletteId: string, paletteName: string) => {
+    updateBrandPalette(activeBrand.id, 'secondary', paletteId, paletteName);
+  }, [activeBrand.id, updateBrandPalette]);
+
+  const handleUpdateSparkle = useCallback((paletteId: string, paletteName: string) => {
+    updateBrandPalette(activeBrand.id, 'sparkle', paletteId, paletteName);
+  }, [activeBrand.id, updateBrandPalette]);
+
+  const handleUpdateNeutral = useCallback((paletteId: string, paletteName: string) => {
+    updateBrandPalette(activeBrand.id, 'neutral', paletteId, paletteName);
+  }, [activeBrand.id, updateBrandPalette]);
+
+  const handleUpdatePositive = useCallback((paletteId: string, paletteName: string) => {
     const newColors = {
       ...activeBrand.colors,
       semantic: {
         ...activeBrand.colors.semantic,
-        [role]: { paletteId, paletteName }
+        positive: { paletteId, paletteName }
       }
     };
     useBrandStore.getState().updateBrand(activeBrand.id, { colors: newColors });
-  };
+  }, [activeBrand.id, activeBrand.colors]);
+
+  const handleUpdateNegative = useCallback((paletteId: string, paletteName: string) => {
+    const newColors = {
+      ...activeBrand.colors,
+      semantic: {
+        ...activeBrand.colors.semantic,
+        negative: { paletteId, paletteName }
+      }
+    };
+    useBrandStore.getState().updateBrand(activeBrand.id, { colors: newColors });
+  }, [activeBrand.id, activeBrand.colors]);
+
+  const handleUpdateWarning = useCallback((paletteId: string, paletteName: string) => {
+    const newColors = {
+      ...activeBrand.colors,
+      semantic: {
+        ...activeBrand.colors.semantic,
+        warning: { paletteId, paletteName }
+      }
+    };
+    useBrandStore.getState().updateBrand(activeBrand.id, { colors: newColors });
+  }, [activeBrand.id, activeBrand.colors]);
+
+  const handleUpdateInformative = useCallback((paletteId: string, paletteName: string) => {
+    const newColors = {
+      ...activeBrand.colors,
+      semantic: {
+        ...activeBrand.colors.semantic,
+        informative: { paletteId, paletteName }
+      }
+    };
+    useBrandStore.getState().updateBrand(activeBrand.id, { colors: newColors });
+  }, [activeBrand.id, activeBrand.colors]);
 
   return (
     <div 
@@ -188,7 +226,7 @@ export function BrandConfigPanel() {
                 label="Primary"
                 value={activeBrand.colors.primary.paletteId}
                 paletteName={activeBrand.colors.primary.paletteName}
-                onChange={(id, name) => handleUpdatePalette('primary', id, name)}
+                onChange={handleUpdatePrimary}
                 required
                 compact
               />
@@ -196,7 +234,7 @@ export function BrandConfigPanel() {
                 label="Secondary"
                 value={activeBrand.colors.secondary.paletteId}
                 paletteName={activeBrand.colors.secondary.paletteName}
-                onChange={(id, name) => handleUpdatePalette('secondary', id, name)}
+                onChange={handleUpdateSecondary}
                 required
                 compact
               />
@@ -204,7 +242,7 @@ export function BrandConfigPanel() {
                 label="Sparkle"
                 value={activeBrand.colors.sparkle.paletteId}
                 paletteName={activeBrand.colors.sparkle.paletteName}
-                onChange={(id, name) => handleUpdatePalette('sparkle', id, name)}
+                onChange={handleUpdateSparkle}
                 required
                 compact
               />
@@ -212,7 +250,7 @@ export function BrandConfigPanel() {
                 label="Neutral"
                 value={activeBrand.colors.neutral.paletteId}
                 paletteName={activeBrand.colors.neutral.paletteName}
-                onChange={(id, name) => handleUpdatePalette('neutral', id, name)}
+                onChange={handleUpdateNeutral}
                 required
                 compact
               />
@@ -225,28 +263,28 @@ export function BrandConfigPanel() {
                 label="Positive"
                 value={activeBrand.colors.semantic.positive.paletteId}
                 paletteName={activeBrand.colors.semantic.positive.paletteName}
-                onChange={(id, name) => handleUpdateSemantic('positive', id, name)}
+                onChange={handleUpdatePositive}
                 compact
               />
               <CompactPaletteSelector
                 label="Negative"
                 value={activeBrand.colors.semantic.negative.paletteId}
                 paletteName={activeBrand.colors.semantic.negative.paletteName}
-                onChange={(id, name) => handleUpdateSemantic('negative', id, name)}
+                onChange={handleUpdateNegative}
                 compact
               />
               <CompactPaletteSelector
                 label="Warning"
                 value={activeBrand.colors.semantic.warning.paletteId}
                 paletteName={activeBrand.colors.semantic.warning.paletteName}
-                onChange={(id, name) => handleUpdateSemantic('warning', id, name)}
+                onChange={handleUpdateWarning}
                 compact
               />
               <CompactPaletteSelector
                 label="Informative"
                 value={activeBrand.colors.semantic.informative.paletteId}
                 paletteName={activeBrand.colors.semantic.informative.paletteName}
-                onChange={(id, name) => handleUpdateSemantic('informative', id, name)}
+                onChange={handleUpdateInformative}
               compact
             />
           </div>
