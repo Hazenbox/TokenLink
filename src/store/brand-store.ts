@@ -498,9 +498,13 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
       // Update brand
       updateBrand: (id: string, updates: Partial<Brand>) => {
         set((state) => {
+          // Deep clone updates if they contain nested objects to prevent state mutation
+          const hasNestedObjects = updates.colors || updates.collections || updates.palettes;
+          const safeUpdates = hasNestedObjects ? deepClone(updates) : updates;
+          
           const newBrands = state.brands.map((b) =>
             b.id === id
-              ? { ...b, ...updates, updatedAt: Date.now(), version: b.version + 1 }
+              ? { ...b, ...safeUpdates, updatedAt: Date.now(), version: b.version + 1 }
               : b
           );
           
@@ -600,7 +604,8 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
         const brand = get().brands.find((b) => b.id === brandId);
         if (!brand) return;
 
-        const newColors = { ...brand.colors };
+        // Deep clone colors to prevent mutation of nested objects (e.g., semantic)
+        const newColors = deepClone(brand.colors);
         if (role === 'semantic') {
           // Handle semantic colors separately
           return;
