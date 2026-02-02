@@ -26,6 +26,7 @@ export function BrandVariableTable() {
   const activeBrandId = useBrandStore((state) => state.activeBrandId);
   const brandsById = useBrandStore((state) => state.brandsById);
   const brands = useBrandStore((state) => state.brands);
+  const isLoading = useBrandStore((state) => state.isLoading);
   const activeCollectionId = useVariablesViewStore((state) => state.activeCollectionId);
   const hierarchyPath = useVariablesViewStore((state) => state.hierarchyPath);
   const searchQuery = useVariablesViewStore((state) => state.searchQuery);
@@ -34,6 +35,16 @@ export function BrandVariableTable() {
   // Simple state selectors - no function calls
   const collections = useBrandStore((state) => state.figmaCollections, shallow);
   const allVariablesMap = useBrandStore((state) => state.figmaVariablesByCollection, shallow);
+  
+  // Defensive check: show loading state during initialization
+  if (isLoading && brands.length === 0) {
+    return (
+      <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+        <div style={{ fontSize: '14px', marginBottom: '8px' }}>Loading variables...</div>
+        <div style={{ fontSize: '12px' }}>Initializing brand data</div>
+      </div>
+    );
+  }
   
   // Compute activeBrand with useMemo to prevent infinite loops
   const activeBrand = useMemo(() => {

@@ -209,6 +209,7 @@ export function BrandSidebar() {
     setActiveBrand,
     renameBrand,
     duplicateBrand,
+    isLoading,
   } = useBrandStore((state) => ({
     brands: state.brands,
     activeBrandId: state.activeBrandId,
@@ -217,12 +218,24 @@ export function BrandSidebar() {
     setActiveBrand: state.setActiveBrand,
     renameBrand: state.renameBrand,
     duplicateBrand: state.duplicateBrand,
+    isLoading: state.isLoading,
   }), shallow);
 
   const [newBrandName, setNewBrandName] = React.useState("");
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [editingName, setEditingName] = React.useState("");
+
+  // Defensive check: prevent rendering with undefined/null brands during loading
+  if (!brands) {
+    return (
+      <div className="flex flex-col h-full">
+        <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+          {isLoading ? 'Loading brands...' : 'No brands available'}
+        </div>
+      </div>
+    );
+  }
 
   const handleCreate = () => {
     if (newBrandName.trim()) {

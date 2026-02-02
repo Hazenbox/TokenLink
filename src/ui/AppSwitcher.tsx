@@ -4,6 +4,7 @@ import { App } from "./App";
 import { AutomateApp } from "./AutomateApp";
 import { GuidePage } from "./views/GuidePage";
 import { safeStorage } from "@/lib/storage";
+import { AutomateErrorBoundary } from "./components/AutomateErrorBoundary";
 
 export type ActiveApp = "color" | "figzig" | "automate" | "guide";
 
@@ -61,7 +62,11 @@ export function AppSwitcher() {
   if (activeApp === "color") {
     return <ColorApp />;
   } else if (activeApp === "automate") {
-    return <AutomateApp />;
+    return (
+      <AutomateErrorBoundary>
+        <AutomateApp />
+      </AutomateErrorBoundary>
+    );
   } else if (activeApp === "guide") {
     return <GuidePage />;
   } else {

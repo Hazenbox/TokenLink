@@ -41,7 +41,8 @@ export function AutomateApp() {
     syncBrandWithLayers, 
     syncAllBrands, 
     syncStatus,
-    syncAttempts
+    syncAttempts,
+    isLoading
   } = useBrandStore((state) => ({
     activeBrandId: state.activeBrandId,
     brandsById: state.brandsById,
@@ -50,6 +51,7 @@ export function AutomateApp() {
     syncAllBrands: state.syncAllBrands,
     syncStatus: state.syncStatus,
     syncAttempts: state.syncAttempts,
+    isLoading: state.isLoading,
   }), shallow);
   
   // Compute derived values with useMemo to prevent infinite loops
@@ -66,6 +68,24 @@ export function AutomateApp() {
     );
     return recentAttempts.length < 5;
   }, [syncAttempts]);
+  
+  // Show loading state during initialization
+  if (isLoading && brands.length === 0) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100%',
+        gap: '16px',
+        color: 'var(--text-secondary)'
+      }}>
+        <div style={{ fontSize: '14px', fontWeight: 500 }}>Loading brands...</div>
+        <div style={{ fontSize: '12px' }}>Initializing Automate tab</div>
+      </div>
+    );
+  }
   
   // Import/Export modals state
   const [showExportModal, setShowExportModal] = useState(false);
@@ -195,6 +215,8 @@ export function AutomateApp() {
   
   // Initialize palettes and brands on mount (order matters!)
   useEffect(() => {
+    let mounted = true;
+    
     const loadData = async () => {
       try {
         console.log('[Init] Starting data load...');
@@ -202,10 +224,12 @@ export function AutomateApp() {
         
         // Load palettes first (brands reference them)
         await usePaletteStore.getState().loadPalettes();
+        if (!mounted) return;
         console.log('[Init] Palettes loaded and initialized');
         
         // Then load brands
         await useBrandStore.getState().loadBrands();
+        if (!mounted) return;
         console.log('[Init] Brands loaded');
         
         // Check if this was a first-time initialization
@@ -220,12 +244,19 @@ export function AutomateApp() {
         console.log('[Init] Initialization complete ✓');
       } catch (error) {
         console.error('[Init] Error during initialization:', error);
-        // Still try to refresh UI with whatever data we have
-        useBrandStore.getState().refreshFigmaData();
+        // Don't call refreshFigmaData on error - let loading state persist
+        // Error boundary will catch any rendering errors
+        if (mounted) {
+          console.error('[Init] Failed to initialize. Please reload the plugin.');
+        }
       }
     };
     
     loadData();
+    
+    return () => {
+      mounted = false;
+    };
   }, []);
   
   return (

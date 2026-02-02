@@ -128,6 +128,7 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
   const collectionsCollapsed = useVariablesViewStore((state) => state.collectionsCollapsed);
   const updateCollection = useBrandStore((state) => state.updateCollection);
   const activeBrandId = useBrandStore((state) => state.activeBrandId);
+  const isLoading = useBrandStore((state) => state.isLoading);
   
   // Initialization guard to prevent infinite loop
   const [isInitialized, setIsInitialized] = useState(false);
@@ -135,6 +136,17 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
   // Editing state
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
+  
+  // Defensive check: prevent rendering with undefined/empty collections during loading
+  if (!collections || (collections.length === 0 && isLoading)) {
+    return (
+      <div className="flex flex-col h-full p-4">
+        <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '12px' }}>
+          {isLoading ? 'Loading collections...' : 'No collections yet'}
+        </div>
+      </div>
+    );
+  }
   
   // Auto-select first collection if none selected (only once on mount)
   useEffect(() => {
