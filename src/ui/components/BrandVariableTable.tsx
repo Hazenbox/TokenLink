@@ -363,9 +363,10 @@ export function BrandVariableTable() {
           
           return (
             <div ref={tableContainerRef} className="flex-1 overflow-auto">
-              <table className="border-collapse text-xs" style={{ tableLayout: 'fixed', minWidth: `${NAME_COLUMN_WIDTH + modes.length * MODE_COLUMN_WIDTH}px` }}>
+              {/* IMPORTANT: Use border-separate, NOT border-collapse - border-collapse breaks position:sticky on thead */}
+              <table className="text-xs" style={{ borderCollapse: 'separate', borderSpacing: 0, tableLayout: 'fixed', minWidth: `${NAME_COLUMN_WIDTH + modes.length * MODE_COLUMN_WIDTH}px` }}>
                 <TableColGroup modeCount={modes.length} />
-                <thead className="sticky top-0 z-30 bg-background">
+                <thead className="sticky top-0 z-30" style={{ backgroundColor: 'var(--background)' }}>
                   <tr className="border-b border-border/40">
                     <th className="sticky left-0 z-40 bg-background text-left px-3 py-2 border-r border-border/20 w-[250px]">
                       <span className="text-[11px] font-medium text-foreground-secondary">
@@ -479,9 +480,10 @@ export function BrandVariableTable() {
       ) : (
         // Non-virtualized rendering for small lists (≤ 100 variables)
         <div ref={tableContainerRef} className="flex-1 overflow-auto">
-          <table className="border-collapse text-xs" style={{ tableLayout: 'fixed', minWidth: `${NAME_COLUMN_WIDTH + modes.length * MODE_COLUMN_WIDTH}px` }}>
+          {/* IMPORTANT: Use border-separate, NOT border-collapse - border-collapse breaks position:sticky on thead */}
+          <table className="text-xs" style={{ borderCollapse: 'separate', borderSpacing: 0, tableLayout: 'fixed', minWidth: `${NAME_COLUMN_WIDTH + modes.length * MODE_COLUMN_WIDTH}px` }}>
             <TableColGroup modeCount={modes.length} />
-            <thead className="sticky top-0 z-30 bg-background">
+            <thead className="sticky top-0 z-30" style={{ backgroundColor: 'var(--background)' }}>
               <tr className="border-b border-border/40">
                 <th className="sticky left-0 z-40 bg-background text-left px-3 py-2 border-r border-border/20 w-[250px]">
                   <span className="text-[11px] font-medium text-foreground-secondary">
