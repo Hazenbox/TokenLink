@@ -16,6 +16,18 @@ import { FigmaCollection } from '@/models/brand';
 import { EmptyState } from '../EmptyState';
 import { cn } from '@colors/utils';
 
+// Style constants to prevent object recreation on every render
+const LOADING_STATE_STYLE = {
+  padding: '20px',
+  textAlign: 'center' as const,
+  color: 'var(--text-secondary)',
+  fontSize: '12px'
+};
+
+const SCROLL_AREA_STYLE = {
+  overflowX: 'auto' as const
+};
+
 interface CollectionsSidebarProps {
   onCreateCollection?: () => void;
 }
