@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Rule, createDefaultRule, validateRule, parseAliasPath } from '../../models/rules';
-import { createGraph, VariableGraph } from '../../models';
+import { createGraph, VariableGraph, addCollection, addGroup, addVariable } from '../../models';
 import { findMatchingVariables, resolveTargetVariables, matchVariables } from '../../engine/ruleMatcher';
 
 // Flexible GraphData interface that accepts both App.tsx and model types
@@ -391,11 +391,11 @@ export function RuleEditor({
     try {
       const g = createGraph();
       
-      // Convert collections to internal format (with null checks)
+      // Convert collections to internal format using builder functions (maintains index maps)
       if (graphData.collections && Array.isArray(graphData.collections)) {
         graphData.collections.forEach((col: any) => {
           if (col && col.id && col.name) {
-            g.collections.set(col.id, {
+            addCollection(g, {
               id: col.id,
               name: col.name,
               type: (typeof col.type === 'string' ? col.type : 'primitive') as any,
@@ -404,11 +404,11 @@ export function RuleEditor({
         });
       }
       
-      // Convert groups to internal format (with null checks)
+      // Convert groups to internal format using builder functions (maintains index maps)
       if (graphData.groups && Array.isArray(graphData.groups)) {
         graphData.groups.forEach((grp: any) => {
           if (grp && grp.id && grp.name && grp.collectionId) {
-            g.groups.set(grp.id, {
+            addGroup(g, {
               id: grp.id,
               name: grp.name,
               collectionId: grp.collectionId,
@@ -417,11 +417,11 @@ export function RuleEditor({
         });
       }
       
-      // Convert variables to internal format (with null checks)
+      // Convert variables to internal format using builder functions (maintains index maps)
       if (graphData.variables && Array.isArray(graphData.variables)) {
         graphData.variables.forEach((var_: any) => {
           if (var_ && var_.id && var_.name && var_.groupId) {
-            g.variables.set(var_.id, {
+            addVariable(g, {
               id: var_.id,
               name: var_.name,
               groupId: var_.groupId,
