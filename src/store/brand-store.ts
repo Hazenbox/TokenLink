@@ -1264,7 +1264,13 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
       updateSyncStatusFromPlugin: (status: 'success' | 'error', data?: any) => {
         console.log('[Brand Store] Updating sync status from plugin:', status, data);
         
-        // Clear any existing timeout
+        // Clear any existing module-level timeout
+        if (statusResetTimer) {
+          clearTimeout(statusResetTimer);
+          statusResetTimer = null;
+        }
+        
+        // Clear any existing timeout in state
         const existingTimeout = get().statusResetTimeout;
         if (existingTimeout) {
           clearTimeout(existingTimeout);
@@ -1290,14 +1296,15 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
         } else {
           set({ syncStatus: 'error' });
           
-          // Reset to idle after 5 seconds
-          const timeout = setTimeout(() => {
+          // Reset to idle after 5 seconds (track module-level timer)
+          statusResetTimer = setTimeout(() => {
             if (get().syncStatus === 'error') {
               set({ syncStatus: 'idle', statusResetTimeout: null });
             }
+            statusResetTimer = null;
           }, 5000);
           
-          set({ statusResetTimeout: timeout });
+          set({ statusResetTimeout: statusResetTimer });
         }
       },
 
@@ -1610,15 +1617,16 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
             }
           };
 
-          const timeoutId = setTimeout(() => {
-            cleanup();
-            console.log('[Storage] Figma storage timeout, using localStorage');
-            loadFromLocalStorage();
-            resolve();
-          }, 3000); // Increase to 3 seconds for reliability
-          
+          // Cleanup function (defined first to avoid closure issues)
+          let cleanupCalled = false;
           const cleanup = () => {
-            window.removeEventListener('message', handleMessage);
+            if (cleanupCalled) return; // Prevent double cleanup
+            cleanupCalled = true;
+            
+            if (loadBrandsCleanup) {
+              window.removeEventListener('message', handleMessage);
+              loadBrandsCleanup = null;
+            }
             clearTimeout(timeoutId);
             set({ isLoading: false });
           };
@@ -1660,6 +1668,15 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
           };
           
           window.addEventListener('message', handleMessage);
+          loadBrandsCleanup = () => window.removeEventListener('message', handleMessage);
+          
+          // Timeout to fallback to localStorage if no response
+          const timeoutId = setTimeout(() => {
+            cleanup();
+            console.log('[Storage] Figma storage timeout, using localStorage');
+            loadFromLocalStorage();
+            resolve();
+          }, 3000); // Increase to 3 seconds for reliability
           
           // Request from Figma clientStorage (via plugin message)
           parent.postMessage({
@@ -1718,7 +1735,7 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
           }
         }, 300);
         
-        set({ saveQueue: timeoutId });
+        set({ saveQueue: saveQueueTimer });
       },
       
       // Figma data refresh actions
@@ -2099,6 +2116,11 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
 // Auto-save every 30 seconds
 let autoSaveInterval: ReturnType<typeof setInterval> | null = null;
 
+// Track timers to prevent memory leaks
+let saveQueueTimer: NodeJS.Timeout | null = null;
+let statusResetTimer: NodeJS.Timeout | null = null;
+let loadBrandsCleanup: (() => void) | null = null;
+
 if (typeof window !== 'undefined' && !autoSaveInterval) {
   autoSaveInterval = setInterval(() => {
     useBrandStore.getState().autoSave();
@@ -2110,9 +2132,31 @@ if (typeof window !== 'undefined' && !autoSaveInterval) {
  * Call this when the plugin is closing or on unmount
  */
 export function cleanupBrandStore() {
+  // Clear auto-save interval
   if (autoSaveInterval) {
     clearInterval(autoSaveInterval);
     autoSaveInterval = null;
     console.log('[Brand Store] Auto-save interval cleared');
+  }
+  
+  // Clear save queue timer
+  if (saveQueueTimer) {
+    clearTimeout(saveQueueTimer);
+    saveQueueTimer = null;
+    console.log('[Brand Store] Save queue timer cleared');
+  }
+  
+  // Clear status reset timer
+  if (statusResetTimer) {
+    clearTimeout(statusResetTimer);
+    statusResetTimer = null;
+    console.log('[Brand Store] Status reset timer cleared');
+  }
+  
+  // Remove loadBrands event listener if active
+  if (loadBrandsCleanup) {
+    loadBrandsCleanup();
+    loadBrandsCleanup = null;
+    console.log('[Brand Store] Load brands listener removed');
   }
 }
