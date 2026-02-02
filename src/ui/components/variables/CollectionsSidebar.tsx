@@ -37,14 +37,14 @@ interface CollectionItemProps {
   isActive: boolean;
   isEditing: boolean;
   editingName: string;
-  onClick: () => void;
-  onStartEdit: () => void;
+  onClick: (id: string) => void;
+  onStartEdit: (id: string, name: string) => void;
   onEditChange: (name: string) => void;
-  onEditSave: () => void;
+  onEditSave: (id: string) => void;
   onEditCancel: () => void;
 }
 
-function CollectionItem({ 
+const CollectionItem = React.memo(function CollectionItem({ 
   collection, 
   isActive, 
   isEditing,
@@ -65,16 +65,16 @@ function CollectionItem({
           ? "bg-surface-elevated"
           : "hover:bg-surface"
       )}
-      onClick={onClick}
+      onClick={() => onClick(collection.id)}
     >
       <div className="flex items-center justify-between gap-2 w-full">
         {isEditing ? (
           <Input
             value={editingName}
             onChange={(e) => onEditChange(e.target.value)}
-            onBlur={onEditSave}
+            onBlur={() => onEditSave(collection.id)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") onEditSave();
+              if (e.key === "Enter") onEditSave(collection.id);
               if (e.key === "Escape") onEditCancel();
             }}
             className="h-5 px-1 py-0 text-xs rounded-lg flex-1"
@@ -116,7 +116,7 @@ function CollectionItem({
                       onClick={(e) => {
                         e.stopPropagation();
                         setMenuOpen(false);
-                        onStartEdit();
+                        onStartEdit(collection.id, collection.name);
                       }}
                     >
                       Rename
@@ -130,7 +130,7 @@ function CollectionItem({
       </div>
     </div>
   );
-}
+});
 
 export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarProps) {
   // Simple state selector - no function calls
@@ -261,10 +261,10 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
                 isActive={activeCollectionId === collection.id}
                 isEditing={editingId === collection.id}
                 editingName={editingName}
-                onClick={() => handleClick(collection.id)}
-                onStartEdit={() => handleStartEditCollection(collection.id, collection.name)}
+                onClick={handleClick}
+                onStartEdit={handleStartEditCollection}
                 onEditChange={setEditingName}
-                onEditSave={() => handleSaveEditCollection(collection.id)}
+                onEditSave={handleSaveEditCollection}
                 onEditCancel={handleCancelEditCollection}
               />
             ))}
