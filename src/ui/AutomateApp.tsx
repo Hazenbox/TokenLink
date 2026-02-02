@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Upload, Loader2, CheckCircle, AlertCircle, Download, FolderInput } from 'lucide-react';
+import { Upload, Loader2, CheckCircle, AlertCircle, Download, FolderInput, Terminal } from 'lucide-react';
 import { BrandSidebar } from './components/brands/BrandSidebar';
 import { BrandConfigPanel } from './components/BrandConfigPanel';
 import { BrandVariableTable } from './components/BrandVariableTable';
@@ -15,9 +15,11 @@ import { SyncProgressModal } from './components/SyncProgressModal';
 import { ExportModal } from './components/ExportModal';
 import { ImportPreviewModal } from './components/ImportPreviewModal';
 import { ImportResults } from './components/ImportResults';
+import { ConsoleLogViewer } from './components/ConsoleLogViewer';
 import { useBrandStore } from '@/store/brand-store';
 import { usePaletteStore } from '@/store/palette-store';
 import { useFigmaMessages } from './hooks/useFigmaMessages';
+import { useConsoleLogs } from './hooks/useConsoleLogs';
 import { BrandGenerator } from '@/lib/brand-generator';
 import { parseImportFile, createImportPreview } from '@/services/import-service';
 import { executeImport } from '@/services/import-execution';
@@ -26,6 +28,9 @@ import { ImportPreview, ImportOptions, ImportResult } from '@/models/export-type
 export function AutomateApp() {
   // Handle Figma plugin messages for sync responses
   const { notification, progress, clearNotification } = useFigmaMessages();
+  
+  // Console logs
+  const { logs, isVisible, clearLogs, toggleVisibility, closeConsole } = useConsoleLogs();
   
   // Sync logic
   const activeBrand = useBrandStore((state) => state.getActiveBrand());
@@ -210,6 +215,24 @@ export function AutomateApp() {
             <span>Export</span>
           </button>
           
+          {/* Console Button */}
+          <button
+            onClick={toggleVisibility}
+            className="h-6 px-2 text-xs font-normal flex items-center gap-1.5 transition-colors text-foreground hover:text-foreground-secondary"
+            title="Toggle console"
+          >
+            <Terminal className="w-3 h-3" />
+            <span>Console</span>
+            {logs.length > 0 && (
+              <span className="px-1.5 py-0.5 text-[10px] rounded bg-surface-elevated text-foreground-secondary">
+                {logs.length}
+              </span>
+            )}
+            {logs.filter(l => l.level === 'error').length > 0 && (
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+            )}
+          </button>
+          
           {/* Import Button */}
           <button
             onClick={handleImportClick}
@@ -299,6 +322,14 @@ export function AutomateApp() {
           onClose={clearNotification}
         />
       )}
+      
+      {/* Console Log Viewer - Fixed bottom overlay */}
+      <ConsoleLogViewer
+        logs={logs}
+        isVisible={isVisible}
+        onClose={closeConsole}
+        onClear={clearLogs}
+      />
     </div>
   );
 }
