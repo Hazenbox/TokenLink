@@ -41,6 +41,8 @@ const LOADING_TITLE_STYLE = { fontSize: '14px', fontWeight: 500 };
 const LOADING_SUBTITLE_STYLE = { fontSize: '12px' };
 
 export function AutomateApp() {
+  console.log('[DEBUG] AutomateApp render START', Date.now());
+  
   // Track initialization state to prevent premature rendering (FIX for React error #185)
   // MUST be first to prevent store subscription loops during init
   const [isInitialized, setIsInitialized] = useState(false);
