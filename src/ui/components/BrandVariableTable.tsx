@@ -445,11 +445,12 @@ export function BrandVariableTable() {
               >
                 <TableColGroup modeCount={modes.length} isResponsive={isResponsive} />
                 {/* NOTE: sticky must be on <th> cells, NOT on <thead> - CSS spec limitation */}
+                {/* NOTE: border-b must be on <th> cells, NOT on <tr> - borders on tr don't stick */}
                 <thead>
                   {/* Main header row */}
-                  <tr className="border-b border-border/40">
+                  <tr>
                     {/* Name column: sticky both vertically (top:0) and horizontally (left:0) */}
-                    <th className="sticky top-0 left-0 z-40 bg-background text-left px-3 py-2 border-r border-border/20">
+                    <th className="sticky top-0 left-0 z-40 bg-background text-left px-3 py-2 border-b border-border/40 border-r border-border/20">
                       <span className="text-[11px] font-medium text-foreground-secondary">
                         Name
                       </span>
@@ -458,7 +459,7 @@ export function BrandVariableTable() {
                     {modes.map((mode) => (
                       <th 
                         key={mode.modeId} 
-                        className="sticky top-0 z-30 bg-background text-left px-3 py-2 border-r border-border/40 whitespace-nowrap"
+                        className="sticky top-0 z-30 bg-background text-left px-3 py-2 border-b border-border/40 border-r border-border/40 whitespace-nowrap"
                       >
                         <span className="text-[11px] font-medium text-foreground-secondary">
                           {mode.name}
@@ -468,9 +469,9 @@ export function BrandVariableTable() {
                   </tr>
                   {/* Floating group header - shows current group while scrolling */}
                   {currentVisibleGroup && (
-                    <tr className="border-b border-border/50">
+                    <tr>
                       <th 
-                        className="sticky top-[33px] left-0 bg-surface text-left px-3 py-1.5 border-r border-border/20"
+                        className="sticky top-[33px] left-0 bg-surface text-left px-3 py-1.5 border-b border-border/50 border-r border-border/20"
                         style={{ zIndex: 35 }}
                       >
                         <div className="flex items-center gap-2">
@@ -485,7 +486,7 @@ export function BrandVariableTable() {
                       {modes.map((mode) => (
                         <th 
                           key={mode.modeId}
-                          className="sticky top-[33px] bg-surface border-r border-border/40"
+                          className="sticky top-[33px] bg-surface border-b border-border/50 border-r border-border/40"
                           style={{ zIndex: 25 }}
                         />
                       ))}
@@ -605,10 +606,11 @@ export function BrandVariableTable() {
               >
                 <TableColGroup modeCount={modes.length} isResponsive={isResponsive} />
                 {/* NOTE: sticky must be on <th> cells, NOT on <thead> - CSS spec limitation */}
+                {/* NOTE: border-b must be on <th> cells, NOT on <tr> - borders on tr don't stick */}
                 <thead>
-                  <tr className="border-b border-border/40">
+                  <tr>
                     {/* Name column: sticky both vertically (top:0) and horizontally (left:0) */}
-                    <th className="sticky top-0 left-0 z-40 bg-background text-left px-3 py-2 border-r border-border/20">
+                    <th className="sticky top-0 left-0 z-40 bg-background text-left px-3 py-2 border-b border-border/40 border-r border-border/20">
                       <span className="text-[11px] font-medium text-foreground-secondary">
                         Name
                       </span>
@@ -617,7 +619,7 @@ export function BrandVariableTable() {
                     {modes.map((mode) => (
                       <th 
                         key={mode.modeId} 
-                        className="sticky top-0 z-30 bg-background text-left px-3 py-2 border-r border-border/40 whitespace-nowrap"
+                        className="sticky top-0 z-30 bg-background text-left px-3 py-2 border-b border-border/40 border-r border-border/40 whitespace-nowrap"
                       >
                         <span className="text-[11px] font-medium text-foreground-secondary">
                           {mode.name}
