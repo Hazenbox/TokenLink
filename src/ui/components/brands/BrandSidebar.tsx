@@ -22,6 +22,13 @@ import { useBrandStore } from "@/store/brand-store";
 import { cn } from "@colors/utils";
 import { EmptyState } from "../EmptyState";
 
+// Style constant to prevent object recreation on every render
+const LOADING_STATE_STYLE = {
+  padding: '20px',
+  textAlign: 'center' as const,
+  color: 'var(--text-secondary)'
+};
+
 interface BrandItemProps {
   brand: { id: string; name: string; syncedAt?: number; updatedAt: number };
   isActive: boolean;
@@ -230,7 +237,7 @@ export function BrandSidebar() {
   if (!brands) {
     return (
       <div className="flex flex-col h-full">
-        <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+        <div style={LOADING_STATE_STYLE}>
           {isLoading ? 'Loading brands...' : 'No brands available'}
         </div>
       </div>

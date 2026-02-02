@@ -21,6 +21,29 @@ import { EmptyState } from './EmptyState';
 // Threshold for enabling virtualization
 const VIRTUALIZATION_THRESHOLD = 100;
 
+// Style constants to prevent object recreation on every render
+const LOADING_CONTAINER_STYLE = {
+  padding: '40px',
+  textAlign: 'center' as const,
+  color: 'var(--text-secondary)'
+};
+
+const LOADING_TITLE_STYLE = {
+  fontSize: '14px',
+  marginBottom: '8px'
+};
+
+const LOADING_SUBTITLE_STYLE = {
+  fontSize: '12px'
+};
+
+const VIRTUALIZED_ROW_STYLE_BASE = {
+  position: 'absolute' as const,
+  top: 0,
+  left: 0,
+  width: '100%'
+};
+
 export function BrandVariableTable() {
   // Subscribe to primitive data only - no function calls
   const activeBrandId = useBrandStore((state) => state.activeBrandId);
@@ -39,9 +62,9 @@ export function BrandVariableTable() {
   // Defensive check: show loading state during initialization
   if (isLoading && brands.length === 0) {
     return (
-      <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-        <div style={{ fontSize: '14px', marginBottom: '8px' }}>Loading variables...</div>
-        <div style={{ fontSize: '12px' }}>Initializing brand data</div>
+      <div style={LOADING_CONTAINER_STYLE}>
+        <div style={LOADING_TITLE_STYLE}>Loading variables...</div>
+        <div style={LOADING_SUBTITLE_STYLE}>Initializing brand data</div>
       </div>
     );
   }
@@ -277,10 +300,7 @@ export function BrandVariableTable() {
                         key={`group-${virtualRow.index}`}
                         className="bg-surface"
                         style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          width: '100%',
+                          ...VIRTUALIZED_ROW_STYLE_BASE,
                           height: `${virtualRow.size}px`,
                           transform: `translateY(${virtualRow.start}px)`,
                         }}
@@ -310,10 +330,7 @@ export function BrandVariableTable() {
                         key={`var-${variable.id}`}
                         className="border-b border-border/40 hover:bg-interactive-hover transition-colors group"
                         style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          width: '100%',
+                          ...VIRTUALIZED_ROW_STYLE_BASE,
                           height: `${virtualRow.size}px`,
                           transform: `translateY(${virtualRow.start}px)`,
                         }}

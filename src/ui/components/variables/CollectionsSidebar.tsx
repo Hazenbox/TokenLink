@@ -141,7 +141,7 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
   if (!collections || (collections.length === 0 && isLoading)) {
     return (
       <div className="flex flex-col h-full p-4">
-        <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '12px' }}>
+        <div style={LOADING_STATE_STYLE}>
           {isLoading ? 'Loading collections...' : 'No collections yet'}
         </div>
       </div>
@@ -233,7 +233,7 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
       </div>
       
       {/* Collections List */}
-      <ScrollArea className="flex-1" style={{ overflowX: 'auto' }}>
+      <ScrollArea className="flex-1" style={SCROLL_AREA_STYLE}>
         {collections.length === 0 ? (
           <EmptyState
             title="No collections"
