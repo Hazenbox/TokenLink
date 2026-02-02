@@ -44,6 +44,97 @@ export function BrandConfigPanel() {
     [activeBrand]
   );
 
+  // ALL useCallback HOOKS MUST BE BEFORE ANY CONDITIONAL RETURNS (React rules of hooks)
+  // Memoize palette update handlers to prevent recreation on every render
+  // Use activeBrandId instead of activeBrand.id to handle null case safely
+  const handleUpdatePrimary = useCallback((paletteId: string, paletteName: string) => {
+    const brandId = useBrandStore.getState().activeBrandId;
+    if (brandId && brandId !== '__all__') {
+      useBrandStore.getState().updateBrandPalette(brandId, 'primary', paletteId, paletteName);
+    }
+  }, []);
+
+  const handleUpdateSecondary = useCallback((paletteId: string, paletteName: string) => {
+    const brandId = useBrandStore.getState().activeBrandId;
+    if (brandId && brandId !== '__all__') {
+      useBrandStore.getState().updateBrandPalette(brandId, 'secondary', paletteId, paletteName);
+    }
+  }, []);
+
+  const handleUpdateSparkle = useCallback((paletteId: string, paletteName: string) => {
+    const brandId = useBrandStore.getState().activeBrandId;
+    if (brandId && brandId !== '__all__') {
+      useBrandStore.getState().updateBrandPalette(brandId, 'sparkle', paletteId, paletteName);
+    }
+  }, []);
+
+  const handleUpdateNeutral = useCallback((paletteId: string, paletteName: string) => {
+    const brandId = useBrandStore.getState().activeBrandId;
+    if (brandId && brandId !== '__all__') {
+      useBrandStore.getState().updateBrandPalette(brandId, 'neutral', paletteId, paletteName);
+    }
+  }, []);
+
+  const handleUpdatePositive = useCallback((paletteId: string, paletteName: string) => {
+    const brandId = useBrandStore.getState().activeBrandId;
+    if (!brandId || brandId === '__all__') return;
+    const brand = useBrandStore.getState().brandsById?.get(brandId);
+    if (!brand) return;
+    const newColors = {
+      ...brand.colors,
+      semantic: {
+        ...brand.colors.semantic,
+        positive: { paletteId, paletteName }
+      }
+    };
+    useBrandStore.getState().updateBrand(brandId, { colors: newColors });
+  }, []);
+
+  const handleUpdateNegative = useCallback((paletteId: string, paletteName: string) => {
+    const brandId = useBrandStore.getState().activeBrandId;
+    if (!brandId || brandId === '__all__') return;
+    const brand = useBrandStore.getState().brandsById?.get(brandId);
+    if (!brand) return;
+    const newColors = {
+      ...brand.colors,
+      semantic: {
+        ...brand.colors.semantic,
+        negative: { paletteId, paletteName }
+      }
+    };
+    useBrandStore.getState().updateBrand(brandId, { colors: newColors });
+  }, []);
+
+  const handleUpdateWarning = useCallback((paletteId: string, paletteName: string) => {
+    const brandId = useBrandStore.getState().activeBrandId;
+    if (!brandId || brandId === '__all__') return;
+    const brand = useBrandStore.getState().brandsById?.get(brandId);
+    if (!brand) return;
+    const newColors = {
+      ...brand.colors,
+      semantic: {
+        ...brand.colors.semantic,
+        warning: { paletteId, paletteName }
+      }
+    };
+    useBrandStore.getState().updateBrand(brandId, { colors: newColors });
+  }, []);
+
+  const handleUpdateInformative = useCallback((paletteId: string, paletteName: string) => {
+    const brandId = useBrandStore.getState().activeBrandId;
+    if (!brandId || brandId === '__all__') return;
+    const brand = useBrandStore.getState().brandsById?.get(brandId);
+    if (!brand) return;
+    const newColors = {
+      ...brand.colors,
+      semantic: {
+        ...brand.colors.semantic,
+        informative: { paletteId, paletteName }
+      }
+    };
+    useBrandStore.getState().updateBrand(brandId, { colors: newColors });
+  }, []);
+
   // Handle resize
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -67,6 +158,8 @@ export function BrandConfigPanel() {
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
   };
+  
+  // NOW we can have conditional returns (after all hooks)
   
   // Collapsed state - show only toggle button
   if (configPanelCollapsed) {
@@ -122,76 +215,6 @@ export function BrandConfigPanel() {
       </div>
     );
   }
-
-  // Memoize palette update handlers to prevent recreation on every render
-  const handleUpdatePrimary = useCallback((paletteId: string, paletteName: string) => {
-    updateBrandPalette(activeBrand.id, 'primary', paletteId, paletteName);
-  }, [activeBrand.id, updateBrandPalette]);
-
-  const handleUpdateSecondary = useCallback((paletteId: string, paletteName: string) => {
-    updateBrandPalette(activeBrand.id, 'secondary', paletteId, paletteName);
-  }, [activeBrand.id, updateBrandPalette]);
-
-  const handleUpdateSparkle = useCallback((paletteId: string, paletteName: string) => {
-    updateBrandPalette(activeBrand.id, 'sparkle', paletteId, paletteName);
-  }, [activeBrand.id, updateBrandPalette]);
-
-  const handleUpdateNeutral = useCallback((paletteId: string, paletteName: string) => {
-    updateBrandPalette(activeBrand.id, 'neutral', paletteId, paletteName);
-  }, [activeBrand.id, updateBrandPalette]);
-
-  // Fix: Read activeBrand.colors from store inside callback to avoid dependency on object reference
-  const handleUpdatePositive = useCallback((paletteId: string, paletteName: string) => {
-    const brand = useBrandStore.getState().brandsById?.get(activeBrand.id);
-    if (!brand) return;
-    const newColors = {
-      ...brand.colors,
-      semantic: {
-        ...brand.colors.semantic,
-        positive: { paletteId, paletteName }
-      }
-    };
-    useBrandStore.getState().updateBrand(activeBrand.id, { colors: newColors });
-  }, [activeBrand.id]);
-
-  const handleUpdateNegative = useCallback((paletteId: string, paletteName: string) => {
-    const brand = useBrandStore.getState().brandsById?.get(activeBrand.id);
-    if (!brand) return;
-    const newColors = {
-      ...brand.colors,
-      semantic: {
-        ...brand.colors.semantic,
-        negative: { paletteId, paletteName }
-      }
-    };
-    useBrandStore.getState().updateBrand(activeBrand.id, { colors: newColors });
-  }, [activeBrand.id]);
-
-  const handleUpdateWarning = useCallback((paletteId: string, paletteName: string) => {
-    const brand = useBrandStore.getState().brandsById?.get(activeBrand.id);
-    if (!brand) return;
-    const newColors = {
-      ...brand.colors,
-      semantic: {
-        ...brand.colors.semantic,
-        warning: { paletteId, paletteName }
-      }
-    };
-    useBrandStore.getState().updateBrand(activeBrand.id, { colors: newColors });
-  }, [activeBrand.id]);
-
-  const handleUpdateInformative = useCallback((paletteId: string, paletteName: string) => {
-    const brand = useBrandStore.getState().brandsById?.get(activeBrand.id);
-    if (!brand) return;
-    const newColors = {
-      ...brand.colors,
-      semantic: {
-        ...brand.colors.semantic,
-        informative: { paletteId, paletteName }
-      }
-    };
-    useBrandStore.getState().updateBrand(activeBrand.id, { colors: newColors });
-  }, [activeBrand.id]);
 
   return (
     <div 
