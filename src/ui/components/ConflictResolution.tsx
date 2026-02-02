@@ -13,6 +13,8 @@ export interface ConflictResolutionProps {
   onStrategyChange: (strategy: 'skip' | 'overwrite' | 'rename' | 'merge') => void;
 }
 
+type ConflictStrategy = 'skip' | 'overwrite' | 'rename' | 'merge';
+
 const STRATEGIES = [
   {
     value: 'skip' as const,
@@ -40,6 +42,58 @@ const STRATEGIES = [
   },
 ];
 
+// Memoized StrategyOption component to prevent inline arrow functions in map
+interface StrategyOptionProps {
+  strategy: ConflictStrategy;
+  currentStrategy: ConflictStrategy;
+  icon: string;
+  label: string;
+  description: string;
+  onStrategyChange: (strategy: ConflictStrategy) => void;
+}
+
+const StrategyOption = React.memo(function StrategyOption({
+  strategy,
+  currentStrategy,
+  icon,
+  label,
+  description,
+  onStrategyChange
+}: StrategyOptionProps) {
+  return (
+    <label
+      className={`
+        flex items-start gap-3 p-3 rounded-md cursor-pointer transition-colors
+        ${
+          currentStrategy === strategy
+            ? 'bg-blue-500/10 border border-blue-500/30'
+            : 'bg-background border border-border hover:border-border/60'
+        }
+      `}
+    >
+      <input
+        type="radio"
+        name="strategy"
+        value={strategy}
+        checked={currentStrategy === strategy}
+        onChange={(e) => onStrategyChange(e.target.value as ConflictStrategy)}
+        className="mt-0.5"
+      />
+      <div className="flex-1">
+        <div className="flex items-center gap-2">
+          <span className="text-base">{icon}</span>
+          <span className="text-sm font-medium text-foreground">
+            {label}
+          </span>
+        </div>
+        <p className="text-xs text-foreground-secondary mt-0.5">
+          {description}
+        </p>
+      </div>
+    </label>
+  );
+});
+
 export function ConflictResolution({
   conflicts,
   strategy,
@@ -54,39 +108,15 @@ export function ConflictResolution({
         </p>
         <div className="space-y-2">
           {STRATEGIES.map((s) => (
-            <label
+            <StrategyOption
               key={s.value}
-              className={`
-                flex items-start gap-3 p-3 rounded-md cursor-pointer transition-colors
-                ${
-                  strategy === s.value
-                    ? 'bg-blue-500/10 border border-blue-500/30'
-                    : 'bg-background border border-border hover:border-border/60'
-                }
-              `}
-            >
-              <input
-                type="radio"
-                name="strategy"
-                value={s.value}
-                checked={strategy === s.value}
-                onChange={(e) =>
-                  onStrategyChange(e.target.value as typeof strategy)
-                }
-                className="mt-0.5"
-              />
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-base">{s.icon}</span>
-                  <span className="text-sm font-medium text-foreground">
-                    {s.label}
-                  </span>
-                </div>
-                <p className="text-xs text-foreground-secondary mt-0.5">
-                  {s.description}
-                </p>
-              </div>
-            </label>
+              strategy={s.value}
+              currentStrategy={strategy}
+              icon={s.icon}
+              label={s.label}
+              description={s.description}
+              onStrategyChange={onStrategyChange}
+            />
           ))}
         </div>
       </div>
