@@ -3,7 +3,7 @@
  * Displays multi-level accordion for hierarchical variable navigation
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { ChevronsUpDown, ChevronRight, ChevronDown } from 'lucide-react';
 import { shallow } from 'zustand/shallow';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -52,6 +52,21 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
     return path.every((segment, index) => hierarchyPath[index] === segment);
   };
   
+  // Create stable callbacks to prevent new function references on every render
+  const handleNodeClick = useCallback((node: HierarchyNode, hasChildren: boolean) => {
+    if (hasChildren) {
+      // Toggle expansion if has children
+      toggleHierarchyNode(node.fullPath);
+    }
+    // Set as active filter
+    setHierarchyPath(node.path);
+  }, [toggleHierarchyNode, setHierarchyPath]);
+  
+  const handleChevronClick = useCallback((fullPath: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleHierarchyNode(fullPath);
+  }, [toggleHierarchyNode]);
+  
   // Render a single node
   const renderNode = (node: HierarchyNode): React.ReactNode => {
     const hasChildren = node.children.size > 0;
@@ -66,14 +81,7 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
       <div key={node.fullPath} style={{ paddingLeft: `${Math.max(0, paddingLeft - 4)}px` }}>
         <SidebarItem
           isActive={isSelected}
-          onClick={() => {
-            if (hasChildren) {
-              // Toggle expansion if has children
-              toggleHierarchyNode(node.fullPath);
-            }
-            // Set as active filter
-            setHierarchyPath(node.path);
-          }}
+          onClick={() => handleNodeClick(node, hasChildren)}
           className={isAncestor && !isSelected ? 'bg-surface/20' : ''}
         >
           <div className="flex items-center gap-1.5 flex-1 min-w-0">
@@ -81,10 +89,7 @@ export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsS
             {hasChildren ? (
               <div 
                 className="flex-shrink-0 w-3.5 h-3.5 flex items-center justify-center text-foreground-tertiary"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleHierarchyNode(node.fullPath);
-                }}
+                onClick={(e) => handleChevronClick(node.fullPath, e)}
               >
                 {isExpanded ? (
                   <ChevronDown className="w-3.5 h-3.5" />
