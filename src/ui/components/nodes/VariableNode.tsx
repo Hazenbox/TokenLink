@@ -1,41 +1,46 @@
 /**
  * Custom React Flow node component for variables with mode-level granularity
+ * Optimized with React.memo and useCallback for performance
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { NodeProps } from '@xyflow/react';
 import { VariableNodeData } from '../../../adapters/graphToReactFlow';
 import { getCollectionColor } from '../../../utils/layoutGraph';
 import { ModeNode } from './ModeNode';
 
-export function VariableNode({ data, selected }: NodeProps<VariableNodeData>) {
+function VariableNodeComponent({ data, selected }: NodeProps<VariableNodeData>) {
   const [isHovered, setIsHovered] = useState(false);
   const [infoHovered, setInfoHovered] = useState(false);
-  const accentColor = getCollectionColor(data.collectionType);
+  
+  // Memoize accent color calculation
+  const accentColor = useMemo(() => getCollectionColor(data.collectionType), [data.collectionType]);
   const isNodeSelected = data.isSelected || selected;
 
-  const handleModeClick = (modeId: string, event?: React.MouseEvent) => {
+  // Memoize event handlers to prevent recreation on every render
+  const handleModeClick = useCallback((modeId: string, event?: React.MouseEvent) => {
     // Call the callback from data if it exists
     if (data.onModeClick) {
       data.onModeClick(modeId, event);
     }
-  };
+  }, [data.onModeClick]);
 
-  const handleContextMenu = (e: React.MouseEvent) => {
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (data.onContextMenu) {
       data.onContextMenu(e);
     }
-  };
+  }, [data.onContextMenu]);
 
-  const handleModeContextMenu = (modeId: string) => (e: React.MouseEvent) => {
+  // Memoize mode context menu handler factory
+  const handleModeContextMenu = useCallback((modeId: string) => (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (data.onModeContextMenu) {
       data.onModeContextMenu(e, modeId);
     }
-  };
+  }, [data.onModeContextMenu]);
 
   return (
     <div
@@ -44,8 +49,9 @@ export function VariableNode({ data, selected }: NodeProps<VariableNodeData>) {
       onContextMenu={handleContextMenu}
       style={{
         background: isNodeSelected ? 'rgba(139, 126, 255, 0.08)' : 'var(--card-bg)',
-        backdropFilter: 'blur(20px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+        // Optimize: Only apply backdrop-filter when hovered/selected (GPU-intensive)
+        backdropFilter: isHovered || isNodeSelected ? 'blur(20px) saturate(180%)' : 'none',
+        WebkitBackdropFilter: isHovered || isNodeSelected ? 'blur(20px) saturate(180%)' : 'none',
         border: isNodeSelected ? `2px solid ${accentColor}` : `1px solid var(--card-stroke)`,
         borderRadius: '16px',
         padding: '16px 18px',
@@ -59,6 +65,8 @@ export function VariableNode({ data, selected }: NodeProps<VariableNodeData>) {
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         position: 'relative',
         overflow: 'visible',
+        // CSS containment for better performance
+        contain: 'layout style paint',
       }}
     >
       {/* Header with Variable name and Info icon */}
@@ -195,3 +203,21 @@ export function VariableNode({ data, selected }: NodeProps<VariableNodeData>) {
     </div>
   );
 }
+
+// Memoize component with custom comparison to prevent unnecessary re-renders
+export const VariableNode = React.memo(VariableNodeComponent, (prevProps, nextProps) => {
+  // Only re-render if these critical props change
+  return (
+    prevProps.data.variableId === nextProps.data.variableId &&
+    prevProps.data.modes.length === nextProps.data.modes.length &&
+    prevProps.data.aliasCount === nextProps.data.aliasCount &&
+    prevProps.data.collectionType === nextProps.data.collectionType &&
+    prevProps.selected === nextProps.selected &&
+    prevProps.data.isSelected === nextProps.data.isSelected &&
+    // Check if mode selection changed (compare mode IDs)
+    (prevProps.data.isModeSelected === nextProps.data.isModeSelected ||
+     (prevProps.data.modes.every((m, i) => 
+       prevProps.data.isModeSelected?.(m.id) === nextProps.data.isModeSelected?.(m.id)
+     )))
+  );
+});

@@ -3,10 +3,11 @@
  * Enhanced with dropdowns, live preview, and templates
  */
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Rule, createDefaultRule, validateRule, parseAliasPath } from '../../models/rules';
 import { createGraph, VariableGraph, addCollection, addGroup, addVariable } from '../../models';
 import { findMatchingVariables, resolveTargetVariables, matchVariables } from '../../engine/ruleMatcher';
+import { debounce } from '../../utils/performance';
 
 // Flexible GraphData interface that accepts both App.tsx and model types
 interface GraphData {
@@ -383,6 +384,10 @@ export function RuleEditor({
   const [jsonText, setJsonText] = useState('');
   const [showTemplates, setShowTemplates] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
+  
+  // Debounced rule state for preview calculation (prevents expensive calculations on every keystroke)
+  const [debouncedRule, setDebouncedRule] = useState<Rule | null>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Build graph from graphData for preview - with error handling
   const graph: VariableGraph | null = useMemo(() => {
@@ -550,15 +555,38 @@ export function RuleEditor({
   // Get available target collections
   const targetCollectionNames = useMemo(() => collections.map(c => c.name).sort(), [collections]);
 
-  // Live preview - with error handling
+  // Initialize debounced rule on mount
+  useEffect(() => {
+    setDebouncedRule(rule);
+  }, []); // Only on mount
+
+  // Debounce rule updates for preview (300ms delay to avoid expensive calculations on every keystroke)
+  useEffect(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    
+    debounceTimerRef.current = setTimeout(() => {
+      setDebouncedRule(rule);
+    }, 300);
+    
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [rule]);
+
+  // Live preview - with error handling (uses debounced rule to prevent excessive calculations)
   const preview = useMemo(() => {
     if (!graph) return null;
-    if (!rule.when.collection && !rule.when.group) return null;
+    if (!debouncedRule) return null;
+    if (!debouncedRule.when.collection && !debouncedRule.when.group) return null;
 
     try {
-      const sourceVars = findMatchingVariables(graph, rule);
-      const targetVars = resolveTargetVariables(graph, rule);
-      const matchResult = matchVariables(graph, rule);
+      const sourceVars = findMatchingVariables(graph, debouncedRule);
+      const targetVars = resolveTargetVariables(graph, debouncedRule);
+      const matchResult = matchVariables(graph, debouncedRule);
 
       return {
         sourceCount: sourceVars.length,
@@ -578,7 +606,7 @@ export function RuleEditor({
         targetVars: [],
       };
     }
-  }, [graph, rule]);
+  }, [graph, debouncedRule]);
 
   return (
     <div style={styles.overlay} onClick={onClose}>

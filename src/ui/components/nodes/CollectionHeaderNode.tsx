@@ -1,8 +1,9 @@
 /**
  * Collection header node component for graph columns
+ * Optimized with React.memo and useMemo for performance
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { NodeProps } from '@xyflow/react';
 import { CollectionHeaderData } from '../../../utils/layoutGraph';
@@ -16,8 +17,9 @@ interface ExtendedCollectionHeaderData extends CollectionHeaderData {
   onContextMenu?: (event: React.MouseEvent) => void;
 }
 
-export function CollectionHeaderNode({ data }: NodeProps<ExtendedCollectionHeaderData>) {
-  const accentColor = getCollectionColor(data.collectionType);
+function CollectionHeaderNodeComponent({ data }: NodeProps<ExtendedCollectionHeaderData>) {
+  // Memoize accent color calculation
+  const accentColor = useMemo(() => getCollectionColor(data.collectionType), [data.collectionType]);
   const [isHovered, setIsHovered] = React.useState(false);
 
   return (
@@ -26,8 +28,9 @@ export function CollectionHeaderNode({ data }: NodeProps<ExtendedCollectionHeade
       onMouseLeave={() => setIsHovered(false)}
       style={{
         background: 'var(--card-bg)',
-        backdropFilter: 'blur(24px) saturate(200%)',
-        WebkitBackdropFilter: 'blur(24px) saturate(200%)',
+        // Optimize: Only apply backdrop-filter when hovered (GPU-intensive)
+        backdropFilter: isHovered ? 'blur(24px) saturate(200%)' : 'none',
+        WebkitBackdropFilter: isHovered ? 'blur(24px) saturate(200%)' : 'none',
         border: '1px solid var(--card-stroke)',
         borderRadius: '18px',
         padding: '18px 22px',
@@ -37,6 +40,8 @@ export function CollectionHeaderNode({ data }: NodeProps<ExtendedCollectionHeade
         userSelect: 'none',
         position: 'relative',
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        // CSS containment for better performance
+        contain: 'layout style paint',
       }}
       onContextMenu={(e) => {
         e.preventDefault();
@@ -185,3 +190,16 @@ export function CollectionHeaderNode({ data }: NodeProps<ExtendedCollectionHeade
     </div>
   );
 }
+
+// Memoize component to prevent unnecessary re-renders
+export const CollectionHeaderNode = React.memo(CollectionHeaderNodeComponent, (prevProps, nextProps) => {
+  // Only re-render if these props change
+  return (
+    prevProps.data.collectionId === nextProps.data.collectionId &&
+    prevProps.data.collectionName === nextProps.data.collectionName &&
+    prevProps.data.variableCount === nextProps.data.variableCount &&
+    prevProps.data.collectionType === nextProps.data.collectionType &&
+    prevProps.data.canMoveLeft === nextProps.data.canMoveLeft &&
+    prevProps.data.canMoveRight === nextProps.data.canMoveRight
+  );
+});

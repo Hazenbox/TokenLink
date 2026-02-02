@@ -83,9 +83,17 @@ export function VariableGraphView({
   onCanvasContextMenu,
   multiSelect,
 }: VariableGraphViewProps) {
+  // Deep memoization: Create a stable hash of graph structure to prevent unnecessary conversions
+  // Only recalculate when graph structure actually changes (size or content)
+  const graphHash = useMemo(() => {
+    if (!graph) return '';
+    // Create a simple hash based on graph structure
+    return `${graph.collections.size}-${graph.groups.size}-${graph.variables.size}-${graph.aliases.length}`;
+  }, [graph?.collections.size, graph?.groups.size, graph?.variables.size, graph?.aliases.length]);
+  
   const { nodes: initialNodes, edges: initialEdges } = useMemo(
     () => graphToReactFlow(graph),
-    [graph]
+    [graph, graphHash] // Include graphHash to trigger recalculation when structure changes
   );
   
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -110,13 +118,22 @@ export function VariableGraphView({
 
   const [proximityHandle, setProximityHandle] = useState<{ handleId: string; isValid: boolean } | null>(null);
   
-  // Sync React Flow state when graph changes - set nodes first
+  // Sync React Flow state when graph changes - optimized to prevent unnecessary updates
   useEffect(() => {
-    setNodes(initialNodes);
-  }, [initialNodes]);
+    // Only update if nodes actually changed (compare by ID and length)
+    const currentNodeIds = new Set(nodes.map(n => n.id));
+    const newNodeIds = new Set(initialNodes.map(n => n.id));
+    const nodesChanged = 
+      currentNodeIds.size !== newNodeIds.size ||
+      ![...currentNodeIds].every(id => newNodeIds.has(id));
+    
+    if (nodesChanged) {
+      setNodes(initialNodes);
+    }
+  }, [initialNodes, nodes]);
   
   // Set edges after nodes are mounted to ensure handles exist
-  // React Flow will handle missing handles gracefully
+  // Optimized: Single requestAnimationFrame is sufficient
   useEffect(() => {
     if (nodes.length === 0) {
       setEdges([]);
@@ -128,12 +145,9 @@ export function VariableGraphView({
       return;
     }
     
-    // Wait for nodes to render, then set edges
-    // React Flow will handle invalid edges gracefully (won't render edges with missing handles)
+    // Wait for nodes to render, then set edges (single RAF is sufficient)
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setEdges(initialEdges);
-      });
+      setEdges(initialEdges);
     });
   }, [initialEdges, nodes.length]);
   

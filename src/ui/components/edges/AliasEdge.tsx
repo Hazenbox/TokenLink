@@ -8,6 +8,22 @@ import { AliasEdgeData } from '../../../adapters/graphToReactFlow';
 import { EdgeTooltip } from './EdgeTooltip';
 import { devDebug } from '../../../utils/logger';
 
+// Custom comparison function for memo to prevent unnecessary re-renders
+const areEqual = (prevProps: EdgeProps<AliasEdgeData>, nextProps: EdgeProps<AliasEdgeData>) => {
+  return (
+    prevProps.id === nextProps.id &&
+    prevProps.sourceX === nextProps.sourceX &&
+    prevProps.sourceY === nextProps.sourceY &&
+    prevProps.targetX === nextProps.targetX &&
+    prevProps.targetY === nextProps.targetY &&
+    prevProps.selected === nextProps.selected &&
+    prevProps.data?.sourceVariableId === nextProps.data?.sourceVariableId &&
+    prevProps.data?.targetVariableId === nextProps.data?.targetVariableId &&
+    prevProps.data?.sourceModeId === nextProps.data?.sourceModeId &&
+    prevProps.data?.targetModeId === nextProps.data?.targetModeId
+  );
+};
+
 export const AliasEdge = memo(function AliasEdge({
   id,
   sourceX,
@@ -46,17 +62,19 @@ export const AliasEdge = memo(function AliasEdge({
     curvature: 0.15, // Reduced curvature for gentler curves
   }), [sourceX, sourceY, sourcePosition, adjustedTargetX, adjustedTargetY, targetPosition]);
 
-  // Calculate screen position from canvas coordinates
-  const canvasToScreen = (canvasX: number, canvasY: number) => {
-    const flowContainer = document.querySelector('.react-flow');
-    if (!flowContainer) return { x: 0, y: 0 };
-    
-    const rect = flowContainer.getBoundingClientRect();
-    const screenX = rect.left + (canvasX + viewportX) * zoom;
-    const screenY = rect.top + (canvasY + viewportY) * zoom;
-    
-    return { x: screenX, y: screenY };
-  };
+  // Memoize canvasToScreen calculation to avoid DOM queries on every render
+  const canvasToScreen = useMemo(() => {
+    return (canvasX: number, canvasY: number) => {
+      const flowContainer = document.querySelector('.react-flow');
+      if (!flowContainer) return { x: 0, y: 0 };
+      
+      const rect = flowContainer.getBoundingClientRect();
+      const screenX = rect.left + (canvasX + viewportX) * zoom;
+      const screenY = rect.top + (canvasY + viewportY) * zoom;
+      
+      return { x: screenX, y: screenY };
+    };
+  }, [viewportX, viewportY, zoom]);
 
   // Handlers for mouse events
   const handleMouseEnter = (e: React.MouseEvent) => {
@@ -166,4 +184,4 @@ export const AliasEdge = memo(function AliasEdge({
       )}
     </>
   );
-});
+}, areEqual);

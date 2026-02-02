@@ -23,6 +23,7 @@ import { downloadJSON } from '../utils/export';
 import { useMultiSelect } from './hooks/useMultiSelect';
 import { useKeyboardShortcuts, KeyboardShortcut } from './hooks/useKeyboardShortcuts';
 import { useViewStore } from '@/store/view-store';
+import { useMessageHandler } from './hooks/useMessageHandler';
 
 // Build timestamp for cache busting
 const BUILD_TIMESTAMP = new Date().toISOString();
@@ -553,326 +554,32 @@ const App: React.FC = () => {
     );
   };
 
+  // Use centralized message handler hook for better performance
+  const handleMessage = useMessageHandler({
+    setGraphData,
+    setLoading,
+    setLoadingProgress,
+    setError,
+    setNotification,
+    setIsEvaluating,
+    setRuleResult,
+    setIsExporting,
+    setIsImporting,
+    downloadJSON,
+  });
+
   useEffect(() => {
     // Request variable graph when the component mounts
     refreshGraph();
 
-    // Listen for messages from the plugin code
-    const handleMessage = (event: MessageEvent) => {
-      const msg = event.data.pluginMessage;
-      
-      if (msg.type === 'loading-progress') {
-        // Update progress state
-        setLoadingProgress(msg.data);
-      }
-      
-      if (msg.type === 'variable-graph-loaded') {
-        // Update state with the graph data
-        setGraphData(msg.data);
-        setLoading(false);
-      }
-      
-      if (msg.type === 'variable-graph-error') {
-        // Handle error
-        setError(msg.data.message);
-        setLoading(false);
-      }
-      
-      if (msg.type === 'alias-created') {
-        // Alias created successfully
-        setGraphData(msg.data.graph);
-        setNotification({ type: 'success', message: 'Alias created successfully!' });
-        setTimeout(() => setNotification(null), 3000);
-      }
-      
-      if (msg.type === 'alias-creation-error') {
-        // Error creating alias
-        setNotification({ type: 'error', message: msg.data.message });
-        setTimeout(() => setNotification(null), 5000);
-      }
-      
-      if (msg.type === 'variables-updated') {
-        // Real-time sync: variables changed in Figma
-        console.log('Received real-time variable update from Figma');
-        setGraphData(msg.data);
-        // Show subtle notification
-        setNotification({ type: 'success', message: 'Variables synced' });
-        setTimeout(() => {
-          setNotification(null);
-        }, 2000);
-      }
-      
-      if (msg.type === 'sync-error') {
-        // Error syncing variables
-        setNotification({ type: 'error', message: msg.data.message });
-        setTimeout(() => {
-          setNotification(null);
-        }, 3000);
-      }
-      
-      if (msg.type === 'rules-evaluated') {
-        // Dry-run results
-        setIsEvaluating(false);
-        setRuleResult(msg.data);
-        setNotification({ type: 'success', message: 'Rule evaluation completed' });
-        setTimeout(() => setNotification(null), 3000);
-      }
-      
-      if (msg.type === 'rules-evaluation-error') {
-        // Error evaluating rules
-        setIsEvaluating(false);
-        setNotification({ type: 'error', message: msg.data.message });
-        setTimeout(() => setNotification(null), 5000);
-      }
-      
-      if (msg.type === 'rules-applied') {
-        // Rules applied
-        setIsEvaluating(false);
-        setGraphData(msg.data.graph);
-        setRuleResult(msg.data.formatted);
-        
-        if (msg.data.success) {
-          setNotification({ 
-            type: 'success', 
-            message: `Rules applied! Created ${msg.data.successCount} alias(es)` 
-          });
-        } else {
-          setNotification({ 
-            type: 'error', 
-            message: `Applied with errors: ${msg.data.errorCount} failed` 
-          });
-        }
-        setTimeout(() => setNotification(null), 5000);
-      }
-      
-      if (msg.type === 'rules-application-error') {
-        // Error applying rules
-        setIsEvaluating(false);
-        setNotification({ type: 'error', message: msg.data.message });
-        setTimeout(() => setNotification(null), 5000);
-      }
-      
-      if (msg.type === 'graph-exported') {
-        // Graph exported successfully
-        setIsExporting(false);
-        const { json } = msg.data;
-        
-        // Download the JSON file
-        downloadJSON(json);
-        
-        setNotification({ type: 'success', message: 'Graph exported successfully!' });
-        setTimeout(() => setNotification(null), 3000);
-      }
-      
-      if (msg.type === 'graph-export-error') {
-        // Error exporting graph
-        setIsExporting(false);
-        setNotification({ type: 'error', message: msg.data.message });
-        setTimeout(() => setNotification(null), 5000);
-      }
-      
-      if (msg.type === 'import-progress') {
-        // Import progress update
-        const { step, total, message } = msg.data;
-        console.log(`[Import Progress] ${step}/${total}: ${message}`);
-        // Could show progress bar or update notification here if desired
-      }
-      
-      if (msg.type === 'graph-imported') {
-        // Graph imported successfully
-        setIsImporting(false);
-        const { result, graph, format } = msg.data;
-        
-        // Update graph data
-        setGraphData(graph);
-        
-        // Show detailed notification with format info
-        const formatLabel = format === 'figma-native' ? 'Figma native' : 'Token Link';
-        const message = result.success
-          ? `Import successful! (${formatLabel} format) Created ${result.stats.collectionsCreated} collection(s), ${result.stats.variablesCreated} variable(s), ${result.stats.aliasesCreated} alias(es)`
-          : 'Import completed with errors';
-        
-        setNotification({ 
-          type: result.success ? 'success' : 'error', 
-          message: message
-        });
-        
-        // Log warnings and errors
-        if (result.warnings.length > 0) {
-          console.warn('Import warnings:', result.warnings);
-        }
-        if (result.errors.length > 0) {
-          console.error('Import errors:', result.errors);
-        }
-        
-        setTimeout(() => setNotification(null), 5000);
-      }
-      
-      if (msg.type === 'graph-import-error') {
-        // Error importing graph
-        setIsImporting(false);
-        setNotification({ type: 'error', message: msg.data.message });
-        setTimeout(() => setNotification(null), 5000);
-      }
-      
-      // Collection creation handlers
-      if (msg.type === 'collection-created') {
-        console.log('[Token Link] Collection created, updating graph:', {
-          collections: msg.data.graph.collections.length,
-          groups: msg.data.graph.groups.length,
-          variables: msg.data.graph.variables.length,
-        });
-        setGraphData(msg.data.graph);
-        setNotification({ type: 'success', message: 'Collection created successfully!' });
-        setTimeout(() => setNotification(null), 3000);
-      }
-      
-      if (msg.type === 'collection-creation-error') {
-        console.error('[Token Link] Collection creation error:', msg.data.message);
-        setNotification({ type: 'error', message: msg.data.message });
-        setTimeout(() => setNotification(null), 5000);
-      }
-      
-      // Mode creation handlers
-      if (msg.type === 'mode-created') {
-        setGraphData(msg.data.graph);
-        setNotification({ type: 'success', message: 'Mode created successfully!' });
-        setTimeout(() => setNotification(null), 3000);
-      }
-      
-      if (msg.type === 'mode-creation-error') {
-        setNotification({ type: 'error', message: msg.data.message });
-        setTimeout(() => setNotification(null), 5000);
-      }
-      
-      // Variable creation handlers
-      if (msg.type === 'variable-created') {
-        setGraphData(msg.data.graph);
-        setNotification({ type: 'success', message: 'Variable created successfully!' });
-        setTimeout(() => setNotification(null), 3000);
-      }
-      
-      if (msg.type === 'variable-creation-error') {
-        setNotification({ type: 'error', message: msg.data.message });
-        setTimeout(() => setNotification(null), 5000);
-      }
-      
-      // Deletion handlers
-      if (msg.type === 'collection-deleted') {
-        setGraphData(msg.data.graph);
-        setNotification({ type: 'success', message: 'Collection deleted successfully!' });
-        setTimeout(() => setNotification(null), 3000);
-      }
-      
-      if (msg.type === 'collection-deletion-error') {
-        setNotification({ type: 'error', message: msg.data.message });
-        setTimeout(() => setNotification(null), 5000);
-      }
-      
-      // ml_ collections cleanup handlers
-      if (msg.type === 'ml-collections-cleaned') {
-        if (msg.data.graph) {
-          setGraphData(msg.data.graph);
-        }
-        setNotification({ 
-          type: 'success', 
-          message: msg.data.message || `Deleted ${msg.data.deletedCount} ml_ prefixed collections`
-        });
-        setTimeout(() => setNotification(null), 4000);
-      }
-      
-      if (msg.type === 'ml-collections-cleanup-error') {
-        setNotification({ type: 'error', message: msg.data.message });
-        setTimeout(() => setNotification(null), 5000);
-      }
-      
-      if (msg.type === 'variable-deleted') {
-        setGraphData(msg.data.graph);
-        setNotification({ type: 'success', message: 'Variable deleted successfully!' });
-        setTimeout(() => setNotification(null), 3000);
-      }
-      
-      if (msg.type === 'variable-deletion-error') {
-        setNotification({ type: 'error', message: msg.data.message });
-        setTimeout(() => setNotification(null), 5000);
-      }
-      
-      if (msg.type === 'mode-deleted') {
-        setGraphData(msg.data.graph);
-        setNotification({ type: 'success', message: 'Mode deleted successfully!' });
-        setTimeout(() => setNotification(null), 3000);
-      }
-      
-      if (msg.type === 'mode-deletion-error') {
-        setNotification({ type: 'error', message: msg.data.message });
-        setTimeout(() => setNotification(null), 5000);
-      }
-      
-      // Alias deletion handlers
-      if (msg.type === 'alias-deleted') {
-        setGraphData(msg.data.graph);
-        
-        // Create detailed multi-line toast message
-        const { aliasInfo } = msg.data;
-        const message = `Alias Removed
-
-[Collection: ${aliasInfo.sourceCollectionName}]
-  ${aliasInfo.sourceGroupName}/${aliasInfo.sourceVariableName} · ${aliasInfo.sourceModeName}
-    ↓
-[Collection: ${aliasInfo.targetCollectionName}]
-  ${aliasInfo.targetGroupName}/${aliasInfo.targetVariableName} · ${aliasInfo.targetModeName}`;
-        
-        setNotification({ type: 'success', message });
-        setTimeout(() => setNotification(null), 5000);
-      }
-      
-      if (msg.type === 'alias-deletion-error') {
-        setNotification({ type: 'error', message: msg.data.message });
-        setTimeout(() => setNotification(null), 5000);
-      }
-      
-      // Rename handlers
-      if (msg.type === 'collection-renamed') {
-        setGraphData(msg.data.graph);
-        setNotification({ type: 'success', message: 'Collection renamed successfully!' });
-        setTimeout(() => setNotification(null), 3000);
-      }
-      
-      if (msg.type === 'collection-rename-error') {
-        setNotification({ type: 'error', message: msg.data.message });
-        setTimeout(() => setNotification(null), 5000);
-      }
-      
-      if (msg.type === 'variable-renamed') {
-        setGraphData(msg.data.graph);
-        setNotification({ type: 'success', message: 'Variable renamed successfully!' });
-        setTimeout(() => setNotification(null), 3000);
-      }
-      
-      if (msg.type === 'variable-rename-error') {
-        setNotification({ type: 'error', message: msg.data.message });
-        setTimeout(() => setNotification(null), 5000);
-      }
-      
-      if (msg.type === 'mode-renamed') {
-        setGraphData(msg.data.graph);
-        setNotification({ type: 'success', message: 'Mode renamed successfully!' });
-        setTimeout(() => setNotification(null), 3000);
-      }
-      
-      if (msg.type === 'mode-rename-error') {
-        setNotification({ type: 'error', message: msg.data.message });
-        setTimeout(() => setNotification(null), 5000);
-      }
-    };
-
+    // Listen for messages from the plugin code using centralized handler
     window.addEventListener('message', handleMessage);
 
     // Cleanup listener on unmount
     return () => {
       window.removeEventListener('message', handleMessage);
     };
-  }, []);
+  }, [handleMessage, refreshGraph]);
 
   // Note: Undo/Redo is handled natively by Figma (Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z)
   // Since we call figma.commitUndo() after alias deletion, Figma's native undo/redo
