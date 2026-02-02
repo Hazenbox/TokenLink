@@ -4,7 +4,7 @@
  * Filtering handled by hierarchical Groups sidebar
  */
 
-import React, { useMemo, useEffect, useRef, useCallback } from 'react';
+import React, { useMemo, useEffect, useRef, useCallback, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useBrandStore } from '@/store/brand-store';
 import { useVariablesViewStore } from '@/store/variables-view-store';
@@ -279,6 +279,53 @@ export function BrandVariableTable() {
     enabled: shouldVirtualize,
   });
   
+  // Track current visible group for floating header in virtualized tables
+  const [currentVisibleGroup, setCurrentVisibleGroup] = useState<{ name: string; count: number } | null>(null);
+  
+  // Find the group that should be shown in the floating header based on scroll position
+  const updateVisibleGroup = useCallback(() => {
+    if (!shouldVirtualize || !tableContainerRef.current) return;
+    
+    const scrollTop = tableContainerRef.current.scrollTop;
+    const headerHeight = 33; // Main header height
+    const effectiveScrollTop = scrollTop + headerHeight;
+    
+    // Find which row is at the top of the visible area
+    const topRowIndex = Math.floor(effectiveScrollTop / ROW_HEIGHT);
+    
+    // Walk backwards from this row to find its group
+    let groupName: string | null = null;
+    let groupCount = 0;
+    
+    for (let i = Math.min(topRowIndex, flattenedRows.length - 1); i >= 0; i--) {
+      const row = flattenedRows[i];
+      if (row && row.type === 'group') {
+        groupName = row.groupName;
+        groupCount = row.count;
+        break;
+      }
+    }
+    
+    if (groupName && scrollTop > 0) {
+      setCurrentVisibleGroup({ name: groupName, count: groupCount });
+    } else {
+      setCurrentVisibleGroup(null);
+    }
+  }, [shouldVirtualize, flattenedRows]);
+  
+  // Update visible group on scroll
+  useEffect(() => {
+    const container = tableContainerRef.current;
+    if (!container || !shouldVirtualize) return;
+    
+    const handleScroll = () => {
+      requestAnimationFrame(updateVisibleGroup);
+    };
+    
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [shouldVirtualize, updateVisibleGroup]);
+  
   // NOW we can have conditional returns (after all hooks)
   
   // Show loading state during initialization
@@ -384,7 +431,7 @@ export function BrandVariableTable() {
           const isResponsive = modes.length <= RESPONSIVE_MODE_THRESHOLD;
           
           return (
-            <div ref={tableContainerRef} className="flex-1 overflow-auto">
+            <div ref={tableContainerRef} className="flex-1 overflow-auto relative">
               {/* IMPORTANT: Use border-separate, NOT border-collapse - border-collapse breaks position:sticky */}
               <table 
                 className="text-xs" 
@@ -399,6 +446,7 @@ export function BrandVariableTable() {
                 <TableColGroup modeCount={modes.length} isResponsive={isResponsive} />
                 {/* NOTE: sticky must be on <th> cells, NOT on <thead> - CSS spec limitation */}
                 <thead>
+                  {/* Main header row */}
                   <tr className="border-b border-border/40">
                     {/* Name column: sticky both vertically (top:0) and horizontally (left:0) */}
                     <th className="sticky top-0 left-0 z-40 bg-background text-left px-3 py-2 border-r border-border/20">
@@ -418,6 +466,31 @@ export function BrandVariableTable() {
                       </th>
                     ))}
                   </tr>
+                  {/* Floating group header - shows current group while scrolling */}
+                  {currentVisibleGroup && (
+                    <tr className="border-b border-border/50">
+                      <th 
+                        className="sticky top-[33px] left-0 bg-surface text-left px-3 py-1.5 border-r border-border/20"
+                        style={{ zIndex: 35 }}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-semibold text-foreground uppercase tracking-wide truncate">
+                            {currentVisibleGroup.name}
+                          </span>
+                          <span className="text-[9px] text-foreground-tertiary flex-shrink-0">
+                            ({currentVisibleGroup.count})
+                          </span>
+                        </div>
+                      </th>
+                      {modes.map((mode) => (
+                        <th 
+                          key={mode.modeId}
+                          className="sticky top-[33px] bg-surface border-r border-border/40"
+                          style={{ zIndex: 25 }}
+                        />
+                      ))}
+                    </tr>
+                  )}
                 </thead>
                 <tbody>
                   {/* Top padding spacer for virtualization */}
