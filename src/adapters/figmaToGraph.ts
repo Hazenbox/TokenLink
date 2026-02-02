@@ -248,7 +248,11 @@ export function figmaToGraph(
                 console.log(`[Token Link] Resolved alias: ${figmaVariable.name}.${modeName} → ${targetVariable.name}.${targetMode.name} (mode ID: ${targetMode.modeId})`);
               } else {
                 // Fallback: if no matching mode name found, use the first mode of target collection
-                console.warn(`[Token Link] No matching mode "${modeName}" found in target collection "${targetCollection.name}", using first mode`);
+                // Only warn if target has multiple modes (indicates potential misconfiguration)
+                // Single-mode targets are expected to receive aliases from multi-mode sources
+                if (targetCollection.modes.length > 1) {
+                  console.warn(`[Token Link] No matching mode "${modeName}" found in target collection "${targetCollection.name}" (has ${targetCollection.modes.length} modes: ${targetCollection.modes.map(m => m.name).join(', ')}), using first mode`);
+                }
                 modeValue = {
                   ...modeValue,
                   modeId: targetCollection.modes[0]?.modeId || modeId,
