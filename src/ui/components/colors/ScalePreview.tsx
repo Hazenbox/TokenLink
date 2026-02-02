@@ -1,5 +1,5 @@
 import * as React from "react";
-import { LayoutGrid, List, ArrowUpDown, Download, Circle, Copy, Check, ChevronDown, Maximize2, Minimize2, Layers } from "lucide-react";
+import { LayoutGrid, List, ArrowUpDown, Download, Circle, Copy, Check, ChevronDown, Maximize2, Minimize2, Layers, CloudUpload } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
@@ -724,6 +724,8 @@ export function ScalePreview() {
   const [showDots, setShowDots] = React.useState(false);
   const [copyStatus, setCopyStatus] = React.useState<'idle' | 'copied' | 'error'>('idle');
   const [copyContrastStatus, setCopyContrastStatus] = React.useState<'idle' | 'copied' | 'error'>('idle');
+  const [syncOpen, setSyncOpen] = React.useState(false);
+  const [syncStatus, setSyncStatus] = React.useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
 
   React.useEffect(() => {
     if (!downloadOpen) {
@@ -737,6 +739,47 @@ export function ScalePreview() {
       return () => clearTimeout(timer);
     }
   }, [copyContrastStatus]);
+
+  React.useEffect(() => {
+    if (syncStatus === 'success' || syncStatus === 'error') {
+      const timer = setTimeout(() => setSyncStatus('idle'), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [syncStatus]);
+
+  // Listen for sync messages from plugin code
+  React.useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      const msg = event.data.pluginMessage;
+      if (!msg) return;
+
+      switch (msg.type) {
+        case 'sync-palette-colors-progress':
+          // Keep syncing status during progress
+          if (syncStatus !== 'syncing') {
+            setSyncStatus('syncing');
+          }
+          console.log('[Palette Sync Progress]', msg.data.message);
+          break;
+
+        case 'sync-palette-colors-success':
+          console.log('[Palette Sync Success]', msg.data);
+          setSyncStatus('success');
+          // Show notification
+          const { totalVariables, created, updated } = msg.data;
+          console.log(`Sync complete: ${totalVariables} variables (${created} created, ${updated} updated)`);
+          break;
+
+        case 'sync-palette-colors-error':
+          console.error('[Palette Sync Error]', msg.data.message);
+          setSyncStatus('error');
+          break;
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [syncStatus]);
 
   const activePalette = React.useMemo(
     () => palettes.find((p) => p.id === activePaletteId),
@@ -895,6 +938,67 @@ export function ScalePreview() {
                 </div>
               </PopoverContent>
             </Popover>
+
+            <Tooltip>
+              <Popover open={syncOpen} onOpenChange={setSyncOpen}>
+                <PopoverTrigger asChild>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 cursor-pointer"
+                      disabled={syncStatus === 'syncing'}
+                    >
+                      {syncStatus === 'syncing' ? (
+                        <CloudUpload className="h-3.5 w-3.5 opacity-50 animate-pulse" />
+                      ) : syncStatus === 'success' ? (
+                        <Check className="h-3.5 w-3.5 text-green-600" />
+                      ) : (
+                        <CloudUpload className="h-3.5 w-3.5 opacity-50" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                </PopoverTrigger>
+                <PopoverContent className="w-48 p-1" align="end">
+                  <div className="flex flex-col">
+                    <button
+                      className="rounded px-2 py-1.5 text-xs hover:bg-accent text-left cursor-pointer"
+                      onClick={() => {
+                        const { syncPaletteToFigmaPrimitives } = usePaletteStore.getState();
+                        if (activePalette) {
+                          syncPaletteToFigmaPrimitives(activePalette.id);
+                          setSyncStatus('syncing');
+                          setSyncOpen(false);
+                        }
+                      }}
+                      disabled={syncStatus === 'syncing'}
+                    >
+                      Sync {activePalette?.name} color
+                    </button>
+                    <button
+                      className="rounded px-2 py-1.5 text-xs hover:bg-accent text-left cursor-pointer"
+                      onClick={() => {
+                        const { syncAllPalettesToFigmaPrimitives } = usePaletteStore.getState();
+                        syncAllPalettesToFigmaPrimitives();
+                        setSyncStatus('syncing');
+                        setSyncOpen(false);
+                      }}
+                      disabled={syncStatus === 'syncing'}
+                    >
+                      Sync all colors
+                    </button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+              <TooltipContent side="bottom">
+                <p className="text-xs">
+                  {syncStatus === 'syncing' ? 'Syncing to Figma...' : 
+                   syncStatus === 'success' ? 'Synced successfully!' : 
+                   syncStatus === 'error' ? 'Sync failed' : 
+                   'Sync colors to Figma primitives'}
+                </p>
+              </TooltipContent>
+            </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>

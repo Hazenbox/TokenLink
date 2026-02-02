@@ -2515,6 +2515,162 @@ figma.ui.onmessage = async (msg) => {
     }
   }
   
+  // Handle palette colors sync to primitives collection
+  if (msg.type === 'sync-palette-colors-to-primitives') {
+    try {
+      const { palettes, scales } = msg.data;
+      
+      if (!palettes || !Array.isArray(palettes)) {
+        throw new Error('Invalid palettes data');
+      }
+      
+      if (!scales || typeof scales !== 'object') {
+        throw new Error('Invalid scales data');
+      }
+      
+      console.log(`[Palette Sync] Starting sync for ${palettes.length} palette(s)...`);
+      
+      // Send initial progress
+      figma.ui.postMessage({
+        type: 'sync-palette-colors-progress',
+        data: {
+          message: 'Creating primitives collection...',
+          progress: 0
+        }
+      });
+      
+      // Step 1: Get or create 00_Primitives collection
+      const primitivesCollection = await getOrCreateCollection('00_Primitives');
+      console.log(`[Palette Sync] Using collection: ${primitivesCollection.name}`);
+      
+      // Step 2: Build variable cache for fast lookups
+      console.log('[Palette Sync] Building variable cache...');
+      const variableCache = await buildVariableCache();
+      console.log(`[Palette Sync] Cache built: ${variableCache.size} existing variables`);
+      
+      // Scale type mapping
+      const SCALE_TYPES = [
+        { key: 'surface', label: 'Surface' },
+        { key: 'high', label: 'High' },
+        { key: 'medium', label: 'Medium' },
+        { key: 'low', label: 'Low' },
+        { key: 'heavy', label: 'Heavy' },
+        { key: 'bold', label: 'Bold' },
+        { key: 'boldA11Y', label: 'Bold A11Y' },
+        { key: 'minimal', label: 'Minimal' }
+      ];
+      
+      // All steps from 200 to 2500
+      const STEPS = [
+        200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100,
+        1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000,
+        2100, 2200, 2300, 2400, 2500
+      ];
+      
+      let totalVariables = 0;
+      let totalCreated = 0;
+      let totalUpdated = 0;
+      const errors: Array<{ variable: string; error: string }> = [];
+      
+      // Step 3: Process each palette
+      for (let paletteIndex = 0; paletteIndex < palettes.length; paletteIndex++) {
+        const palette = palettes[paletteIndex];
+        const paletteScales = scales[palette.id];
+        
+        if (!paletteScales) {
+          console.warn(`[Palette Sync] No scales found for palette: ${palette.name}`);
+          continue;
+        }
+        
+        console.log(`[Palette Sync] Processing palette ${paletteIndex + 1}/${palettes.length}: ${palette.name}`);
+        
+        figma.ui.postMessage({
+          type: 'sync-palette-colors-progress',
+          data: {
+            message: `Syncing ${palette.name}...`,
+            progress: Math.round((paletteIndex / palettes.length) * 100)
+          }
+        });
+        
+        // Process each step
+        for (const step of STEPS) {
+          const stepScales = paletteScales[step];
+          if (!stepScales) continue;
+          
+          // Process each scale type
+          for (const scaleType of SCALE_TYPES) {
+            const scaleData = (stepScales as any)[scaleType.key];
+            if (!scaleData || !scaleData.hex) continue;
+            
+            const variableName = `${palette.name}/${step}/${scaleType.label}`;
+            totalVariables++;
+            
+            try {
+              // Check if variable exists in cache
+              let figmaVar = findVariableInCache(variableCache, primitivesCollection.id, variableName);
+              
+              if (!figmaVar) {
+                // Create new variable
+                figmaVar = figma.variables.createVariable(variableName, primitivesCollection, 'COLOR');
+                variableCache.set(`${primitivesCollection.id}:${variableName}`, figmaVar);
+                totalCreated++;
+              } else {
+                totalUpdated++;
+              }
+              
+              // Convert hex to RGB
+              const hex = scaleData.hex;
+              if (!hex || typeof hex !== 'string' || !hex.startsWith('#') || hex.length !== 7) {
+                throw new Error(`Invalid hex format: ${hex}`);
+              }
+              
+              const rgb = hexToRGB(hex, `palette: ${palette.name}, step: ${step}, scale: ${scaleType.label}`);
+              
+              // Set the color value
+              figmaVar.setValueForMode(primitivesCollection.defaultModeId, rgb);
+              
+            } catch (error) {
+              errors.push({
+                variable: variableName,
+                error: error instanceof Error ? error.message : String(error)
+              });
+              console.error(`[Palette Sync] Error processing ${variableName}:`, error);
+            }
+          }
+        }
+        
+        // Yield to event loop after each palette
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+      
+      console.log(`[Palette Sync] Sync complete!`);
+      console.log(`  Total variables processed: ${totalVariables}`);
+      console.log(`  Created: ${totalCreated}`);
+      console.log(`  Updated: ${totalUpdated}`);
+      console.log(`  Errors: ${errors.length}`);
+      
+      // Send success message
+      figma.ui.postMessage({
+        type: 'sync-palette-colors-success',
+        data: {
+          totalVariables,
+          created: totalCreated,
+          updated: totalUpdated,
+          errors: errors.length > 0 ? errors.slice(0, 10) : [] // Only send first 10 errors
+        }
+      });
+      
+    } catch (error) {
+      console.error('[Palette Sync] Error syncing palettes:', error);
+      figma.ui.postMessage({
+        type: 'sync-palette-colors-error',
+        data: {
+          message: error instanceof Error ? error.message : 'Failed to sync palettes to primitives'
+        }
+      });
+    }
+  }
+  
   // Handle window resize
   if (msg.type === 'resize') {
     try {

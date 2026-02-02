@@ -50,6 +50,8 @@ interface PaletteState {
   // New actions for Figma sync
   syncToFigmaVariables: () => Promise<void>;
   importFromFigmaVariables: (collectionId: string) => Promise<void>;
+  syncPaletteToFigmaPrimitives: (paletteId: string) => void;
+  syncAllPalettesToFigmaPrimitives: () => void;
   
   // Storage operations
   loadPalettes: () => Promise<void>;
@@ -314,6 +316,64 @@ export const usePaletteStore = create<PaletteState>()((set, get) => {
           // Send message to plugin code to import from Figma
           window.parent.postMessage(
             { pluginMessage: { type: 'import-figma-colors', data: { collectionId } } },
+            '*'
+          );
+        },
+
+        syncPaletteToFigmaPrimitives: (paletteId: string) => {
+          const palette = get().getPaletteById(paletteId);
+          if (!palette) {
+            console.error(`[Palette Store] Palette not found: ${paletteId}`);
+            return;
+          }
+
+          // Generate all scales for the palette
+          const scales = generateAllScales(palette.steps, palette.primaryStep);
+
+          console.log(`[Palette Store] Syncing palette "${palette.name}" to primitives...`);
+          
+          // Send message to plugin code with palette data and generated scales
+          window.parent.postMessage(
+            { 
+              pluginMessage: { 
+                type: 'sync-palette-colors-to-primitives', 
+                data: { 
+                  palettes: [palette],
+                  scales: { [palette.id]: scales }
+                } 
+              } 
+            },
+            '*'
+          );
+        },
+
+        syncAllPalettesToFigmaPrimitives: () => {
+          const palettes = get().getAllPalettes();
+          
+          if (!palettes || palettes.length === 0) {
+            console.error('[Palette Store] No palettes to sync');
+            return;
+          }
+
+          // Generate scales for all palettes
+          const scalesMap: Record<string, GeneratedScalesMap> = {};
+          palettes.forEach(palette => {
+            scalesMap[palette.id] = generateAllScales(palette.steps, palette.primaryStep);
+          });
+
+          console.log(`[Palette Store] Syncing ${palettes.length} palettes to primitives...`);
+          
+          // Send message to plugin code with all palettes and their scales
+          window.parent.postMessage(
+            { 
+              pluginMessage: { 
+                type: 'sync-palette-colors-to-primitives', 
+                data: { 
+                  palettes,
+                  scales: scalesMap
+                } 
+              } 
+            },
             '*'
           );
         },
