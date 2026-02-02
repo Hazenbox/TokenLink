@@ -3,7 +3,7 @@
  * Displays accordion of groups with expandable steps for filtering
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { ChevronsUpDown, ChevronRight, ChevronDown, Search, X, MoreHorizontal } from 'lucide-react';
 import { shallow } from 'zustand/shallow';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -17,6 +17,171 @@ import { cn } from '@colors/utils';
 interface GroupsSidebarProps {
   onCreateGroup?: () => void;
 }
+
+// Type for group with steps
+type GroupWithSteps = {
+  id: string;
+  name: string;
+  variableCount?: number;
+  steps?: string[];
+};
+
+// Memoized GroupItem component to prevent inline arrow functions in map
+interface GroupItemProps {
+  group: GroupWithSteps;
+  isExpanded: boolean;
+  isActiveGroup: boolean;
+  selectedStep: string | null;
+  isEditing: boolean;
+  editingName: string;
+  hasSteps: boolean;
+  onGroupClick: (groupId: string, hasSteps: boolean) => void;
+  onAllStepsClick: (groupId: string) => void;
+  onStepClick: (groupId: string, step: string) => void;
+  onStartEdit: (groupId: string, groupName: string, e: React.MouseEvent) => void;
+  onRename: (groupId: string) => void;
+  onEditChange: (name: string) => void;
+  onCancelEdit: () => void;
+}
+
+const GroupItem = React.memo(function GroupItem({
+  group,
+  isExpanded,
+  isActiveGroup,
+  selectedStep,
+  isEditing,
+  editingName,
+  hasSteps,
+  onGroupClick,
+  onAllStepsClick,
+  onStepClick,
+  onStartEdit,
+  onRename,
+  onEditChange,
+  onCancelEdit
+}: GroupItemProps) {
+  return (
+    <div>
+      {/* Group Header - Clickable */}
+      <div
+        className={cn(
+          "group w-full px-3 py-2 flex items-center gap-2 text-left text-[11px] transition-colors hover:bg-surface/50",
+          isActiveGroup && selectedStep === 'all' ? 'bg-surface-selected border-l-2 border-l-border-strong' : ''
+        )}
+      >
+        {isEditing ? (
+          <>
+            {hasSteps && (
+              <div className="w-3 h-3 flex-shrink-0" />
+            )}
+            <Input
+              value={editingName}
+              onChange={(e) => onEditChange(e.target.value)}
+              onBlur={() => onRename(group.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") onRename(group.id);
+                if (e.key === "Escape") onCancelEdit();
+              }}
+              className="h-5 px-1 py-0 text-xs rounded-lg flex-1"
+              autoFocus
+              onClick={(e) => e.stopPropagation()}
+            />
+          </>
+        ) : (
+          <>
+            <button
+              onClick={() => onGroupClick(group.id, hasSteps)}
+              className="flex items-center gap-2 flex-1 min-w-0"
+            >
+              {/* Chevron icon (only if has steps) */}
+              {hasSteps && (
+                isExpanded ? (
+                  <ChevronDown className="w-3 h-3 text-foreground-tertiary flex-shrink-0" />
+                ) : (
+                  <ChevronRight className="w-3 h-3 text-foreground-tertiary flex-shrink-0" />
+                )
+              )}
+              
+              {/* Group name */}
+              <div className="flex-1 min-w-0">
+                <div className={`font-medium truncate ${isActiveGroup ? 'text-foreground' : 'text-foreground-secondary'}`}>
+                  {group.name}
+                </div>
+              </div>
+            </button>
+            
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {/* Count */}
+              <div className="text-[10px] text-foreground-tertiary">
+                {group.variableCount || 0}
+              </div>
+              
+              {/* More menu */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <IconButton
+                    icon={MoreHorizontal}
+                    variant="ghost"
+                    size="sm"
+                    aria-label="More options"
+                    className={cn(
+                      "h-5 w-5 transition-opacity opacity-0 group-hover:opacity-100"
+                    )}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                  />
+                </PopoverTrigger>
+                <PopoverContent className="w-32 p-1" align="end" side="right">
+                  <div className="flex flex-col">
+                    <button
+                      className="rounded px-2 py-1.5 text-xs hover:bg-accent text-left cursor-pointer"
+                      onClick={(e) => onStartEdit(group.id, group.name, e)}
+                    >
+                      Rename
+                    </button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+          </>
+        )}
+      </div>
+      
+      {/* Steps List (when expanded) */}
+      {isExpanded && hasSteps && (
+        <div className="pl-5 py-1 bg-background">
+          {/* All steps option */}
+          <button
+            onClick={() => onAllStepsClick(group.id)}
+            className={`
+              w-full px-3 py-1.5 text-left text-[11px]
+              transition-colors hover:bg-surface/50 rounded
+              ${isActiveGroup && selectedStep === 'all' ? 'text-foreground font-medium' : 'text-foreground-secondary'}
+            `}
+          >
+            All steps
+          </button>
+          
+          {/* Individual steps */}
+          {group.steps!.map(step => (
+            <button
+              key={step}
+              onClick={() => onStepClick(group.id, step)}
+              className={`
+                w-full px-3 py-1.5 text-left text-[11px]
+                transition-colors hover:bg-surface/50 rounded
+                ${isActiveGroup && selectedStep === step ? 'text-foreground font-medium' : 'text-foreground-secondary'}
+              `}
+            >
+              {step}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+});
 
 export function GroupsSidebar({ onCreateGroup }: GroupsSidebarProps) {
   const activeCollectionId = useVariablesViewStore((state) => state.activeCollectionId);
@@ -123,6 +288,11 @@ export function GroupsSidebar({ onCreateGroup }: GroupsSidebarProps) {
     startEditing(groupId, groupName);
   }, []);
   
+  const handleCancelEdit = useCallback(() => {
+    setEditingId(null);
+    setEditingName("");
+  }, []);
+  
   // Filter groups and steps by search query
   const filteredGroupsWithSteps = useMemo(() => {
     if (!searchQuery) return groupsWithSteps;
@@ -222,132 +392,26 @@ export function GroupsSidebar({ onCreateGroup }: GroupsSidebarProps) {
               const isExpanded = expandedGroups.has(group.id);
               const isActiveGroup = activeGroupId === group.id;
               const hasSteps = group.steps && group.steps.length > 0;
-              
               const isEditing = editingId === group.id;
               
               return (
-                <div key={group.id}>
-                  {/* Group Header - Clickable */}
-                  <div
-                    className={cn(
-                      "group w-full px-3 py-2 flex items-center gap-2 text-left text-[11px] transition-colors hover:bg-surface/50",
-                      isActiveGroup && selectedStep === 'all' ? 'bg-surface-selected border-l-2 border-l-border-strong' : ''
-                    )}
-                  >
-                    {isEditing ? (
-                      <>
-                        {hasSteps && (
-                          <div className="w-3 h-3 flex-shrink-0" />
-                        )}
-                        <Input
-                          value={editingName}
-                          onChange={(e) => setEditingName(e.target.value)}
-                          onBlur={() => handleRename(group.id)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") handleRename(group.id);
-                            if (e.key === "Escape") {
-                              setEditingId(null);
-                              setEditingName("");
-                            }
-                          }}
-                          className="h-5 px-1 py-0 text-xs rounded-lg flex-1"
-                          autoFocus
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => handleGroupClick(group.id, hasSteps)}
-                          className="flex items-center gap-2 flex-1 min-w-0"
-                        >
-                          {/* Chevron icon (only if has steps) */}
-                          {hasSteps && (
-                            isExpanded ? (
-                              <ChevronDown className="w-3 h-3 text-foreground-tertiary flex-shrink-0" />
-                            ) : (
-                              <ChevronRight className="w-3 h-3 text-foreground-tertiary flex-shrink-0" />
-                            )
-                          )}
-                          
-                          {/* Group name */}
-                          <div className="flex-1 min-w-0">
-                            <div className={`font-medium truncate ${isActiveGroup ? 'text-foreground' : 'text-foreground-secondary'}`}>
-                              {group.name}
-                            </div>
-                          </div>
-                        </button>
-                        
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          {/* Count */}
-                          <div className="text-[10px] text-foreground-tertiary">
-                            {group.variableCount || 0}
-                          </div>
-                          
-                          {/* More menu */}
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <IconButton
-                                icon={MoreHorizontal}
-                                variant="ghost"
-                                size="sm"
-                                aria-label="More options"
-                                className={cn(
-                                  "h-5 w-5 transition-opacity opacity-0 group-hover:opacity-100"
-                                )}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                }}
-                              />
-                            </PopoverTrigger>
-                            <PopoverContent className="w-32 p-1" align="end" side="right">
-                              <div className="flex flex-col">
-                                <button
-                                  className="rounded px-2 py-1.5 text-xs hover:bg-accent text-left cursor-pointer"
-                                  onClick={(e) => handleStartEditGroup(group.id, group.name, e)}
-                                >
-                                  Rename
-                                </button>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  
-                  {/* Steps List (when expanded) */}
-                  {isExpanded && hasSteps && (
-                    <div className="pl-5 py-1 bg-background">
-                      {/* All steps option */}
-                      <button
-                        onClick={() => handleAllStepsClick(group.id)}
-                        className={`
-                          w-full px-3 py-1.5 text-left text-[11px]
-                          transition-colors hover:bg-surface/50 rounded
-                          ${isActiveGroup && selectedStep === 'all' ? 'text-foreground font-medium' : 'text-foreground-secondary'}
-                        `}
-                      >
-                        All steps
-                      </button>
-                      
-                      {/* Individual steps */}
-                      {group.steps!.map(step => (
-                        <button
-                          key={step}
-                          onClick={() => handleStepClick(group.id, step)}
-                          className={`
-                            w-full px-3 py-1.5 text-left text-[11px]
-                            transition-colors hover:bg-surface/50 rounded
-                            ${isActiveGroup && selectedStep === step ? 'text-foreground font-medium' : 'text-foreground-secondary'}
-                          `}
-                        >
-                          {step}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <GroupItem
+                  key={group.id}
+                  group={group}
+                  isExpanded={isExpanded}
+                  isActiveGroup={isActiveGroup}
+                  selectedStep={selectedStep}
+                  isEditing={isEditing}
+                  editingName={editingName}
+                  hasSteps={hasSteps}
+                  onGroupClick={handleGroupClick}
+                  onAllStepsClick={handleAllStepsClick}
+                  onStepClick={handleStepClick}
+                  onStartEdit={handleStartEditGroup}
+                  onRename={handleRename}
+                  onEditChange={setEditingName}
+                  onCancelEdit={handleCancelEdit}
+                />
               );
             })}
           </div>
