@@ -135,9 +135,15 @@ const HierarchyNodeItem = React.memo(function HierarchyNodeItem({
 });
 
 export function HierarchicalGroupsSidebar({ onCreateGroup }: HierarchicalGroupsSidebarProps) {
+  // Primitive values - stable
   const activeCollectionId = useVariablesViewStore((state) => state.activeCollectionId);
-  const hierarchyPath = useVariablesViewStore((state) => state.hierarchyPath);
   const setHierarchyPath = useVariablesViewStore((state) => state.setHierarchyPath);
+  
+  // Array - use string comparison for stability
+  const hierarchyPath = useVariablesViewStore(
+    (state) => state.hierarchyPath,
+    (a, b) => a === b || a.join('/') === b.join('/')
+  );
   // FIX: Use custom equality for Set to prevent re-renders when contents are the same
   const expandedHierarchyNodes = useVariablesViewStore(
     (state) => state.expandedHierarchyNodes,

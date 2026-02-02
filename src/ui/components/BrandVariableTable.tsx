@@ -6,7 +6,6 @@
 
 import React, { useMemo, useEffect, useRef, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { shallow } from 'zustand/shallow';
 import { useBrandStore } from '@/store/brand-store';
 import { useVariablesViewStore } from '@/store/variables-view-store';
 import { BrandGenerator } from '@/lib/brand-generator';
@@ -44,19 +43,51 @@ const VIRTUALIZED_ROW_STYLE_BASE = {
   width: '100%'
 };
 
+// Uniform row height to prevent virtualizer measurement loops
+const ROW_HEIGHT = 32;
+
 export function BrandVariableTable() {
-  // Subscribe to primitive data only - no function calls
+  // FIX: Subscribe with custom equality functions to prevent infinite re-renders
+  // Primitive values - stable
   const activeBrandId = useBrandStore((state) => state.activeBrandId);
-  const brandsById = useBrandStore((state) => state.brandsById);
-  const brands = useBrandStore((state) => state.brands);
   const isLoading = useBrandStore((state) => state.isLoading);
   const activeCollectionId = useVariablesViewStore((state) => state.activeCollectionId);
-  const hierarchyPath = useVariablesViewStore((state) => state.hierarchyPath);
   const searchQuery = useVariablesViewStore((state) => state.searchQuery);
   const setSearchQuery = useVariablesViewStore((state) => state.setSearchQuery);
   
-  // Simple state selectors - no function calls
-  const collections = useBrandStore((state) => state.figmaCollections, shallow);
+  // Map - use size comparison
+  const brandsById = useBrandStore(
+    (state) => state.brandsById,
+    (a, b) => a === b || (a?.size === b?.size)
+  );
+  
+  // Arrays - use length + ID comparison
+  const brands = useBrandStore(
+    (state) => state.brands,
+    (a, b) => {
+      if (a === b) return true;
+      if (a.length !== b.length) return false;
+      if (a.length === 0) return true;
+      return a[0]?.id === b[0]?.id;
+    }
+  );
+  
+  // hierarchyPath - compare by joining (stable string)
+  const hierarchyPath = useVariablesViewStore(
+    (state) => state.hierarchyPath,
+    (a, b) => a === b || a.join('/') === b.join('/')
+  );
+  
+  // Collections - use length + ID comparison
+  const collections = useBrandStore(
+    (state) => state.figmaCollections,
+    (a, b) => {
+      if (a === b) return true;
+      if (a.length !== b.length) return false;
+      if (a.length === 0) return true;
+      return a[0]?.id === b[0]?.id;
+    }
+  );
   // FIX: Use custom equality for Map to prevent re-renders when reference changes but contents are same
   const allVariablesMap = useBrandStore(
     (state) => state.figmaVariablesByCollection,
@@ -109,10 +140,14 @@ export function BrandVariableTable() {
     [collections, activeCollectionId]
   );
   
-  const modes = activeCollection?.modes || [];
+  // FIX: Memoize modes to prevent new empty array on every render
+  const modes = useMemo(() => activeCollection?.modes || [], [activeCollection]);
   
-  // Get all variables for active collection
-  const allVariables = allVariablesMap.get(activeCollectionId || '') || [];
+  // FIX: Memoize allVariables to prevent new empty array on every render  
+  const allVariables = useMemo(
+    () => allVariablesMap.get(activeCollectionId || '') || [],
+    [allVariablesMap, activeCollectionId]
+  );
   
   // Apply hierarchical filtering: hierarchy path + search
   const filteredVariables = useMemo(() => {
@@ -169,6 +204,9 @@ export function BrandVariableTable() {
     return groups;
   }, [filteredVariables]);
   
+  // FIX: Track previous flattenedRows to maintain stable reference
+  const prevFlattenedRowsRef = useRef<Array<{ type: 'group'; groupName: string; count: number } | { type: 'variable'; variable: any }>>([]);
+  
   // Flatten grouped variables for virtualization (only if needed)
   const flattenedRows = useMemo(() => {
     const rows: Array<{ type: 'group'; groupName: string; count: number } | { type: 'variable'; variable: any }> = [];
@@ -182,6 +220,12 @@ export function BrandVariableTable() {
         });
       });
     
+    // FIX: Only return new array if length changed (stable reference to break virtualizer loop)
+    if (rows.length === prevFlattenedRowsRef.current.length) {
+      return prevFlattenedRowsRef.current;
+    }
+    
+    prevFlattenedRowsRef.current = rows;
     return rows;
   }, [groupedVariables]);
   
@@ -191,14 +235,17 @@ export function BrandVariableTable() {
   // Ref for scrollable container
   const tableContainerRef = useRef<HTMLDivElement>(null);
   
+  // FIX: Memoize getScrollElement to prevent new function on every render
+  const getScrollElement = useCallback(() => tableContainerRef.current, []);
+  
+  // FIX: Use uniform row height to prevent virtualizer measurement loops
+  const estimateSize = useCallback(() => ROW_HEIGHT, []);
+  
   // Setup virtualizer only if needed
   const rowVirtualizer = useVirtualizer({
     count: flattenedRows.length,
-    getScrollElement: () => tableContainerRef.current,
-    estimateSize: (index) => {
-      const row = flattenedRows[index];
-      return row.type === 'group' ? 28 : 32; // Group header: 28px, Variable row: 32px
-    },
+    getScrollElement,
+    estimateSize,
     overscan: 10, // Render 10 extra rows above/below viewport
     enabled: shouldVirtualize,
   });

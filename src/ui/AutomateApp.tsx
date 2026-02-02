@@ -3,9 +3,8 @@
  * Main component with sidebar and Figma-style layout
  */
 
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { Upload, Loader2, CheckCircle, AlertCircle, Download, FolderInput } from 'lucide-react';
-import { shallow } from 'zustand/shallow';
 import { BrandSidebar } from './components/brands/BrandSidebar';
 import { BrandConfigPanel } from './components/BrandConfigPanel';
 import { BrandVariableTable } from './components/BrandVariableTable';
@@ -42,26 +41,52 @@ export function AutomateApp() {
   // Handle Figma plugin messages for sync responses
   const { notification, progress, clearNotification, showNotification } = useFigmaMessages();
   
-  // Optimized: Subscribe to primitive data only - no function calls to prevent infinite re-renders
-  const { 
-    activeBrandId,
-    brandsById,
-    brands, 
-    syncBrandWithLayers, 
-    syncAllBrands, 
-    syncStatus,
-    syncAttempts,
-    isLoading
-  } = useBrandStore((state) => ({
-    activeBrandId: state.activeBrandId,
-    brandsById: state.brandsById,
-    brands: state.brands,
-    syncBrandWithLayers: state.syncBrandWithLayers,
-    syncAllBrands: state.syncAllBrands,
-    syncStatus: state.syncStatus,
-    syncAttempts: state.syncAttempts,
-    isLoading: state.isLoading,
-  }), shallow);
+  // FIX: Use INDIVIDUAL subscriptions with stable equality functions to prevent infinite re-renders
+  // The combined object subscription with shallow comparison was failing because:
+  // - Maps (brandsById) aren't compared correctly by shallow
+  // - Arrays (brands, syncAttempts) get new references on every store update
+  
+  // Primitive values - these are stable
+  const activeBrandId = useBrandStore((state) => state.activeBrandId);
+  const syncStatus = useBrandStore((state) => state.syncStatus);
+  const isLoading = useBrandStore((state) => state.isLoading);
+  
+  // Map - use custom equality that compares by reference first, then size
+  const brandsById = useBrandStore(
+    (state) => state.brandsById,
+    (a, b) => {
+      if (a === b) return true;
+      if (!a || !b) return a === b;
+      return a.size === b.size; // Size check for performance
+    }
+  );
+  
+  // Array - use custom equality that compares length and first/last elements
+  const brands = useBrandStore(
+    (state) => state.brands,
+    (a, b) => {
+      if (a === b) return true;
+      if (!a || !b) return a === b;
+      if (a.length !== b.length) return false;
+      // Quick check: compare first and last item IDs
+      if (a.length === 0) return true;
+      return a[0]?.id === b[0]?.id && a[a.length - 1]?.id === b[b.length - 1]?.id;
+    }
+  );
+  
+  // syncAttempts - compare by length (sufficient for rate limiting check)
+  const syncAttempts = useBrandStore(
+    (state) => state.syncAttempts,
+    (a, b) => {
+      if (a === b) return true;
+      if (!a || !b) return a === b;
+      return a.length === b.length;
+    }
+  );
+  
+  // Functions - get from store directly instead of subscribing (they're stable)
+  const syncBrandWithLayers = useBrandStore((state) => state.syncBrandWithLayers);
+  const syncAllBrands = useBrandStore((state) => state.syncAllBrands);
   
   // Compute derived values with useMemo to prevent infinite loops
   const activeBrand = useMemo(() => {

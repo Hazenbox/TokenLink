@@ -5,7 +5,6 @@
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Trash2, MoreHorizontal } from 'lucide-react';
-import { shallow } from 'zustand/shallow';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -133,14 +132,25 @@ const CollectionItem = React.memo(function CollectionItem({
 });
 
 export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarProps) {
-  // Simple state selector - no function calls
-  const collections = useBrandStore((state) => state.figmaCollections, shallow);
+  // FIX: Use custom equality functions to prevent infinite re-renders
+  // Primitive values - stable
   const activeCollectionId = useVariablesViewStore((state) => state.activeCollectionId);
   const setActiveCollection = useVariablesViewStore((state) => state.setActiveCollection);
   const collectionsCollapsed = useVariablesViewStore((state) => state.collectionsCollapsed);
   const updateCollection = useBrandStore((state) => state.updateCollection);
   const activeBrandId = useBrandStore((state) => state.activeBrandId);
   const isLoading = useBrandStore((state) => state.isLoading);
+  
+  // Array - use length + ID comparison
+  const collections = useBrandStore(
+    (state) => state.figmaCollections,
+    (a, b) => {
+      if (a === b) return true;
+      if (a.length !== b.length) return false;
+      if (a.length === 0) return true;
+      return a[0]?.id === b[0]?.id;
+    }
+  );
   
   // Use ref for initialization to prevent re-renders and avoid hook-after-conditional-return issue
   const isInitializedRef = useRef(false);
@@ -207,12 +217,20 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
   // Auto-select first collection if none selected
   // Uses ref to ensure this only runs once and doesn't cause infinite loops
   useEffect(() => {
+    // DIAGNOSTIC: Log effect trigger
+    const currentActiveCollection = useVariablesViewStore.getState().activeCollectionId;
+    console.log('[CollectionsSidebar] Auto-select effect triggered', {
+      isInitialized: isInitializedRef.current,
+      collectionsLength: collections.length,
+      currentActiveCollection
+    });
+    
     // Only auto-select if:
     // 1. Not already initialized
     // 2. Collections exist
     // 3. No collection is currently selected (read from store directly to avoid dep)
-    const currentActiveCollection = useVariablesViewStore.getState().activeCollectionId;
     if (!isInitializedRef.current && collections.length > 0 && !currentActiveCollection) {
+      console.log('[CollectionsSidebar] Auto-selecting first collection:', collections[0].id);
       isInitializedRef.current = true;
       useVariablesViewStore.getState().setActiveCollection(collections[0].id);
     }

@@ -3,7 +3,7 @@
  * Configuration interface for brand colors and palette selection
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { useBrandStore } from '@/store/brand-store';
 import { useVariablesViewStore } from '@/store/variables-view-store';
 import { CompactPaletteSelector } from './CompactPaletteSelector';
@@ -15,11 +15,27 @@ import { BrandGenerator } from '@/lib/brand-generator';
 import { EmptyState } from './EmptyState';
 
 export function BrandConfigPanel() {
-  // Subscribe to primitive data only - no function calls
+  // FIX: Use custom equality functions to prevent infinite re-renders
+  // Primitive values - stable
   const activeBrandId = useBrandStore((state) => state.activeBrandId);
-  const brandsById = useBrandStore((state) => state.brandsById);
-  const brands = useBrandStore((state) => state.brands);
   const updateBrandPalette = useBrandStore((state) => state.updateBrandPalette);
+  
+  // Map - use size comparison
+  const brandsById = useBrandStore(
+    (state) => state.brandsById,
+    (a, b) => a === b || (a?.size === b?.size)
+  );
+  
+  // Array - use length + ID comparison
+  const brands = useBrandStore(
+    (state) => state.brands,
+    (a, b) => {
+      if (a === b) return true;
+      if (a.length !== b.length) return false;
+      if (a.length === 0) return true;
+      return a[0]?.id === b[0]?.id;
+    }
+  );
   
   const configPanelCollapsed = useVariablesViewStore((state) => state.configPanelCollapsed);
   const configPanelWidth = useVariablesViewStore((state) => state.configPanelWidth);

@@ -1,6 +1,5 @@
 import * as React from "react";
 import { Plus, MoreHorizontal } from "lucide-react";
-import { shallow } from "zustand/shallow";
 import { Button } from "@/components/ui/button";
 import { CompactButton } from "../common/CompactButton";
 import { IconButton } from "../common/IconButton";
@@ -215,26 +214,28 @@ const ALL_BRAND_ITEM = {
 };
 
 export function BrandSidebar() {
-  // Optimized: Use shallow comparison to prevent unnecessary re-renders
-  const {
-    brands,
-    activeBrandId,
-    createBrand,
-    deleteBrand,
-    setActiveBrand,
-    renameBrand,
-    duplicateBrand,
-    isLoading,
-  } = useBrandStore((state) => ({
-    brands: state.brands,
-    activeBrandId: state.activeBrandId,
-    createBrand: state.createBrand,
-    deleteBrand: state.deleteBrand,
-    setActiveBrand: state.setActiveBrand,
-    renameBrand: state.renameBrand,
-    duplicateBrand: state.duplicateBrand,
-    isLoading: state.isLoading,
-  }), shallow);
+  // FIX: Use individual subscriptions with custom equality to prevent infinite re-renders
+  // Primitive values - stable
+  const activeBrandId = useBrandStore((state) => state.activeBrandId);
+  const isLoading = useBrandStore((state) => state.isLoading);
+  
+  // Array - use length + ID comparison
+  const brands = useBrandStore(
+    (state) => state.brands,
+    (a, b) => {
+      if (a === b) return true;
+      if (a.length !== b.length) return false;
+      if (a.length === 0) return true;
+      return a[0]?.id === b[0]?.id && a[a.length - 1]?.id === b[b.length - 1]?.id;
+    }
+  );
+  
+  // Functions - get directly (they're stable in Zustand)
+  const createBrand = useBrandStore((state) => state.createBrand);
+  const deleteBrand = useBrandStore((state) => state.deleteBrand);
+  const setActiveBrand = useBrandStore((state) => state.setActiveBrand);
+  const renameBrand = useBrandStore((state) => state.renameBrand);
+  const duplicateBrand = useBrandStore((state) => state.duplicateBrand);
 
   const [newBrandName, setNewBrandName] = React.useState("");
   const [dialogOpen, setDialogOpen] = React.useState(false);
