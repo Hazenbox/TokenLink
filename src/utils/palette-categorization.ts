@@ -7,52 +7,54 @@
  * Based on industry standards from Vodafone UK, Google Material, IBM Carbon, and Atlassian.
  */
 
-export type PaletteCategory = 'core' | 'functional' | 'extended';
+export type PaletteCategory = 'core' | 'functional';
 
 /**
- * Figma collection names for the three primitive collections
+ * Figma collection names for the two primitive collections
  */
 export const COLLECTION_NAMES: Record<PaletteCategory, string> = {
   core: '00_Primitives_Core',
   functional: '00_Primitives_Functional',
-  extended: '00_Primitives_Extended',
 };
 
 /**
  * User-friendly descriptions for each category
  */
 export const CATEGORY_DESCRIPTIONS: Record<PaletteCategory, string> = {
-  core: 'Neutrals and primary brand colors',
-  functional: 'Status and feedback colors',
-  extended: 'Accent and secondary colors',
+  core: 'Primary, secondary, sparkle, and neutral palettes',
+  functional: 'Positive, negative, warning, and informative palettes',
 };
 
 /**
  * Keywords used to identify functional/status colors
+ * These map to semantic roles: positive, negative, warning, informative
  */
 const FUNCTIONAL_KEYWORDS = [
-  'success',
-  'error',
-  'warning',
-  'info',
   'positive',
   'negative',
-  'caution',
+  'warning',
   'informative',
+  'success',
+  'error',
+  'caution',
   'danger',
   'alert',
+  'info',
 ] as const;
 
 /**
- * Keywords used to identify core/neutral/primary colors
+ * Keywords used to identify core colors
+ * These map to primary, secondary, sparkle, neutral roles
  */
 const CORE_KEYWORDS = [
+  'primary',
+  'secondary',
+  'sparkle',
+  'neutral',
   'grey',
   'gray',
-  'neutral',
   'white',
   'black',
-  'primary',
   'brand',
   'base',
   'greyscale',
@@ -72,12 +74,14 @@ export const MAX_PALETTES_PER_COLLECTION = Math.floor(
  * Categorize a palette based on its name
  * 
  * @param paletteName - The name of the palette to categorize
- * @returns The category ('core', 'functional', or 'extended')
+ * @returns The category ('core' or 'functional')
  * 
  * @example
  * categorizePalette('Grey') // 'core'
- * categorizePalette('Success') // 'functional'
- * categorizePalette('Rose gold') // 'extended'
+ * categorizePalette('Primary') // 'core'
+ * categorizePalette('Positive') // 'functional'
+ * categorizePalette('Warning') // 'functional'
+ * categorizePalette('Rose gold') // 'core' (default)
  */
 export function categorizePalette(paletteName: string): PaletteCategory {
   const nameLower = paletteName.toLowerCase();
@@ -87,13 +91,8 @@ export function categorizePalette(paletteName: string): PaletteCategory {
     return 'functional';
   }
   
-  // Check core keywords
-  if (CORE_KEYWORDS.some(keyword => nameLower.includes(keyword))) {
-    return 'core';
-  }
-  
-  // Default to extended for everything else
-  return 'extended';
+  // Default to core for everything else (primary, secondary, sparkle, neutral, and any custom palettes)
+  return 'core';
 }
 
 /**
@@ -118,7 +117,6 @@ export function groupPalettesByCategory(
   const grouped: Record<PaletteCategory, Array<{ id: string; name: string }>> = {
     core: [],
     functional: [],
-    extended: [],
   };
   
   palettes.forEach(palette => {
@@ -186,12 +184,6 @@ export function getCategoryColor(category: PaletteCategory): {
         bg: 'bg-blue-50 dark:bg-blue-900/20',
         text: 'text-blue-700 dark:text-blue-300',
         badge: 'bg-blue-100 dark:bg-blue-800/50 text-blue-700 dark:text-blue-300',
-      };
-    case 'extended':
-      return {
-        bg: 'bg-purple-50 dark:bg-purple-900/20',
-        text: 'text-purple-700 dark:text-purple-300',
-        badge: 'bg-purple-100 dark:bg-purple-800/50 text-purple-700 dark:text-purple-300',
       };
   }
 }

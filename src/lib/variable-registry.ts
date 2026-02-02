@@ -69,8 +69,23 @@ export class VariableRegistry {
    */
   findByName(name: string, collectionId?: string): VariableEntry | undefined {
     if (collectionId) {
+      // Check for exact match first
       const nameKey = `${collectionId}:${name}`;
-      return this.variablesByName.get(nameKey);
+      const exactMatch = this.variablesByName.get(nameKey);
+      if (exactMatch) return exactMatch;
+      
+      // Special case: If looking for 'primitives', also search 'primitives-*' collections
+      // This enables semi-semantics to find primitives across Core and Functional collections
+      if (collectionId === 'primitives') {
+        for (const [key, variable] of this.variablesByName.entries()) {
+          // Match any collection starting with 'primitives-' (e.g., 'primitives-core:', 'primitives-functional:')
+          if (key.endsWith(`:${name}`) && key.startsWith('primitives-')) {
+            return variable;
+          }
+        }
+      }
+      
+      return undefined;
     }
     
     // Search all collections

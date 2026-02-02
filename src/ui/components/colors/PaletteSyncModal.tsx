@@ -43,7 +43,7 @@ export function PaletteSyncModal({
 }: PaletteSyncModalProps) {
   const [selectedPalettes, setSelectedPalettes] = React.useState<Set<string>>(new Set());
   const [expandedCategories, setExpandedCategories] = React.useState<Set<PaletteCategory>>(
-    new Set(['core', 'functional', 'extended'])
+    new Set(['core', 'functional'])
   );
 
   // Group palettes by category
@@ -54,7 +54,7 @@ export function PaletteSyncModal({
 
   // Calculate variable counts per collection
   const collectionCounts = React.useMemo(() => {
-    const counts: Record<PaletteCategory, number> = { core: 0, functional: 0, extended: 0 };
+    const counts: Record<PaletteCategory, number> = { core: 0, functional: 0 };
 
     selectedPalettes.forEach(paletteId => {
       const palette = palettes.find(p => p.id === paletteId);
@@ -77,6 +77,8 @@ export function PaletteSyncModal({
   React.useEffect(() => {
     if (open && selectedPalettes.size === 0) {
       setSelectedPalettes(new Set(palettes.map(p => p.id)));
+      // Auto-expand all categories
+      setExpandedCategories(new Set(['core', 'functional']));
     }
   }, [open, palettes, selectedPalettes.size]);
 
@@ -172,7 +174,7 @@ export function PaletteSyncModal({
 
         <ScrollArea className="flex-1 pr-4">
           <div className="space-y-4">
-            {(['core', 'functional', 'extended'] as PaletteCategory[]).map(category => {
+            {(['core', 'functional'] as PaletteCategory[]).map(category => {
               const categoryPalettes = groupedPalettes[category];
               const selectedCount = getCategoryPaletteCount(category);
               const variableCount = collectionCounts[category];

@@ -2533,17 +2533,16 @@ figma.ui.onmessage = async (msg) => {
       // Collection name mapping
       const COLLECTION_NAMES: Record<string, string> = {
         'core': '00_Primitives_Core',
-        'functional': '00_Primitives_Functional',
-        'extended': '00_Primitives_Extended'
+        'functional': '00_Primitives_Functional'
       };
       
       // Group palettes by collection based on categories
       const palettesByCollection = new Map<string, any[]>();
       
       for (const palette of palettes) {
-        // Default to extended if no category provided
-        const category = categories?.[palette.id] || 'extended';
-        const collectionName = COLLECTION_NAMES[category] || '00_Primitives_Extended';
+        // Default to core if no category provided
+        const category = categories?.[palette.id] || 'core';
+        const collectionName = COLLECTION_NAMES[category] || '00_Primitives_Core';
         
         if (!palettesByCollection.has(collectionName)) {
           palettesByCollection.set(collectionName, []);

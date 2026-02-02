@@ -67,6 +67,24 @@ function hexToRGB(hex: string): { r: number; g: number; b: number; a: number } {
 }
 
 export class PrimitivesGenerator extends BaseLayerGenerator {
+  /**
+   * Categorize a palette based on its role in the brand
+   * Core: primary, secondary, sparkle, neutral
+   * Functional: positive, negative, warning, informative
+   */
+  private categorizePalette(palette: any): 'core' | 'functional' {
+    if (!this.brand.colors) return 'core';
+    
+    // Check if palette is assigned to functional/semantic roles
+    if (this.brand.colors.semantic?.positive?.paletteId === palette.id) return 'functional';
+    if (this.brand.colors.semantic?.negative?.paletteId === palette.id) return 'functional';
+    if (this.brand.colors.semantic?.warning?.paletteId === palette.id) return 'functional';
+    if (this.brand.colors.semantic?.informative?.paletteId === palette.id) return 'functional';
+    
+    // All other palettes (primary, secondary, sparkle, neutral) go to core
+    return 'core';
+  }
+  
   generate(): VariableEntry[] {
     // Check if multi-brand mode
     if (this.allBrands && this.allBrands.length > 1) {
@@ -91,8 +109,50 @@ export class PrimitivesGenerator extends BaseLayerGenerator {
     
     this.log(`Generating from ${assignedPalettes.length} assigned palettes: ${assignedPalettes.map(p => p.name).join(', ')}`);
     
-    // For each ASSIGNED palette only
-    for (const palette of assignedPalettes) {
+    // Categorize palettes
+    const corePalettes = assignedPalettes.filter(p => this.categorizePalette(p) === 'core');
+    const functionalPalettes = assignedPalettes.filter(p => this.categorizePalette(p) === 'functional');
+    
+    this.log(`  Core: ${corePalettes.map(p => p.name).join(', ')}`);
+    this.log(`  Functional: ${functionalPalettes.map(p => p.name).join(', ')}`);
+    
+    // Generate for Core collection
+    if (corePalettes.length > 0) {
+      const coreVars = this.generateForCollection(
+        corePalettes,
+        'primitives-core',
+        '00_Primitives_Core'
+      );
+      variables.push(...coreVars);
+      this.log(`Generated ${coreVars.length} variables for Core collection`);
+    }
+    
+    // Generate for Functional collection
+    if (functionalPalettes.length > 0) {
+      const functionalVars = this.generateForCollection(
+        functionalPalettes,
+        'primitives-functional',
+        '00_Primitives_Functional'
+      );
+      variables.push(...functionalVars);
+      this.log(`Generated ${functionalVars.length} variables for Functional collection`);
+    }
+    
+    this.log(`Generated ${variables.length} total primitive variables`);
+    return variables;
+  }
+  
+  /**
+   * Generate variables for a specific collection
+   */
+  private generateForCollection(
+    palettes: any[],
+    collectionId: string,
+    collectionName: string
+  ): VariableEntry[] {
+    const variables: VariableEntry[] = [];
+    
+    for (const palette of palettes) {
       const allScales = generateAllScales(palette.steps, palette.primaryStep);
       
       // For each step
@@ -113,8 +173,8 @@ export class PrimitivesGenerator extends BaseLayerGenerator {
           variables.push({
             id: this.generateVariableId(),
             name,
-            collectionId: this.layer.id,
-            collectionName: this.layer.collectionName,
+            collectionId: collectionId,
+            collectionName: collectionName,
             layer: this.layer.order,
             modeId: 'default',
             modeName: 'Mode 1',
@@ -125,7 +185,6 @@ export class PrimitivesGenerator extends BaseLayerGenerator {
       }
     }
     
-    this.log(`Generated ${variables.length} primitive variables`);
     return variables;
   }
   
@@ -138,72 +197,87 @@ export class PrimitivesGenerator extends BaseLayerGenerator {
     
     this.log(`Generating Primitives (multi-brand) for ${brands.length} brands`);
     
-    // Collect ALL unique palettes from all brands
-    const allPalettes = new Map<string, any>();
+    // Collect ALL unique palettes from all brands with their categories
+    const allPalettes = new Map<string, { palette: any; category: 'core' | 'functional' }>();
     const paletteStore = usePaletteStore.getState();
     
     brands.forEach(brand => {
       if (!brand.colors) return;
       
-      // Collect palette IDs from this brand
-      const paletteRefs = [
+      // Collect core palette IDs
+      const corePaletteRefs = [
         brand.colors.primary,
         brand.colors.secondary,
         brand.colors.sparkle,
-        brand.colors.neutral,
+        brand.colors.neutral
+      ].filter(Boolean);
+      
+      corePaletteRefs.forEach(ref => {
+        if (ref?.paletteId && !allPalettes.has(ref.paletteId)) {
+          const palette = paletteStore.palettes.find(p => p.id === ref.paletteId);
+          if (palette) {
+            allPalettes.set(ref.paletteId, { palette, category: 'core' });
+          }
+        }
+      });
+      
+      // Collect functional palette IDs
+      const functionalPaletteRefs = [
         brand.colors.semantic?.positive,
         brand.colors.semantic?.negative,
         brand.colors.semantic?.warning,
         brand.colors.semantic?.informative
       ].filter(Boolean);
       
-      paletteRefs.forEach(ref => {
+      functionalPaletteRefs.forEach(ref => {
         if (ref?.paletteId && !allPalettes.has(ref.paletteId)) {
           const palette = paletteStore.palettes.find(p => p.id === ref.paletteId);
           if (palette) {
-            allPalettes.set(ref.paletteId, palette);
+            allPalettes.set(ref.paletteId, { palette, category: 'functional' });
           }
         }
       });
     });
     
-    this.log(`Collected ${allPalettes.size} unique palettes from all brands: ${Array.from(allPalettes.values()).map(p => p.name).join(', ')}`);
+    // Separate by category
+    const corePalettes: any[] = [];
+    const functionalPalettes: any[] = [];
     
-    // Generate variables for each unique palette
-    allPalettes.forEach(palette => {
-      const allScales = generateAllScales(palette.steps, palette.primaryStep);
-      
-      // For each step
-      for (const step of STEPS) {
-        const stepScales = allScales[step];
-        if (!stepScales) continue;
-        
-        // For each scale type
-        for (const scale of SCALE_NAMES) {
-          const scaleKey = SCALE_KEY_MAP[scale];
-          const scaleResult = (stepScales as any)[scaleKey];
-          if (!scaleResult || !scaleResult.hex) continue;
-          
-          // Create primitive variable
-          const name = `${palette.name}/${step}/${scale}`;
-          const rgb = hexToRGB(scaleResult.hex);
-          
-          variables.push({
-            id: this.generateVariableId(),
-            name,
-            collectionId: this.layer.id,
-            collectionName: this.layer.collectionName,
-            layer: this.layer.order,
-            modeId: 'default',
-            modeName: 'Mode 1',
-            value: rgb,
-            metadata: { step, scale }
-          });
-        }
+    allPalettes.forEach(({ palette, category }) => {
+      if (category === 'core') {
+        corePalettes.push(palette);
+      } else {
+        functionalPalettes.push(palette);
       }
     });
     
-    this.log(`Generated ${variables.length} primitive variables (merged from ${brands.length} brands)`);
+    this.log(`Collected ${allPalettes.size} unique palettes from ${brands.length} brands`);
+    this.log(`  Core: ${corePalettes.map(p => p.name).join(', ')}`);
+    this.log(`  Functional: ${functionalPalettes.map(p => p.name).join(', ')}`);
+    
+    // Generate for Core collection
+    if (corePalettes.length > 0) {
+      const coreVars = this.generateForCollection(
+        corePalettes,
+        'primitives-core',
+        '00_Primitives_Core'
+      );
+      variables.push(...coreVars);
+      this.log(`Generated ${coreVars.length} variables for Core collection`);
+    }
+    
+    // Generate for Functional collection
+    if (functionalPalettes.length > 0) {
+      const functionalVars = this.generateForCollection(
+        functionalPalettes,
+        'primitives-functional',
+        '00_Primitives_Functional'
+      );
+      variables.push(...functionalVars);
+      this.log(`Generated ${functionalVars.length} variables for Functional collection`);
+    }
+    
+    this.log(`Generated ${variables.length} total primitive variables (merged from ${brands.length} brands)`);
     return variables;
   }
   
