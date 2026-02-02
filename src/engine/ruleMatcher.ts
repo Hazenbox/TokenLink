@@ -22,6 +22,7 @@ import { VariableMatch } from './types';
 
 /**
  * Finds all variables that match the rule's "when" condition
+ * Uses indexed lookups for O(m) complexity instead of O(n) where m = matching variables
  * @param graph - Variable graph to search
  * @param rule - Rule with conditions
  * @returns Array of variables that match the condition
@@ -30,15 +31,50 @@ export function findMatchingVariables(
   graph: VariableGraph,
   rule: Rule
 ): Variable[] {
+  const { when } = rule;
   const matched: Variable[] = [];
 
-  // Get all variables
-  const allVariables = Array.from(graph.variables.values());
-
-  for (const variable of allVariables) {
-    if (matchesCondition(graph, variable, rule)) {
-      matched.push(variable);
+  // Optimize: If collection is specified, use index to get only variables in that collection
+  if (when.collection) {
+    // Find collection by name using index
+    const collection = graph.collectionByName.get(when.collection);
+    if (!collection) {
+      return []; // Collection doesn't exist
     }
+
+    // Get variables in collection using index (O(1) lookup)
+    const variablesInCollection = graph.variablesByCollection.get(collection.id) || [];
+
+    // If group is also specified, filter by group
+    if (when.group) {
+      // Find group by name using index
+      const groupNameKey = `${collection.id}:${when.group}`;
+      const group = graph.groupByName.get(groupNameKey);
+      if (!group) {
+        return []; // Group doesn't exist
+      }
+
+      // Get variables in group using index (O(1) lookup)
+      const variablesInGroup = graph.variablesByGroup.get(group.id) || [];
+      matched.push(...variablesInGroup);
+    } else {
+      // No group filter, return all variables in collection
+      matched.push(...variablesInCollection);
+    }
+  } else if (when.group) {
+    // Only group specified (no collection) - need to search all collections
+    // This is less common, so we iterate collections
+    for (const collection of graph.collections.values()) {
+      const groupNameKey = `${collection.id}:${when.group}`;
+      const group = graph.groupByName.get(groupNameKey);
+      if (group) {
+        const variablesInGroup = graph.variablesByGroup.get(group.id) || [];
+        matched.push(...variablesInGroup);
+      }
+    }
+  } else {
+    // No filters - return all variables (fallback to original behavior)
+    matched.push(...Array.from(graph.variables.values()));
   }
 
   return matched;
@@ -84,6 +120,7 @@ function matchesCondition(
 
 /**
  * Resolves target variables from the "then.aliasTo" path
+ * Uses indexed lookups for O(1) complexity instead of O(n) searches
  * @param graph - Variable graph to search
  * @param rule - Rule with target path
  * @returns Array of target variables, or null if path is invalid
@@ -102,29 +139,27 @@ export function resolveTargetVariables(
 
   const { collection: collectionName, group: groupName, variable: variableName } = parsed;
 
-  // Find the collection
-  const collection = Array.from(graph.collections.values()).find(
-    (c) => c.name === collectionName
-  );
+  // Find the collection using index (O(1) lookup)
+  const collection = graph.collectionByName.get(collectionName);
   if (!collection) {
     return null;
   }
 
-  // Find the group
-  const groups = getGroupsInCollection(graph, collection.id);
-  const group = groups.find((g) => g.name === groupName);
+  // Find the group using index (O(1) lookup)
+  const groupNameKey = `${collection.id}:${groupName}`;
+  const group = graph.groupByName.get(groupNameKey);
   if (!group) {
     return null;
   }
 
-  // If a specific variable is specified, find it
+  // If a specific variable is specified, find it using index (O(1) lookup)
   if (variableName) {
-    const variables = getVariablesInGroup(graph, group.id);
-    const targetVariable = variables.find((v) => v.name === variableName);
+    const variableNameKey = `${group.id}:${variableName}`;
+    const targetVariable = graph.variableByName.get(variableNameKey);
     return targetVariable ? [targetVariable] : null;
   }
 
-  // Otherwise, return all variables in the group
+  // Otherwise, return all variables in the group using index (O(1) lookup)
   return getVariablesInGroup(graph, group.id);
 }
 

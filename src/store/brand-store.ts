@@ -228,8 +228,20 @@ function createDefaultColors(): BrandColors {
 
 /**
  * Deep clone object
+ * Uses structuredClone() for better performance and type support
+ * Falls back to JSON.parse(JSON.stringify()) for older environments
  */
 function deepClone<T>(obj: T): T {
+  // Use structuredClone if available (faster, handles more types including Date, Map, Set, etc.)
+  if (typeof structuredClone !== 'undefined') {
+    try {
+      return structuredClone(obj);
+    } catch (error) {
+      // structuredClone may fail for some objects (e.g., functions, symbols)
+      // Fall back to JSON method
+    }
+  }
+  // Fallback for environments without structuredClone support
   return JSON.parse(JSON.stringify(obj));
 }
 

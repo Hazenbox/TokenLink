@@ -80,11 +80,19 @@ export function layoutGraph(
     nodesByCollection[collectionId].push(node);
   });
 
+  // Pre-build collection name map for O(1) lookups (avoid O(n) find operations)
+  const collectionNameMap = new Map<string, string>();
+  nodes.forEach(node => {
+    if (!collectionNameMap.has(node.data.collectionId)) {
+      collectionNameMap.set(node.data.collectionId, node.data.collectionName);
+    }
+  });
+  
   // Get sorted collection IDs for consistent column order
   const collectionIds = Object.keys(nodesByCollection).sort((a, b) => {
-    // Sort by collection name for alphabetical order
-    const nameA = nodes.find(n => n.data.collectionId === a)?.data.collectionName || '';
-    const nameB = nodes.find(n => n.data.collectionId === b)?.data.collectionName || '';
+    // Sort by collection name for alphabetical order (O(1) lookup)
+    const nameA = collectionNameMap.get(a) || '';
+    const nameB = collectionNameMap.get(b) || '';
     return nameA.localeCompare(nameB);
   });
 
@@ -118,10 +126,18 @@ export function layoutGraph(
       nodesByGroup[groupId].push(node);
     });
 
+    // Pre-build group name map for O(1) lookups
+    const groupNameMap = new Map<string, string>();
+    collectionNodes.forEach(node => {
+      if (!groupNameMap.has(node.data.groupId)) {
+        groupNameMap.set(node.data.groupId, node.data.groupName);
+      }
+    });
+    
     // Get sorted group IDs for consistent order
     const groupIds = Object.keys(nodesByGroup).sort((a, b) => {
-      const nameA = collectionNodes.find(n => n.data.groupId === a)?.data.groupName || '';
-      const nameB = collectionNodes.find(n => n.data.groupId === b)?.data.groupName || '';
+      const nameA = groupNameMap.get(a) || '';
+      const nameB = groupNameMap.get(b) || '';
       return nameA.localeCompare(nameB);
     });
 
@@ -220,10 +236,18 @@ export function reorderColumns(
       nodesByGroup[groupId].push(node);
     });
 
+    // Pre-build group name map for O(1) lookups
+    const groupNameMap = new Map<string, string>();
+    collectionNodes.forEach(node => {
+      if (!groupNameMap.has(node.data.groupId)) {
+        groupNameMap.set(node.data.groupId, node.data.groupName);
+      }
+    });
+    
     // Get sorted group IDs
     const groupIds = Object.keys(nodesByGroup).sort((a, b) => {
-      const nameA = collectionNodes.find(n => n.data.groupId === a)?.data.groupName || '';
-      const nameB = collectionNodes.find(n => n.data.groupId === b)?.data.groupName || '';
+      const nameA = groupNameMap.get(a) || '';
+      const nameB = groupNameMap.get(b) || '';
       return nameA.localeCompare(nameB);
     });
 

@@ -17,12 +17,27 @@ import {
 /**
  * VariableGraph is the main container for all design token entities.
  * Uses Maps for O(1) lookup performance on large token sets.
+ * 
+ * Index maps provide O(1) lookups for common queries:
+ * - groupsByCollection: collectionId → groups[]
+ * - variablesByGroup: groupId → variables[]
+ * - variablesByCollection: collectionId → variables[]
+ * - collectionByName: collectionName → Collection (for name-based lookups)
+ * - groupByName: groupName → Group (scoped to collection, key format: "collectionId:groupName")
+ * - variableByName: variableName → Variable (scoped to group, key format: "groupId:variableName")
  */
 export interface VariableGraph {
   collections: Map<string, Collection>;
   groups: Map<string, Group>;
   variables: Map<string, Variable>;
   aliases: Alias[];
+  // Index maps for O(1) lookups
+  groupsByCollection: Map<string, Group[]>;  // collectionId → groups
+  variablesByGroup: Map<string, Variable[]>;  // groupId → variables
+  variablesByCollection: Map<string, Variable[]>;  // collectionId → variables
+  collectionByName: Map<string, Collection>;  // collectionName → Collection
+  groupByName: Map<string, Group>;  // "collectionId:groupName" → Group
+  variableByName: Map<string, Variable>;  // "groupId:variableName" → Variable
 }
 
 // ============================================================================
@@ -30,7 +45,7 @@ export interface VariableGraph {
 // ============================================================================
 
 /**
- * Creates an empty variable graph
+ * Creates an empty variable graph with initialized index maps
  */
 export function createGraph(): VariableGraph {
   return {
@@ -38,6 +53,13 @@ export function createGraph(): VariableGraph {
     groups: new Map(),
     variables: new Map(),
     aliases: [],
+    // Initialize index maps
+    groupsByCollection: new Map(),
+    variablesByGroup: new Map(),
+    variablesByCollection: new Map(),
+    collectionByName: new Map(),
+    groupByName: new Map(),
+    variableByName: new Map(),
   };
 }
 
@@ -46,35 +68,95 @@ export function createGraph(): VariableGraph {
 // ============================================================================
 
 /**
- * Adds a collection to the graph
+ * Adds a collection to the graph and updates index maps
  */
 export function addCollection(
   graph: VariableGraph,
   collection: Collection
 ): VariableGraph {
   graph.collections.set(collection.id, collection);
+  
+  // Update collectionByName index
+  graph.collectionByName.set(collection.name, collection);
+  
+  // Initialize groupsByCollection and variablesByCollection if not exists
+  if (!graph.groupsByCollection.has(collection.id)) {
+    graph.groupsByCollection.set(collection.id, []);
+  }
+  if (!graph.variablesByCollection.has(collection.id)) {
+    graph.variablesByCollection.set(collection.id, []);
+  }
+  
   return graph;
 }
 
 /**
- * Adds a group to the graph
+ * Adds a group to the graph and updates index maps
  */
 export function addGroup(
   graph: VariableGraph,
   group: Group
 ): VariableGraph {
   graph.groups.set(group.id, group);
+  
+  // Update groupsByCollection index
+  if (!graph.groupsByCollection.has(group.collectionId)) {
+    graph.groupsByCollection.set(group.collectionId, []);
+  }
+  const groupsInCollection = graph.groupsByCollection.get(group.collectionId)!;
+  if (!groupsInCollection.find(g => g.id === group.id)) {
+    groupsInCollection.push(group);
+  }
+  
+  // Update groupByName index (key format: "collectionId:groupName")
+  const collection = graph.collections.get(group.collectionId);
+  if (collection) {
+    const nameKey = `${group.collectionId}:${group.name}`;
+    graph.groupByName.set(nameKey, group);
+  }
+  
+  // Initialize variablesByGroup if not exists
+  if (!graph.variablesByGroup.has(group.id)) {
+    graph.variablesByGroup.set(group.id, []);
+  }
+  
   return graph;
 }
 
 /**
- * Adds a variable to the graph
+ * Adds a variable to the graph and updates index maps
  */
 export function addVariable(
   graph: VariableGraph,
   variable: Variable
 ): VariableGraph {
   graph.variables.set(variable.id, variable);
+  
+  // Update variablesByGroup index
+  if (!graph.variablesByGroup.has(variable.groupId)) {
+    graph.variablesByGroup.set(variable.groupId, []);
+  }
+  const variablesInGroup = graph.variablesByGroup.get(variable.groupId)!;
+  if (!variablesInGroup.find(v => v.id === variable.id)) {
+    variablesInGroup.push(variable);
+  }
+  
+  // Update variablesByCollection index
+  const group = graph.groups.get(variable.groupId);
+  if (group) {
+    const collectionId = group.collectionId;
+    if (!graph.variablesByCollection.has(collectionId)) {
+      graph.variablesByCollection.set(collectionId, []);
+    }
+    const variablesInCollection = graph.variablesByCollection.get(collectionId)!;
+    if (!variablesInCollection.find(v => v.id === variable.id)) {
+      variablesInCollection.push(variable);
+    }
+    
+    // Update variableByName index (key format: "groupId:variableName")
+    const nameKey = `${variable.groupId}:${variable.name}`;
+    graph.variableByName.set(nameKey, variable);
+  }
   
   // Extract aliases from the variable's modes and add to graph
   variable.modes.forEach((mode) => {
@@ -112,6 +194,7 @@ export function addVariable(
 /**
  * Finds a variable by its path (collection/group/name)
  * Returns null if not found
+ * Uses index maps for O(1) lookups instead of O(n) searches
  */
 export function getVariableByPath(
   graph: VariableGraph,
@@ -119,22 +202,18 @@ export function getVariableByPath(
   groupName: string,
   variableName: string
 ): Variable | null {
-  // Find collection by name
-  const collection = Array.from(graph.collections.values()).find(
-    (c) => c.name === collectionName
-  );
+  // Find collection by name using index
+  const collection = graph.collectionByName.get(collectionName);
   if (!collection) return null;
 
-  // Find group by name and collection
-  const group = Array.from(graph.groups.values()).find(
-    (g) => g.name === groupName && g.collectionId === collection.id
-  );
+  // Find group by name and collection using index
+  const groupNameKey = `${collection.id}:${groupName}`;
+  const group = graph.groupByName.get(groupNameKey);
   if (!group) return null;
 
-  // Find variable by name and group
-  const variable = Array.from(graph.variables.values()).find(
-    (v) => v.name === variableName && v.groupId === group.id
-  );
+  // Find variable by name and group using index
+  const variableNameKey = `${group.id}:${variableName}`;
+  const variable = graph.variableByName.get(variableNameKey);
 
   return variable || null;
 }
@@ -156,11 +235,17 @@ export function getAliasesForVariable(
 
 /**
  * Gets all variables in a specific group
+ * Uses index map for O(1) lookup instead of O(n) filter
  */
 export function getVariablesInGroup(
   graph: VariableGraph,
   groupId: string
 ): Variable[] {
+  // Use index map if available, fallback to filter for backward compatibility
+  if (graph.variablesByGroup.has(groupId)) {
+    return graph.variablesByGroup.get(groupId)!;
+  }
+  // Fallback for graphs without index (shouldn't happen, but safe)
   return Array.from(graph.variables.values()).filter(
     (v) => v.groupId === groupId
   );
@@ -168,11 +253,17 @@ export function getVariablesInGroup(
 
 /**
  * Gets all groups in a specific collection
+ * Uses index map for O(1) lookup instead of O(n) filter
  */
 export function getGroupsInCollection(
   graph: VariableGraph,
   collectionId: string
 ): Group[] {
+  // Use index map if available, fallback to filter for backward compatibility
+  if (graph.groupsByCollection.has(collectionId)) {
+    return graph.groupsByCollection.get(collectionId)!;
+  }
+  // Fallback for graphs without index (shouldn't happen, but safe)
   return Array.from(graph.groups.values()).filter(
     (g) => g.collectionId === collectionId
   );

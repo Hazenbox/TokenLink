@@ -6,6 +6,7 @@ import React, { useState, useMemo, memo } from 'react';
 import { EdgeProps, getBezierPath, BaseEdge, Position, useViewport } from '@xyflow/react';
 import { AliasEdgeData } from '../../../adapters/graphToReactFlow';
 import { EdgeTooltip } from './EdgeTooltip';
+import { devDebug } from '../../../utils/logger';
 
 export const AliasEdge = memo(function AliasEdge({
   id,
@@ -84,8 +85,8 @@ export const AliasEdge = memo(function AliasEdge({
   // Calculate tooltip position for selected state when not hovering
   const selectedTooltipPos = selected && !isHovered ? canvasToScreen(labelX, labelY) : null;
 
-  // Debug logging to understand markerEnd prop
-  console.log('[AliasEdge] Marker debug:', {
+  // Debug logging to understand markerEnd prop (development only)
+  devDebug('[AliasEdge] Marker debug:', {
     edgeId: id,
     markerEndProp: markerEnd,
     selected,

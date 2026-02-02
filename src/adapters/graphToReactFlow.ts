@@ -4,8 +4,9 @@
 
 import { Node, Edge } from '@xyflow/react';
 import { VariableGraph, getGroupForVariable, getCollectionForGroup } from '../models/graph';
-import { Variable, Collection, Group, Mode } from '../models/types';
+import { Variable, Collection, Group, Mode, Alias } from '../models/types';
 import { layoutGraph, CollectionHeaderData } from '../utils/layoutGraph';
+import { devLog, devWarn } from '../utils/logger';
 
 export interface VariableNodeData {
   variableId: string;
@@ -47,6 +48,7 @@ export type { CollectionHeaderData };
 
 /**
  * Converts VariableGraph to React Flow nodes and edges
+ * Optimized with pre-built index maps for O(1) lookups
  */
 export function graphToReactFlow(graph: VariableGraph): {
   nodes: Node<VariableNodeData | CollectionHeaderData>[];
@@ -55,13 +57,40 @@ export function graphToReactFlow(graph: VariableGraph): {
   const variableNodes: Node<VariableNodeData>[] = [];
   const edges: Edge<AliasEdgeData>[] = [];
   
+  // Pre-build alias index: variableId → aliases[] for O(1) alias lookups
+  const aliasIndex = new Map<string, typeof graph.aliases>();
+  graph.aliases.forEach(alias => {
+    if (!aliasIndex.has(alias.fromVariableId)) {
+      aliasIndex.set(alias.fromVariableId, []);
+    }
+    aliasIndex.get(alias.fromVariableId)!.push(alias);
+  });
+  
+  // Pre-build lookup maps: variableId → group, groupId → collection
+  const variableToGroup = new Map<string, Group>();
+  const groupToCollection = new Map<string, Collection>();
+  
+  graph.variables.forEach(variable => {
+    const group = getGroupForVariable(graph, variable.id);
+    if (group) {
+      variableToGroup.set(variable.id, group);
+      if (!groupToCollection.has(group.id)) {
+        const collection = getCollectionForGroup(graph, group.id);
+        if (collection) {
+          groupToCollection.set(group.id, collection);
+        }
+      }
+    }
+  });
+  
   // Track collections and their variable counts
   const collectionData: Map<string, { collection: Collection; count: number }> = new Map();
   
   // Convert variables to nodes (without positions initially)
   graph.variables.forEach((variable) => {
-    const group = getGroupForVariable(graph, variable.id);
-    const collection = group ? getCollectionForGroup(graph, group.id) : null;
+    // Use pre-built maps for O(1) lookups
+    const group = variableToGroup.get(variable.id);
+    const collection = group ? groupToCollection.get(group.id) : null;
     
     if (!group || !collection) return;
     
@@ -71,10 +100,8 @@ export function graphToReactFlow(graph: VariableGraph): {
     }
     collectionData.get(collection.id)!.count++;
     
-    // Count aliases for this variable
-    const aliasCount = graph.aliases.filter(
-      a => a.fromVariableId === variable.id
-    ).length;
+    // Count aliases for this variable using pre-built index (O(1) instead of O(n))
+    const aliasCount = aliasIndex.get(variable.id)?.length || 0;
     
     variableNodes.push({
       id: variable.id,
@@ -83,7 +110,7 @@ export function graphToReactFlow(graph: VariableGraph): {
       data: {
         variableId: variable.id,
         variableName: variable.name,
-        variableType: variable.variableType,
+        variableType: variable.variableType || undefined,
         groupId: group.id,
         groupName: group.name,
         collectionId: collection.id,
@@ -117,7 +144,7 @@ export function graphToReactFlow(graph: VariableGraph): {
   const { positionedNodes, positionedHeaders } = layoutGraph(variableNodes, collectionHeaders);
   
   // Convert aliases to mode-level edges with validation
-  console.log('[Token Link] Creating mode-level edges, total aliases:', graph.aliases.length);
+  devLog('[Token Link] Creating mode-level edges, total aliases:', graph.aliases.length);
   let validEdgesCreated = 0;
   let skippedEdges = 0;
   
@@ -130,7 +157,7 @@ export function graphToReactFlow(graph: VariableGraph): {
     const toVariable = graph.variables.get(alias.toVariableId);
     
     if (!fromVariable || !toVariable) {
-      console.warn(`[Token Link] Alias ${aliasIndex}: Skipping - variables not found in graph`, {
+      devWarn(`[Token Link] Alias ${aliasIndex}: Skipping - variables not found in graph`, {
         fromVariableId: alias.fromVariableId,
         toVariableId: alias.toVariableId,
         fromExists: !!fromVariable,
@@ -142,7 +169,7 @@ export function graphToReactFlow(graph: VariableGraph): {
     
     // Validate that nodes are rendered for both variables
     if (!renderedNodeIds.has(alias.fromVariableId)) {
-      console.warn(`[Token Link] Alias ${aliasIndex}: Skipping - source node not rendered`, {
+      devWarn(`[Token Link] Alias ${aliasIndex}: Skipping - source node not rendered`, {
         fromVariable: fromVariable.name,
         fromVariableId: alias.fromVariableId
       });
@@ -151,7 +178,7 @@ export function graphToReactFlow(graph: VariableGraph): {
     }
     
     if (!renderedNodeIds.has(alias.toVariableId)) {
-      console.warn(`[Token Link] Alias ${aliasIndex}: Skipping - target node not rendered`, {
+      devWarn(`[Token Link] Alias ${aliasIndex}: Skipping - target node not rendered`, {
         toVariable: toVariable.name,
         toVariableId: alias.toVariableId
       });
@@ -168,7 +195,7 @@ export function graphToReactFlow(graph: VariableGraph): {
       // Validate source mode exists
       if (!fromModeIds.has(sourceModeId)) {
         const fromModeName = fromVariable.modes.find(m => m.id === sourceModeId)?.name || 'unknown';
-        console.warn(`[Token Link] Alias ${aliasIndex}: Skipping edge - source mode "${sourceModeId}" (${fromModeName}) not found in variable "${fromVariable.name}"`);
+        devWarn(`[Token Link] Alias ${aliasIndex}: Skipping edge - source mode "${sourceModeId}" (${fromModeName}) not found in variable "${fromVariable.name}"`);
         skippedEdges++;
         return;
       }
@@ -176,7 +203,7 @@ export function graphToReactFlow(graph: VariableGraph): {
       // Validate target mode exists
       if (!toModeIds.has(targetModeId)) {
         const availableModes = toVariable.modes.map(m => `${m.name} (${m.id})`).join(', ');
-        console.warn(`[Token Link] Alias ${aliasIndex}: Skipping edge - target mode "${targetModeId}" not found in variable "${toVariable.name}". Available modes: ${availableModes}`);
+        devWarn(`[Token Link] Alias ${aliasIndex}: Skipping edge - target mode "${targetModeId}" not found in variable "${toVariable.name}". Available modes: ${availableModes}`);
         skippedEdges++;
         return;
       }
@@ -185,11 +212,11 @@ export function graphToReactFlow(graph: VariableGraph): {
       const sourceModeName = fromVariable.modes.find(m => m.id === sourceModeId)?.name || sourceModeId;
       const targetModeName = toVariable.modes.find(m => m.id === targetModeId)?.name || targetModeId;
       
-      // Get group and collection names for source and target
-      const sourceGroup = getGroupForVariable(graph, alias.fromVariableId);
-      const targetGroup = getGroupForVariable(graph, alias.toVariableId);
-      const sourceCollection = sourceGroup ? getCollectionForGroup(graph, sourceGroup.id) : null;
-      const targetCollection = targetGroup ? getCollectionForGroup(graph, targetGroup.id) : null;
+      // Get group and collection names for source and target using pre-built maps (O(1) lookups)
+      const sourceGroup = variableToGroup.get(alias.fromVariableId);
+      const targetGroup = variableToGroup.get(alias.toVariableId);
+      const sourceCollection = sourceGroup ? groupToCollection.get(sourceGroup.id) : null;
+      const targetCollection = targetGroup ? groupToCollection.get(targetGroup.id) : null;
       
       // Create edge with validated handle IDs
       const sourceHandleId = `${alias.fromVariableId}-${sourceModeId}-source`;
@@ -230,13 +257,13 @@ export function graphToReactFlow(graph: VariableGraph): {
         },
       };
       
-      console.log(`[Token Link] ✓ Created edge: ${fromVariable.name}.${sourceModeName} → ${toVariable.name}.${targetModeName}`);
+      devLog(`[Token Link] ✓ Created edge: ${fromVariable.name}.${sourceModeName} → ${toVariable.name}.${targetModeName}`);
       edges.push(edge);
       validEdgesCreated++;
     });
   });
   
-  console.log(`[Token Link] Edge creation complete: ${validEdgesCreated} valid edges, ${skippedEdges} skipped`);
+  devLog(`[Token Link] Edge creation complete: ${validEdgesCreated} valid edges, ${skippedEdges} skipped`);
   
   // Combine all nodes (headers + variables)
   const allNodes = [...positionedHeaders, ...positionedNodes];
