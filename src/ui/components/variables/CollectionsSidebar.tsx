@@ -155,20 +155,25 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
   
   // Auto-select first collection if none selected (MUST be before any conditional returns)
   // Uses ref to ensure this only runs once and doesn't cause infinite loops
+  // FIX: Removed activeCollectionId and setActiveCollection from dependencies to prevent
+  // infinite loop (React error #185). The effect was triggering repeatedly because it
+  // depends on activeCollectionId but also updates it via setActiveCollection.
+  // Zustand actions are stable references, so setActiveCollection doesn't need to be a dep.
   useEffect(() => {
     // Only auto-select if:
     // 1. Not already initialized
     // 2. Collections exist
-    // 3. No collection is currently selected
-    if (!isInitializedRef.current && collections.length > 0 && !activeCollectionId) {
+    // 3. No collection is currently selected (read from store directly to avoid dep)
+    const currentActiveCollection = useVariablesViewStore.getState().activeCollectionId;
+    if (!isInitializedRef.current && collections.length > 0 && !currentActiveCollection) {
       isInitializedRef.current = true;
-      setActiveCollection(collections[0].id);
+      useVariablesViewStore.getState().setActiveCollection(collections[0].id);
     }
     // Mark as initialized even if conditions weren't met, to prevent future runs
     if (collections.length > 0) {
       isInitializedRef.current = true;
     }
-  }, [collections.length, activeCollectionId, setActiveCollection]);
+  }, [collections.length]);
   
   // Defensive check: prevent rendering with undefined/empty collections during loading
   // (This is now AFTER the useEffect to comply with React's rules of hooks)
