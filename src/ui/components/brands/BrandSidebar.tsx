@@ -34,13 +34,13 @@ interface BrandItemProps {
   isActive: boolean;
   isEditing: boolean;
   editingName: string;
-  onSelect: () => void;
-  onStartEdit: () => void;
+  onSelect: (id: string) => void;
+  onStartEdit: (id: string, name: string) => void;
   onEditChange: (name: string) => void;
-  onEditSave: () => void;
+  onEditSave: (id: string) => void;
   onEditCancel: () => void;
-  onDelete: () => void;
-  onDuplicate: () => void;
+  onDelete: (id: string) => void;
+  onDuplicate: (id: string) => void;
 }
 
 // Memoize BrandItem to prevent unnecessary re-renders
@@ -76,16 +76,16 @@ const BrandItem = React.memo(function BrandItem({
           ? "bg-surface-elevated"
           : "hover:bg-surface-elevated/50"
       )}
-      onClick={onSelect}
+      onClick={() => onSelect(brand.id)}
     >
       <div className="flex items-center justify-between gap-2 w-full">
         {isEditing ? (
           <Input
             value={editingName}
             onChange={(e) => onEditChange(e.target.value)}
-            onBlur={onEditSave}
+            onBlur={() => onEditSave(brand.id)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") onEditSave();
+              if (e.key === "Enter") onEditSave(brand.id);
               if (e.key === "Escape") onEditCancel();
             }}
             className="h-5 px-1 py-0 text-xs rounded-lg flex-1"
@@ -128,7 +128,7 @@ const BrandItem = React.memo(function BrandItem({
                       onClick={(e) => {
                         e.stopPropagation();
                         setMenuOpen(false);
-                        onStartEdit();
+                        onStartEdit(brand.id, brand.name);
                       }}
                     >
                       Rename
@@ -138,7 +138,7 @@ const BrandItem = React.memo(function BrandItem({
                       onClick={(e) => {
                         e.stopPropagation();
                         setMenuOpen(false);
-                        onDuplicate();
+                        onDuplicate(brand.id);
                       }}
                     >
                       Duplicate
@@ -182,7 +182,7 @@ const BrandItem = React.memo(function BrandItem({
               variant="destructive"
               onClick={() => {
                 setDeleteDialogOpen(false);
-                onDelete();
+                onDelete(brand.id);
               }}
             >
               Delete
@@ -267,12 +267,6 @@ export function BrandSidebar() {
 
   // Create stable callbacks to prevent new function references on every render
   // This fixes infinite render loop by ensuring memoized BrandItem doesn't re-render unnecessarily
-  const noOp = React.useCallback(() => {}, []);
-  
-  const selectAllBrands = React.useCallback(() => {
-    setActiveBrand('__all__');
-  }, [setActiveBrand]);
-  
   const handleSelectBrand = React.useCallback((brandId: string) => {
     setActiveBrand(brandId);
   }, [setActiveBrand]);
@@ -375,13 +369,13 @@ export function BrandSidebar() {
                     isActive={activeBrandId === '__all__'}
                     isEditing={false}
                     editingName=""
-                    onSelect={selectAllBrands}
-                    onStartEdit={noOp}
-                    onEditChange={noOp}
-                    onEditSave={noOp}
-                    onEditCancel={noOp}
-                    onDelete={noOp}
-                    onDuplicate={noOp}
+                    onSelect={handleSelectBrand}
+                    onStartEdit={handleStartEdit}
+                    onEditChange={setEditingName}
+                    onEditSave={handleSaveEdit}
+                    onEditCancel={handleCancelEdit}
+                    onDelete={handleDeleteBrand}
+                    onDuplicate={handleDuplicateBrand}
                   />
                   <div className="border-t border-border/40 my-1.5" />
                 </>
@@ -395,13 +389,13 @@ export function BrandSidebar() {
                   isActive={activeBrandId === brand.id}
                   isEditing={editingId === brand.id}
                   editingName={editingName}
-                  onSelect={() => handleSelectBrand(brand.id)}
-                  onStartEdit={() => handleStartEdit(brand.id, brand.name)}
+                  onSelect={handleSelectBrand}
+                  onStartEdit={handleStartEdit}
                   onEditChange={setEditingName}
-                  onEditSave={() => handleSaveEdit(brand.id)}
+                  onEditSave={handleSaveEdit}
                   onEditCancel={handleCancelEdit}
-                  onDelete={() => handleDeleteBrand(brand.id)}
-                  onDuplicate={() => handleDuplicateBrand(brand.id)}
+                  onDelete={handleDeleteBrand}
+                  onDuplicate={handleDuplicateBrand}
                 />
               ))}
             </div>
