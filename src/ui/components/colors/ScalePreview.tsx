@@ -8,10 +8,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { IconButton } from "../common/IconButton";
 import { ColorSwatch } from "./ColorSwatch";
 import { ContrastPreview } from "./ContrastPreview";
+import { PaletteSyncModal } from "./PaletteSyncModal";
 import { usePaletteStore } from "@/store/palette-store";
 import { STEPS, Step, StepScales, PaletteSteps, isValidHex, normalizeHex, getReadableTextColor, ScaleResult } from "@colors/color-utils";
 import { cn } from "@colors/utils";
 import { safeStorage } from "@/lib/storage";
+import { type PaletteSyncSelection } from "@/store/palette-store";
 
 type ViewMode = "grid" | "list";
 type SortOrder = "asc" | "desc";
@@ -724,7 +726,7 @@ export function ScalePreview() {
   const [showDots, setShowDots] = React.useState(false);
   const [copyStatus, setCopyStatus] = React.useState<'idle' | 'copied' | 'error'>('idle');
   const [copyContrastStatus, setCopyContrastStatus] = React.useState<'idle' | 'copied' | 'error'>('idle');
-  const [syncOpen, setSyncOpen] = React.useState(false);
+  const [syncModalOpen, setSyncModalOpen] = React.useState(false);
   const [syncStatus, setSyncStatus] = React.useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
 
   React.useEffect(() => {
@@ -940,56 +942,23 @@ export function ScalePreview() {
             </Popover>
 
             <Tooltip>
-              <Popover open={syncOpen} onOpenChange={setSyncOpen}>
-                <PopoverTrigger asChild>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 cursor-pointer"
-                      disabled={syncStatus === 'syncing'}
-                    >
-                      {syncStatus === 'syncing' ? (
-                        <CloudUpload className="h-3.5 w-3.5 opacity-50 animate-pulse" />
-                      ) : syncStatus === 'success' ? (
-                        <Check className="h-3.5 w-3.5 text-green-600" />
-                      ) : (
-                        <CloudUpload className="h-3.5 w-3.5 opacity-50" />
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                </PopoverTrigger>
-                <PopoverContent className="w-48 p-1" align="end">
-                  <div className="flex flex-col">
-                    <button
-                      className="rounded px-2 py-1.5 text-xs hover:bg-accent text-left cursor-pointer"
-                      onClick={() => {
-                        const { syncPaletteToFigmaPrimitives } = usePaletteStore.getState();
-                        if (activePalette) {
-                          syncPaletteToFigmaPrimitives(activePalette.id);
-                          setSyncStatus('syncing');
-                          setSyncOpen(false);
-                        }
-                      }}
-                      disabled={syncStatus === 'syncing'}
-                    >
-                      Sync {activePalette?.name} color
-                    </button>
-                    <button
-                      className="rounded px-2 py-1.5 text-xs hover:bg-accent text-left cursor-pointer"
-                      onClick={() => {
-                        const { syncAllPalettesToFigmaPrimitives } = usePaletteStore.getState();
-                        syncAllPalettesToFigmaPrimitives();
-                        setSyncStatus('syncing');
-                        setSyncOpen(false);
-                      }}
-                      disabled={syncStatus === 'syncing'}
-                    >
-                      Sync all colors
-                    </button>
-                  </div>
-                </PopoverContent>
-              </Popover>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 cursor-pointer"
+                  disabled={syncStatus === 'syncing'}
+                  onClick={() => setSyncModalOpen(true)}
+                >
+                  {syncStatus === 'syncing' ? (
+                    <CloudUpload className="h-3.5 w-3.5 opacity-50 animate-pulse" />
+                  ) : syncStatus === 'success' ? (
+                    <Check className="h-3.5 w-3.5 text-green-600" />
+                  ) : (
+                    <CloudUpload className="h-3.5 w-3.5 opacity-50" />
+                  )}
+                </Button>
+              </TooltipTrigger>
               <TooltipContent side="bottom">
                 <p className="text-xs">
                   {syncStatus === 'syncing' ? 'Syncing to Figma...' : 
@@ -1131,6 +1100,20 @@ export function ScalePreview() {
           </ScrollArea>
         )}
       </div>
+
+      {/* Palette Sync Modal */}
+      <PaletteSyncModal
+        open={syncModalOpen}
+        onOpenChange={setSyncModalOpen}
+        palettes={palettes.map(p => ({ id: p.id, name: p.name }))}
+        onSync={(selections: PaletteSyncSelection[]) => {
+          const { syncSelectedPalettesToFigmaPrimitives } = usePaletteStore.getState();
+          syncSelectedPalettesToFigmaPrimitives(selections);
+          setSyncStatus('syncing');
+          setSyncModalOpen(false);
+        }}
+        isSyncing={syncStatus === 'syncing'}
+      />
     </TooltipProvider>
   );
 }

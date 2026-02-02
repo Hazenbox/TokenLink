@@ -3,8 +3,14 @@ import { Step, PaletteSteps, StepScales } from "@colors/color-utils";
 import { generateAllScales, createDefaultPalette } from "@colors/scale-generator";
 import { loadPalettesFromJSON } from "@colors/palette-loader";
 import { safeStorage } from "@/lib/storage";
+import { categorizePalette, type PaletteCategory } from "@/utils/palette-categorization";
 
 export type GeneratedScalesMap = Record<Step, StepScales | null>;
+
+export interface PaletteSyncSelection {
+  id: string;
+  category: PaletteCategory;
+}
 
 export interface Palette {
   id: string;
@@ -52,6 +58,7 @@ interface PaletteState {
   importFromFigmaVariables: (collectionId: string) => Promise<void>;
   syncPaletteToFigmaPrimitives: (paletteId: string) => void;
   syncAllPalettesToFigmaPrimitives: () => void;
+  syncSelectedPalettesToFigmaPrimitives: (selections: PaletteSyncSelection[]) => void;
   
   // Storage operations
   loadPalettes: () => Promise<void>;
@@ -327,24 +334,9 @@ export const usePaletteStore = create<PaletteState>()((set, get) => {
             return;
           }
 
-          // Generate all scales for the palette
-          const scales = generateAllScales(palette.steps, palette.primaryStep);
-
-          console.log(`[Palette Store] Syncing palette "${palette.name}" to primitives...`);
-          
-          // Send message to plugin code with palette data and generated scales
-          window.parent.postMessage(
-            { 
-              pluginMessage: { 
-                type: 'sync-palette-colors-to-primitives', 
-                data: { 
-                  palettes: [palette],
-                  scales: { [palette.id]: scales }
-                } 
-              } 
-            },
-            '*'
-          );
+          // Auto-categorize and use new sync method
+          const category = categorizePalette(palette.name);
+          get().syncSelectedPalettesToFigmaPrimitives([{ id: paletteId, category }]);
         },
 
         syncAllPalettesToFigmaPrimitives: () => {
@@ -355,22 +347,46 @@ export const usePaletteStore = create<PaletteState>()((set, get) => {
             return;
           }
 
-          // Generate scales for all palettes
-          const scalesMap: Record<string, GeneratedScalesMap> = {};
-          palettes.forEach(palette => {
-            scalesMap[palette.id] = generateAllScales(palette.steps, palette.primaryStep);
-          });
-
-          console.log(`[Palette Store] Syncing ${palettes.length} palettes to primitives...`);
+          // Auto-categorize all palettes and use new sync method
+          const selections = palettes.map(p => ({
+            id: p.id,
+            category: categorizePalette(p.name)
+          }));
           
-          // Send message to plugin code with all palettes and their scales
+          get().syncSelectedPalettesToFigmaPrimitives(selections);
+        },
+
+        syncSelectedPalettesToFigmaPrimitives: (selections: PaletteSyncSelection[]) => {
+          const { palettes } = get();
+          
+          const selectedPalettes = [];
+          const scalesMap: Record<string, GeneratedScalesMap> = {};
+          const categoriesMap: Record<string, PaletteCategory> = {};
+          
+          for (const selection of selections) {
+            const palette = palettes.find(p => p.id === selection.id);
+            if (!palette) {
+              console.warn(`[Palette Store] Palette not found: ${selection.id}`);
+              continue;
+            }
+            
+            selectedPalettes.push(palette);
+            scalesMap[palette.id] = generateAllScales(palette.steps, palette.primaryStep);
+            categoriesMap[palette.id] = selection.category;
+          }
+
+          console.log(`[Palette Store] Syncing ${selectedPalettes.length} palettes to categorized primitives...`);
+          console.log('[Palette Store] Categories:', categoriesMap);
+          
+          // Send message to plugin code with palette data, scales, and categories
           window.parent.postMessage(
             { 
               pluginMessage: { 
                 type: 'sync-palette-colors-to-primitives', 
                 data: { 
-                  palettes,
-                  scales: scalesMap
+                  palettes: selectedPalettes,
+                  scales: scalesMap,
+                  categories: categoriesMap
                 } 
               } 
             },
