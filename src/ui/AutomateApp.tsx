@@ -309,8 +309,10 @@ export function AutomateApp() {
       
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden min-w-0">
-        {/* Left: Brand Sidebar */}
-        <BrandSidebar />
+        {/* Left: Brand Sidebar - wrapped in error boundary */}
+        <VariablesErrorBoundary>
+          <BrandSidebar />
+        </VariablesErrorBoundary>
         
         {/* Middle: Figma-style Variables UI */}
         <div className="flex-1 bg-background overflow-hidden flex max-w-full min-w-0">
