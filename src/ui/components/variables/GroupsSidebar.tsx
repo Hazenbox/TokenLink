@@ -99,6 +99,30 @@ export function GroupsSidebar({ onCreateGroup }: GroupsSidebarProps) {
     setEditingName(name);
   };
   
+  // Create stable callbacks to prevent new function references on every render
+  const handleGroupClick = useCallback((groupId: string, hasSteps: boolean) => {
+    if (hasSteps) {
+      toggleGroupExpanded(groupId);
+    }
+    setActiveGroup(groupId);
+    setSelectedStep('all');
+  }, [toggleGroupExpanded, setActiveGroup, setSelectedStep]);
+  
+  const handleAllStepsClick = useCallback((groupId: string) => {
+    setActiveGroup(groupId);
+    setSelectedStep('all');
+  }, [setActiveGroup, setSelectedStep]);
+  
+  const handleStepClick = useCallback((groupId: string, step: string) => {
+    setActiveGroup(groupId);
+    setSelectedStep(step);
+  }, [setActiveGroup, setSelectedStep]);
+  
+  const handleStartEditGroup = useCallback((groupId: string, groupName: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    startEditing(groupId, groupName);
+  }, []);
+  
   // Filter groups and steps by search query
   const filteredGroupsWithSteps = useMemo(() => {
     if (!searchQuery) return groupsWithSteps;
@@ -234,13 +258,7 @@ export function GroupsSidebar({ onCreateGroup }: GroupsSidebarProps) {
                     ) : (
                       <>
                         <button
-                          onClick={() => {
-                            if (hasSteps) {
-                              toggleGroupExpanded(group.id);
-                            }
-                            setActiveGroup(group.id);
-                            setSelectedStep('all');
-                          }}
+                          onClick={() => handleGroupClick(group.id, hasSteps)}
                           className="flex items-center gap-2 flex-1 min-w-0"
                         >
                           {/* Chevron icon (only if has steps) */}
@@ -286,10 +304,7 @@ export function GroupsSidebar({ onCreateGroup }: GroupsSidebarProps) {
                               <div className="flex flex-col">
                                 <button
                                   className="rounded px-2 py-1.5 text-xs hover:bg-accent text-left cursor-pointer"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    startEditing(group.id, group.name);
-                                  }}
+                                  onClick={(e) => handleStartEditGroup(group.id, group.name, e)}
                                 >
                                   Rename
                                 </button>
@@ -306,10 +321,7 @@ export function GroupsSidebar({ onCreateGroup }: GroupsSidebarProps) {
                     <div className="pl-5 py-1 bg-background">
                       {/* All steps option */}
                       <button
-                        onClick={() => {
-                          setActiveGroup(group.id);
-                          setSelectedStep('all');
-                        }}
+                        onClick={() => handleAllStepsClick(group.id)}
                         className={`
                           w-full px-3 py-1.5 text-left text-[11px]
                           transition-colors hover:bg-surface/50 rounded
@@ -323,10 +335,7 @@ export function GroupsSidebar({ onCreateGroup }: GroupsSidebarProps) {
                       {group.steps!.map(step => (
                         <button
                           key={step}
-                          onClick={() => {
-                            setActiveGroup(group.id);
-                            setSelectedStep(step);
-                          }}
+                          onClick={() => handleStepClick(group.id, step)}
                           className={`
                             w-full px-3 py-1.5 text-left text-[11px]
                             transition-colors hover:bg-surface/50 rounded
