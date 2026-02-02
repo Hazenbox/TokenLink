@@ -2,7 +2,7 @@
  * Utilities for validating connections during drag operations
  */
 
-import { VariableGraph } from '../../models/graph';
+import { VariableGraph, wouldCreateCycle } from '../../models/graph';
 
 export interface ValidationResult {
   isValid: boolean;
@@ -77,41 +77,12 @@ export function validateConnection(
     }
   }
 
-  // Check for circular dependency
-  if (wouldCreateCycle(source.variableId, target.variableId, graph)) {
+  // Check for circular dependency (using shared implementation from graph.ts)
+  if (wouldCreateCycle(graph, source.variableId, target.variableId)) {
     return { isValid: false, reason: 'Would create circular dependency' };
   }
 
   return { isValid: true };
-}
-
-/**
- * Check if creating an alias would create a circular dependency
- */
-function wouldCreateCycle(sourceId: string, targetId: string, graph: VariableGraph): boolean {
-  const visited = new Set<string>();
-  const queue: string[] = [targetId];
-
-  while (queue.length > 0) {
-    const current = queue.shift()!;
-    
-    if (current === sourceId) {
-      return true; // Found a cycle
-    }
-
-    if (visited.has(current)) continue;
-    visited.add(current);
-
-    // Find all aliases where current is the source
-    const outgoingAliases = graph.aliases.filter(a => a.fromVariableId === current);
-    outgoingAliases.forEach(alias => {
-      if (!visited.has(alias.toVariableId)) {
-        queue.push(alias.toVariableId);
-      }
-    });
-  }
-
-  return false;
 }
 
 /**
