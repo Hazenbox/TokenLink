@@ -39,40 +39,30 @@ const LOADING_SUBTITLE_STYLE = {
 // Uniform row height to prevent virtualizer measurement loops
 const ROW_HEIGHT = 32;
 
-// Column width constants - minimums for scrollable layout
-const MIN_NAME_WIDTH = 200;
-const MIN_MODE_WIDTH = 180;
+// Column width constants - FIXED pixel widths for consistent layout
+const NAME_COLUMN_WIDTH = 220;
+const MODE_COLUMN_WIDTH = 200;
 
-// Threshold for switching to responsive (percentage-based) layout
-// When 2 or fewer modes, use full-width responsive layout
-const RESPONSIVE_MODE_THRESHOLD = 2;
+// Calculate total table width for a given mode count
+const getTableWidth = (modeCount: number) => NAME_COLUMN_WIDTH + (modeCount * MODE_COLUMN_WIDTH);
 
 // Memoized ColGroup component to enforce consistent column widths
-// Supports both responsive (percentage) and fixed (pixel) layouts
-const TableColGroup = React.memo(({ modeCount, isResponsive }: { modeCount: number; isResponsive: boolean }) => {
-  if (isResponsive && modeCount > 0) {
-    // Responsive layout: Name column gets 30%, modes share remaining 70% equally
-    const modeWidthPercent = 70 / modeCount;
-    return (
-      <colgroup>
-        <col style={{ width: '30%', minWidth: MIN_NAME_WIDTH }} />
-        {Array.from({ length: modeCount }).map((_, i) => (
-          <col key={i} style={{ width: `${modeWidthPercent}%`, minWidth: MIN_MODE_WIDTH }} />
-        ))}
-      </colgroup>
-    );
-  }
-  
-  // Fixed layout: Use minimum pixel widths for horizontal scroll
-  return (
-    <colgroup>
-      <col style={{ width: MIN_NAME_WIDTH }} />
-      {Array.from({ length: modeCount }).map((_, i) => (
-        <col key={i} style={{ width: MIN_MODE_WIDTH }} />
-      ))}
-    </colgroup>
-  );
-});
+// Uses BOTH width attribute AND style for maximum browser compatibility
+// IMPORTANT: For table-layout:fixed to work, columns need explicit pixel widths
+const TableColGroup = React.memo(({ modeCount }: { modeCount: number }) => (
+  <colgroup>
+    {/* Name column - fixed width */}
+    <col width={NAME_COLUMN_WIDTH} style={{ width: NAME_COLUMN_WIDTH, minWidth: NAME_COLUMN_WIDTH, maxWidth: NAME_COLUMN_WIDTH }} />
+    {/* Mode columns - all same fixed width */}
+    {Array.from({ length: modeCount }).map((_, i) => (
+      <col 
+        key={i} 
+        width={MODE_COLUMN_WIDTH} 
+        style={{ width: MODE_COLUMN_WIDTH, minWidth: MODE_COLUMN_WIDTH, maxWidth: MODE_COLUMN_WIDTH }} 
+      />
+    ))}
+  </colgroup>
+));
 TableColGroup.displayName = 'TableColGroup';
 
 export function BrandVariableTable() {
@@ -427,23 +417,25 @@ export function BrandVariableTable() {
             ? rowVirtualizer.getTotalSize() - virtualItems[virtualItems.length - 1].end 
             : 0;
           
-          // Use responsive layout for 1-2 modes, fixed layout for more
-          const isResponsive = modes.length <= RESPONSIVE_MODE_THRESHOLD;
+          // Calculate exact table width for fixed layout
+          const tableWidth = getTableWidth(modes.length);
           
           return (
             <div ref={tableContainerRef} className="flex-1 overflow-auto relative">
               {/* IMPORTANT: Use border-separate, NOT border-collapse - border-collapse breaks position:sticky */}
+              {/* IMPORTANT: table-layout:fixed REQUIRES explicit width (not auto) to lock column widths */}
               <table 
                 className="text-xs" 
                 style={{ 
                   borderCollapse: 'separate', 
                   borderSpacing: 0, 
                   tableLayout: 'fixed',
-                  width: isResponsive ? '100%' : 'auto',
-                  minWidth: isResponsive ? 'auto' : `${MIN_NAME_WIDTH + modes.length * MIN_MODE_WIDTH}px`
+                  width: tableWidth,
+                  minWidth: tableWidth,
+                  maxWidth: tableWidth
                 }}
               >
-                <TableColGroup modeCount={modes.length} isResponsive={isResponsive} />
+                <TableColGroup modeCount={modes.length} />
                 {/* NOTE: sticky must be on <th> cells, NOT on <thead> - CSS spec limitation */}
                 {/* NOTE: border-b must be on <th> cells, NOT on <tr> - borders on tr don't stick */}
                 <thead>
@@ -588,23 +580,25 @@ export function BrandVariableTable() {
       ) : (
         // Non-virtualized rendering for small lists (≤ 100 variables)
         (() => {
-          // Use responsive layout for 1-2 modes, fixed layout for more
-          const isResponsive = modes.length <= RESPONSIVE_MODE_THRESHOLD;
+          // Calculate exact table width for fixed layout
+          const tableWidth = getTableWidth(modes.length);
           
           return (
             <div ref={tableContainerRef} className="flex-1 overflow-auto">
               {/* IMPORTANT: Use border-separate, NOT border-collapse - border-collapse breaks position:sticky */}
+              {/* IMPORTANT: table-layout:fixed REQUIRES explicit width (not auto) to lock column widths */}
               <table 
                 className="text-xs" 
                 style={{ 
                   borderCollapse: 'separate', 
                   borderSpacing: 0, 
                   tableLayout: 'fixed',
-                  width: isResponsive ? '100%' : 'auto',
-                  minWidth: isResponsive ? 'auto' : `${MIN_NAME_WIDTH + modes.length * MIN_MODE_WIDTH}px`
+                  width: tableWidth,
+                  minWidth: tableWidth,
+                  maxWidth: tableWidth
                 }}
               >
-                <TableColGroup modeCount={modes.length} isResponsive={isResponsive} />
+                <TableColGroup modeCount={modes.length} />
                 {/* NOTE: sticky must be on <th> cells, NOT on <thead> - CSS spec limitation */}
                 {/* NOTE: border-b must be on <th> cells, NOT on <tr> - borders on tr don't stick */}
                 <thead>
