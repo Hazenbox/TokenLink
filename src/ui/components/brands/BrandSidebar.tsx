@@ -258,6 +258,39 @@ export function BrandSidebar() {
     setEditingName(name);
   };
 
+  // Create stable callbacks to prevent new function references on every render
+  // This fixes infinite render loop by ensuring memoized BrandItem doesn't re-render unnecessarily
+  const noOp = React.useCallback(() => {}, []);
+  
+  const selectAllBrands = React.useCallback(() => {
+    setActiveBrand('__all__');
+  }, [setActiveBrand]);
+  
+  const handleSelectBrand = React.useCallback((brandId: string) => {
+    setActiveBrand(brandId);
+  }, [setActiveBrand]);
+  
+  const handleStartEdit = React.useCallback((brandId: string, brandName: string) => {
+    startEditing(brandId, brandName);
+  }, []);
+  
+  const handleSaveEdit = React.useCallback((brandId: string) => {
+    handleRename(brandId);
+  }, [editingName, renameBrand]);
+  
+  const handleCancelEdit = React.useCallback(() => {
+    setEditingId(null);
+    setEditingName("");
+  }, []);
+  
+  const handleDeleteBrand = React.useCallback((brandId: string) => {
+    deleteBrand(brandId);
+  }, [deleteBrand]);
+  
+  const handleDuplicateBrand = React.useCallback((brandId: string) => {
+    duplicateBrand(brandId);
+  }, [duplicateBrand]);
+
   // Memoize sorted brands to avoid re-sorting on every render
   const sortedBrands = React.useMemo(() => 
     [...brands].sort((a, b) => a.name.localeCompare(b.name)),
@@ -335,13 +368,13 @@ export function BrandSidebar() {
                     isActive={activeBrandId === '__all__'}
                     isEditing={false}
                     editingName=""
-                    onSelect={() => setActiveBrand('__all__')}
-                    onStartEdit={() => {}} // No-op for "All"
-                    onEditChange={() => {}} // No-op for "All"
-                    onEditSave={() => {}} // No-op for "All"
-                    onEditCancel={() => {}} // No-op for "All"
-                    onDelete={() => {}} // No-op for "All"
-                    onDuplicate={() => {}} // No-op for "All"
+                    onSelect={selectAllBrands}
+                    onStartEdit={noOp}
+                    onEditChange={noOp}
+                    onEditSave={noOp}
+                    onEditCancel={noOp}
+                    onDelete={noOp}
+                    onDuplicate={noOp}
                   />
                   <div className="border-t border-border/40 my-1.5" />
                 </>
@@ -355,16 +388,13 @@ export function BrandSidebar() {
                   isActive={activeBrandId === brand.id}
                   isEditing={editingId === brand.id}
                   editingName={editingName}
-                  onSelect={() => setActiveBrand(brand.id)}
-                  onStartEdit={() => startEditing(brand.id, brand.name)}
+                  onSelect={() => handleSelectBrand(brand.id)}
+                  onStartEdit={() => handleStartEdit(brand.id, brand.name)}
                   onEditChange={setEditingName}
-                  onEditSave={() => handleRename(brand.id)}
-                  onEditCancel={() => {
-                    setEditingId(null);
-                    setEditingName("");
-                  }}
-                  onDelete={() => deleteBrand(brand.id)}
-                  onDuplicate={() => duplicateBrand(brand.id)}
+                  onEditSave={() => handleSaveEdit(brand.id)}
+                  onEditCancel={handleCancelEdit}
+                  onDelete={() => handleDeleteBrand(brand.id)}
+                  onDuplicate={() => handleDuplicateBrand(brand.id)}
                 />
               ))}
             </div>
