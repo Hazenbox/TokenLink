@@ -1279,14 +1279,15 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
         if (status === 'success') {
           set({ syncStatus: 'success' });
           
-          // Reset to idle after 3 seconds
-          const timeout = setTimeout(() => {
+          // Reset to idle after 3 seconds (track module-level timer)
+          statusResetTimer = setTimeout(() => {
             if (get().syncStatus === 'success') {
               set({ syncStatus: 'idle', statusResetTimeout: null });
             }
+            statusResetTimer = null;
           }, 3000);
           
-          set({ statusResetTimeout: timeout });
+          set({ statusResetTimeout: statusResetTimer });
           
           // If graph data is included, refresh Figma data
           if (data?.graph) {

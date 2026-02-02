@@ -2073,6 +2073,7 @@ figma.ui.onmessage = async (msg) => {
           const totalBatches = Math.ceil(varsArray.length / BATCH_SIZE);
           
           // Process batch with error handling
+          let batchProcessed = 0;
           for (const variable of batch) {
             try {
               const varName = variable.name;
@@ -2105,6 +2106,13 @@ figma.ui.onmessage = async (msg) => {
                 const rgb = hexToRGB(variable.value);
                 console.log(`  [Layer 0] RGB result: r=${rgb.r.toFixed(3)}, g=${rgb.g.toFixed(3)}, b=${rgb.b.toFixed(3)}`);
                 figmaVar.setValueForMode(mode.modeId, rgb);
+              }
+              
+              batchProcessed++;
+              
+              // Yield to event loop every 10 variables (improved responsiveness)
+              if (batchProcessed % 10 === 0) {
+                await new Promise(resolve => setTimeout(resolve, 0));
               }
             } catch (error) {
               // Collect errors but continue processing
