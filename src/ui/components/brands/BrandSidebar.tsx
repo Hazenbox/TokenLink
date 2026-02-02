@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Plus, MoreHorizontal } from "lucide-react";
+import { shallow } from "zustand/shallow";
 import { Button } from "@/components/ui/button";
 import { CompactButton } from "../common/CompactButton";
 import { IconButton } from "../common/IconButton";
@@ -35,7 +36,8 @@ interface BrandItemProps {
   onDuplicate: () => void;
 }
 
-function BrandItem({
+// Memoize BrandItem to prevent unnecessary re-renders
+const BrandItem = React.memo(function BrandItem({
   brand,
   isActive,
   isEditing,
@@ -184,9 +186,21 @@ function BrandItem({
       )}
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison: only re-render if these specific props change
+  return (
+    prevProps.brand.id === nextProps.brand.id &&
+    prevProps.brand.name === nextProps.brand.name &&
+    prevProps.brand.syncedAt === nextProps.brand.syncedAt &&
+    prevProps.brand.updatedAt === nextProps.brand.updatedAt &&
+    prevProps.isActive === nextProps.isActive &&
+    prevProps.isEditing === nextProps.isEditing &&
+    prevProps.editingName === nextProps.editingName
+  );
+});
 
 export function BrandSidebar() {
+  // Optimized: Use shallow comparison to prevent unnecessary re-renders
   const {
     brands,
     activeBrandId,
@@ -195,7 +209,15 @@ export function BrandSidebar() {
     setActiveBrand,
     renameBrand,
     duplicateBrand,
-  } = useBrandStore();
+  } = useBrandStore((state) => ({
+    brands: state.brands,
+    activeBrandId: state.activeBrandId,
+    createBrand: state.createBrand,
+    deleteBrand: state.deleteBrand,
+    setActiveBrand: state.setActiveBrand,
+    renameBrand: state.renameBrand,
+    duplicateBrand: state.duplicateBrand,
+  }), shallow);
 
   const [newBrandName, setNewBrandName] = React.useState("");
   const [dialogOpen, setDialogOpen] = React.useState(false);
@@ -223,8 +245,11 @@ export function BrandSidebar() {
     setEditingName(name);
   };
 
-  const sortedBrands = brands
-    .sort((a, b) => a.name.localeCompare(b.name));
+  // Memoize sorted brands to avoid re-sorting on every render
+  const sortedBrands = React.useMemo(() => 
+    [...brands].sort((a, b) => a.name.localeCompare(b.name)),
+    [brands]
+  );
 
   return (
     <div className="flex h-full w-[220px] flex-col bg-background border-r border-border/40 relative z-10 flex-shrink-0">

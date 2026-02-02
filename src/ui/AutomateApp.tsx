@@ -3,8 +3,9 @@
  * Main component with sidebar and Figma-style layout
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { Upload, Loader2, CheckCircle, AlertCircle, Download, FolderInput, Terminal } from 'lucide-react';
+import { shallow } from 'zustand/shallow';
 import { BrandSidebar } from './components/brands/BrandSidebar';
 import { BrandConfigPanel } from './components/BrandConfigPanel';
 import { BrandVariableTable } from './components/BrandVariableTable';
@@ -32,14 +33,24 @@ export function AutomateApp() {
   // Console logs
   const { logs, isVisible, clearLogs, toggleVisibility, closeConsole } = useConsoleLogs();
   
-  // Sync logic
-  const activeBrand = useBrandStore((state) => state.getActiveBrand());
-  const activeBrandId = useBrandStore((state) => state.activeBrandId);
-  const brands = useBrandStore((state) => state.brands);
-  const syncBrandWithLayers = useBrandStore((state) => state.syncBrandWithLayers);
-  const syncAllBrands = useBrandStore((state) => state.syncAllBrands);
-  const syncStatus = useBrandStore((state) => state.syncStatus);
-  const canSync = useBrandStore((state) => state.canSync());
+  // Optimized: Combine store subscriptions with shallow comparison to prevent unnecessary re-renders
+  const { 
+    activeBrand,
+    activeBrandId, 
+    brands, 
+    syncBrandWithLayers, 
+    syncAllBrands, 
+    syncStatus,
+    canSync 
+  } = useBrandStore((state) => ({
+    activeBrand: state.getActiveBrand(),
+    activeBrandId: state.activeBrandId,
+    brands: state.brands,
+    syncBrandWithLayers: state.syncBrandWithLayers,
+    syncAllBrands: state.syncAllBrands,
+    syncStatus: state.syncStatus,
+    canSync: state.canSync(),
+  }), shallow);
   
   // Import/Export modals state
   const [showExportModal, setShowExportModal] = useState(false);
@@ -48,7 +59,8 @@ export function AutomateApp() {
   const [importPreview, setImportPreview] = useState<ImportPreview | null>(null);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   
-  const isAllBrands = activeBrandId === '__all__';
+  // Memoize computed values to prevent recalculation on every render
+  const isAllBrands = useMemo(() => activeBrandId === '__all__', [activeBrandId]);
   
   const validation = useMemo(() => {
     // Handle "All" brands case
@@ -63,18 +75,22 @@ export function AutomateApp() {
     return BrandGenerator.validate(activeBrand);
   }, [activeBrand, activeBrandId, brands]);
   
-  const canSyncBrand = (isAllBrands || activeBrand) && validation.valid && canSync && syncStatus === 'idle';
+  const canSyncBrand = useMemo(() => 
+    (isAllBrands || activeBrand) && validation.valid && canSync && syncStatus === 'idle',
+    [isAllBrands, activeBrand, validation.valid, canSync, syncStatus]
+  );
   
-  const handleSync = async () => {
+  // Memoize callbacks to prevent recreation on every render
+  const handleSync = useCallback(async () => {
     if (activeBrandId === '__all__') {
       await syncAllBrands();
       return;
     }
     if (!activeBrand) return;
     await syncBrandWithLayers(activeBrand.id);
-  };
+  }, [activeBrandId, activeBrand, syncAllBrands, syncBrandWithLayers]);
   
-  const getSyncButtonContent = () => {
+  const getSyncButtonContent = useCallback(() => {
     switch (syncStatus) {
       case 'validating':
       case 'previewing':
@@ -107,15 +123,15 @@ export function AutomateApp() {
           </>
         );
     }
-  };
+  }, [syncStatus, isAllBrands]);
   
-  // Handle export
-  const handleExport = () => {
+  // Memoize export handler
+  const handleExport = useCallback(() => {
     setShowExportModal(true);
-  };
+  }, []);
   
-  // Handle import file selection
-  const handleImportClick = () => {
+  // Memoize import handler
+  const handleImportClick = useCallback(() => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
@@ -142,10 +158,10 @@ export function AutomateApp() {
       }
     };
     input.click();
-  };
+  }, []);
   
-  // Handle import execution
-  const handleImport = async (options: ImportOptions) => {
+  // Memoize import execution handler
+  const handleImport = useCallback(async (options: ImportOptions) => {
     if (!importPreview) return;
     
     try {
@@ -160,7 +176,7 @@ export function AutomateApp() {
       console.error('Import execution error:', error);
       alert('Import failed. Please try again.');
     }
-  };
+  }, [importPreview]);
   
   // Initialize palettes and brands on mount (order matters!)
   useEffect(() => {
