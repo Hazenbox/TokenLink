@@ -10,7 +10,7 @@ import {
   EvaluationMode,
   AliasOperation,
 } from './types';
-import { parseRules, getEnabledRules, normalizeRules } from './ruleParser';
+import { parseRules, getEnabledRules, normalizeRules, checkDuplicateRuleIds } from './ruleParser';
 import {
   evaluateRules,
   generateAliasOperations,
@@ -66,6 +66,16 @@ export function loadRulesFromJSON(jsonString: string): {
     };
   }
 
+  // Check for duplicate rule IDs
+  const dupeCheck = checkDuplicateRuleIds(parseResult.rules);
+  if (dupeCheck.hasDuplicates) {
+    return {
+      success: false,
+      rules: [],
+      errors: [`Duplicate rule IDs found: ${dupeCheck.duplicates.join(', ')}`],
+    };
+  }
+
   return {
     success: true,
     rules: normalizeRules(parseResult.rules),
@@ -115,6 +125,32 @@ export function toggleRuleEnabled(
     rules: state.rules.map((r) =>
       r.id === ruleId ? { ...r, enabled: !r.enabled } : r
     ),
+  };
+}
+
+/**
+ * Updates state with evaluation result
+ * Use this after calling dryRunRules or applyRules to track the last evaluation
+ */
+export function setLastEvaluationResult(
+  state: RuleEngineState,
+  result: EvaluationResult
+): RuleEngineState {
+  return {
+    ...state,
+    lastEvaluationResult: result,
+  };
+}
+
+/**
+ * Clears the last evaluation result
+ */
+export function clearLastEvaluationResult(
+  state: RuleEngineState
+): RuleEngineState {
+  return {
+    ...state,
+    lastEvaluationResult: null,
   };
 }
 
@@ -278,6 +314,8 @@ export const RuleEngine = {
   updateRule,
   removeRule,
   toggleRuleEnabled,
+  setLastEvaluationResult,
+  clearLastEvaluationResult,
 
   // Rule loading
   loadRulesFromJSON,
