@@ -26,6 +26,20 @@ import { parseImportFile, createImportPreview } from '@/services/import-service'
 import { executeImport } from '@/services/import-execution';
 import { ImportPreview, ImportOptions, ImportResult } from '@/models/export-types';
 
+// Loading state style constants (prevents object recreation on every render)
+const LOADING_CONTAINER_STYLE = {
+  display: 'flex',
+  flexDirection: 'column' as const,
+  alignItems: 'center',
+  justifyContent: 'center',
+  height: '100%',
+  gap: '16px',
+  color: 'var(--text-secondary)'
+};
+
+const LOADING_TITLE_STYLE = { fontSize: '14px', fontWeight: 500 };
+const LOADING_SUBTITLE_STYLE = { fontSize: '12px' };
+
 export function AutomateApp() {
   // Handle Figma plugin messages for sync responses
   const { notification, progress, clearNotification } = useFigmaMessages();
@@ -72,17 +86,9 @@ export function AutomateApp() {
   // Show loading state during initialization
   if (isLoading && brands.length === 0) {
     return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100%',
-        gap: '16px',
-        color: 'var(--text-secondary)'
-      }}>
-        <div style={{ fontSize: '14px', fontWeight: 500 }}>Loading brands...</div>
-        <div style={{ fontSize: '12px' }}>Initializing Automate tab</div>
+      <div style={LOADING_CONTAINER_STYLE}>
+        <div style={LOADING_TITLE_STYLE}>Loading brands...</div>
+        <div style={LOADING_SUBTITLE_STYLE}>Initializing Automate tab</div>
       </div>
     );
   }
@@ -125,7 +131,7 @@ export function AutomateApp() {
     await syncBrandWithLayers(activeBrand.id);
   }, [activeBrandId, activeBrand, syncAllBrands, syncBrandWithLayers]);
   
-  const getSyncButtonContent = useCallback(() => {
+  const syncButtonContent = useMemo(() => {
     switch (syncStatus) {
       case 'validating':
       case 'previewing':
@@ -160,9 +166,35 @@ export function AutomateApp() {
     }
   }, [syncStatus, isAllBrands]);
   
+  // Memoize sync button className to prevent recreation on every render
+  const syncButtonClassName = useMemo(() => {
+    const baseClasses = 'h-6 px-2 text-xs font-normal flex items-center gap-1.5 transition-colors';
+    const stateClasses = canSyncBrand 
+      ? 'text-foreground hover:text-foreground-secondary' 
+      : 'text-foreground-tertiary cursor-not-allowed opacity-50';
+    const statusClasses = syncStatus === 'success' ? 'text-green-500' 
+      : syncStatus === 'error' ? 'text-red-500' 
+      : '';
+    
+    return `${baseClasses} ${stateClasses} ${statusClasses}`.trim();
+  }, [canSyncBrand, syncStatus]);
+  
   // Memoize export handler
   const handleExport = useCallback(() => {
     setShowExportModal(true);
+  }, []);
+  
+  // Memoize modal close handlers to prevent recreation on every render
+  const handleCloseExportModal = useCallback(() => {
+    setShowExportModal(false);
+  }, []);
+  
+  const handleCloseImportPreview = useCallback(() => {
+    setShowImportPreview(false);
+  }, []);
+  
+  const handleCloseImportResults = useCallback(() => {
+    setShowImportResults(false);
   }, []);
   
   // Memoize import handler
@@ -312,16 +344,9 @@ export function AutomateApp() {
           <button
             onClick={handleSync}
             disabled={!canSyncBrand}
-            className={`
-              h-6 px-2 text-xs font-normal flex items-center gap-1.5 transition-colors
-              ${canSyncBrand 
-                ? 'text-foreground hover:text-foreground-secondary' 
-                : 'text-foreground-tertiary cursor-not-allowed opacity-50'}
-              ${syncStatus === 'success' ? 'text-green-500' : ''}
-              ${syncStatus === 'error' ? 'text-red-500' : ''}
-            `}
+            className={syncButtonClassName}
           >
-            {getSyncButtonContent()}
+            {syncButtonContent}
           </button>
         </div>
       </div>
@@ -358,14 +383,14 @@ export function AutomateApp() {
       {/* Export Modal */}
       <ExportModal
         isOpen={showExportModal}
-        onClose={() => setShowExportModal(false)}
+        onClose={handleCloseExportModal}
       />
       
       {/* Import Preview Modal */}
       <ImportPreviewModal
         isOpen={showImportPreview}
         preview={importPreview}
-        onClose={() => setShowImportPreview(false)}
+        onClose={handleCloseImportPreview}
         onImport={handleImport}
       />
       
@@ -373,7 +398,7 @@ export function AutomateApp() {
       <ImportResults
         isOpen={showImportResults}
         result={importResult}
-        onClose={() => setShowImportResults(false)}
+        onClose={handleCloseImportResults}
       />
       
       {/* Toast Notification */}
