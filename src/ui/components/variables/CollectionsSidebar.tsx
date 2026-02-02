@@ -154,7 +154,7 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
       setActiveCollection(collections[0].id);
       setIsInitialized(true);
     }
-  }, [collections.length, activeCollectionId, setActiveCollection, isInitialized]);
+  }, [collections, activeCollectionId, setActiveCollection, isInitialized]);
   
   // Handle collection click
   const handleCollectionClick = useCallback((id: string) => {
@@ -174,6 +174,24 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
     setEditingId(id);
     setEditingName(name);
   };
+  
+  // Create stable callbacks to prevent new function references on every render
+  const handleClick = useCallback((collectionId: string) => {
+    handleCollectionClick(collectionId);
+  }, [handleCollectionClick]);
+  
+  const handleStartEditCollection = useCallback((collectionId: string, collectionName: string) => {
+    startEditing(collectionId, collectionName);
+  }, []);
+  
+  const handleSaveEditCollection = useCallback((collectionId: string) => {
+    handleRename(collectionId);
+  }, [editingName, updateCollection, activeBrandId]);
+  
+  const handleCancelEditCollection = useCallback(() => {
+    setEditingId(null);
+    setEditingName("");
+  }, []);
   
   // Handle cleanup of ml_ prefixed collections
   const handleCleanupMlCollections = useCallback(() => {
@@ -231,14 +249,11 @@ export function CollectionsSidebar({ onCreateCollection }: CollectionsSidebarPro
                 isActive={activeCollectionId === collection.id}
                 isEditing={editingId === collection.id}
                 editingName={editingName}
-                onClick={() => handleCollectionClick(collection.id)}
-                onStartEdit={() => startEditing(collection.id, collection.name)}
+                onClick={() => handleClick(collection.id)}
+                onStartEdit={() => handleStartEditCollection(collection.id, collection.name)}
                 onEditChange={setEditingName}
-                onEditSave={() => handleRename(collection.id)}
-                onEditCancel={() => {
-                  setEditingId(null);
-                  setEditingName("");
-                }}
+                onEditSave={() => handleSaveEditCollection(collection.id)}
+                onEditCancel={handleCancelEditCollection}
               />
             ))}
           </div>
