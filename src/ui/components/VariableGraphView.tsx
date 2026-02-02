@@ -2,7 +2,7 @@
  * Main React Flow graph visualization component for variables
  */
 
-import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import {
   ReactFlow,
   Background,
@@ -118,19 +118,23 @@ export function VariableGraphView({
 
   const [proximityHandle, setProximityHandle] = useState<{ handleId: string; isValid: boolean } | null>(null);
   
+  // Track previous node IDs to detect changes without causing infinite loops
+  const prevNodeIdsRef = useRef<Set<string>>(new Set(initialNodes.map(n => n.id)));
+  
   // Sync React Flow state when graph changes - optimized to prevent unnecessary updates
+  // FIX: Removed `nodes` from dependencies to prevent infinite loop (React error #185)
   useEffect(() => {
     // Only update if nodes actually changed (compare by ID and length)
-    const currentNodeIds = new Set(nodes.map(n => n.id));
     const newNodeIds = new Set(initialNodes.map(n => n.id));
     const nodesChanged = 
-      currentNodeIds.size !== newNodeIds.size ||
-      ![...currentNodeIds].every(id => newNodeIds.has(id));
+      prevNodeIdsRef.current.size !== newNodeIds.size ||
+      ![...prevNodeIdsRef.current].every(id => newNodeIds.has(id));
     
     if (nodesChanged) {
       setNodes(initialNodes);
+      prevNodeIdsRef.current = newNodeIds;
     }
-  }, [initialNodes, nodes]);
+  }, [initialNodes, setNodes]);
   
   // Set edges after nodes are mounted to ensure handles exist
   // Optimized: Single requestAnimationFrame is sufficient
