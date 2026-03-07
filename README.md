@@ -36,7 +36,7 @@ The UI is organized around a navigation rail with three main areas:
 | **Automate** | Brand-driven automation: define brands, attach palettes, generate ~2,600 variables in 9 collections (Layer 0–8), sync to Figma, and import (Figma native or FigZig JSON). Includes rules engine, manual aliasing, and export/import. |
 | **Guide** | In-plugin documentation (overview, variable mapping, layer system, workflow). |
 
-### Screenshots
+### Experience
 
 **Colors** — 8-scale grid (Cobalt palette): palette sidebar and main grid with step swatches, each showing all 8 scales (Surface, High, Medium, Low, Heavy, Bold, Bold A11Y, Minimal).
 
