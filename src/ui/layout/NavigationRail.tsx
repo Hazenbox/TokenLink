@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Palette, Network, Sparkles, HelpCircle } from "lucide-react";
-import { useAppSwitcher } from "@/ui/AppSwitcher";
+import { useAppSwitcher, SHOW_GRAPH_TAB } from "@/ui/AppSwitcher";
 import { NavRailItem } from "./NavRailItem";
 
 export function NavigationRail() {
@@ -13,12 +13,16 @@ export function NavigationRail() {
       label: "Colors",
       ariaLabel: "Colors view",
     },
-    {
-      id: "figzig" as const,
-      icon: Network,
-      label: "Graph",
-      ariaLabel: "Graph view",
-    },
+    ...(SHOW_GRAPH_TAB
+      ? [
+          {
+            id: "figzig" as const,
+            icon: Network,
+            label: "Graph",
+            ariaLabel: "Graph view",
+          },
+        ]
+      : []),
     {
       id: "automate" as const,
       icon: Sparkles,

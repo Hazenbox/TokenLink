@@ -535,7 +535,9 @@ export class BrandGenerator {
         scopes: ['ALL_SCOPES'],
         isAliased,
         sourceScale: entry.metadata.scale,
-        sourcePalette: entry.collectionName
+        sourcePalette: entry.collectionName,
+        layer: entry.layer,
+        generationType: entry.collectionId.startsWith('primitives') ? 'primitives' : undefined,
       });
     }
     

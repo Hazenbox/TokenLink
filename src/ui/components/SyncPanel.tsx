@@ -24,7 +24,7 @@ export function SyncPanel() {
   const activeBrandId = useBrandStore((state) => state.activeBrandId);
   const brandsById = useBrandStore((state) => state.brandsById);
   const brands = useBrandStore((state) => state.brands);
-  const syncBrand = useBrandStore((state) => state.syncBrand);
+  const syncBrandWithLayers = useBrandStore((state) => state.syncBrandWithLayers);
   const syncAllBrands = useBrandStore((state) => state.syncAllBrands);
   const syncStatus = useBrandStore((state) => state.syncStatus);
   const syncAttempts = useBrandStore((state) => state.syncAttempts);
@@ -64,7 +64,7 @@ export function SyncPanel() {
 
     // Validation happens in the store before syncing
     // User will see error/success toast via useFigmaMessages hook
-    await syncBrand(activeBrand.id);
+    await syncBrandWithLayers(activeBrand.id);
   };
 
   const handleExport = () => {

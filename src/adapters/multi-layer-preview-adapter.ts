@@ -177,6 +177,8 @@ function getLayerOrder(collectionName: string): number {
   // Map collection names to layer order
   const layerMap: Record<string, number> = {
     '00_Primitives': 0,
+    '00_Primitives_Core': 0,
+    '00_Primitives_Functional': 0,
     '00_Semi semantics': 1,
     '02 Colour Mode': 2,
     '3 Background Level': 3,

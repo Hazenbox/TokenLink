@@ -8,6 +8,9 @@ import { AutomateErrorBoundary } from "./components/AutomateErrorBoundary";
 
 export type ActiveApp = "color" | "figzig" | "automate" | "guide";
 
+/** Temporarily hide Graph tab — set false in NavigationRail too */
+export const SHOW_GRAPH_TAB = false;
+
 // Global app switcher context
 interface AppSwitcherContextValue {
   activeApp: ActiveApp;
@@ -30,10 +33,17 @@ export function useAppSwitcher() {
 export function AppSwitcherProvider({ children }: { children: React.ReactNode }) {
   const [activeApp, setActiveApp] = React.useState<ActiveApp>(() => {
     const stored = safeStorage.getItem("varcar-active-app");
-    return (stored as ActiveApp) || "color";
+    const app = (stored as ActiveApp) || "color";
+    if (!SHOW_GRAPH_TAB && app === "figzig") {
+      return "color";
+    }
+    return app;
   });
 
   const switchToApp = React.useCallback((app: ActiveApp) => {
+    if (!SHOW_GRAPH_TAB && app === "figzig") {
+      return;
+    }
     safeStorage.setItem("varcar-active-app", app);
     setActiveApp(app);
   }, []);

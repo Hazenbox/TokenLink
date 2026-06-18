@@ -113,7 +113,7 @@ export const DEFAULT_LAYER_CONFIG: LayerMappingConfig = {
       enabled: true,
       namingPattern: "{group}/{step}/{scale}",
       generationType: "semantic",
-      aliasesToLayer: "primitives",
+      aliasesToLayer: "primitives-core",
       estimatedVariableCount: 192 // Grey scale: 24 steps × 8 scales
     },
     {
@@ -247,11 +247,19 @@ export function validateLayerConfig(config: LayerMappingConfig): {
   const errors: string[] = [];
   const warnings: string[] = [];
   
-  // Check for duplicate orders
-  const orders = config.layers.map(l => l.order);
-  const duplicateOrders = orders.filter((order, index) => orders.indexOf(order) !== index);
+  // Check for duplicate orders (sibling primitive layers may share the same order)
+  const ordersByLayer = config.layers.map(l => ({ order: l.order, isPrimitive: l.generationType === 'primitives' }));
+  const duplicateOrders = ordersByLayer
+    .map((entry, index) => ({ ...entry, index }))
+    .filter((entry, index, arr) => {
+      const firstIndex = arr.findIndex(e => e.order === entry.order);
+      if (firstIndex === index) return false;
+      const siblings = arr.filter(e => e.order === entry.order);
+      return !siblings.every(e => e.isPrimitive);
+    })
+    .map(entry => entry.order);
   if (duplicateOrders.length > 0) {
-    errors.push(`Duplicate layer orders found: ${duplicateOrders.join(', ')}`);
+    errors.push(`Duplicate layer orders found: ${[...new Set(duplicateOrders)].join(', ')}`);
   }
   
   // Check for circular aliases

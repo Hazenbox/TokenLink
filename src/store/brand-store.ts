@@ -28,6 +28,7 @@ import { migrateAllLegacyBrands, needsMigration } from "@/lib/brand-migration";
 import { convertMultiLayerToPreview } from "@/adapters/multi-layer-preview-adapter";
 import { useVariablesViewStore } from "./variables-view-store";
 import { useLayerMappingStore } from "./layer-mapping-store";
+import { validatePrimitiveValuesBeforeSync } from "@/utils/figma-sync-utils";
 
 /**
  * Module-level cache for Figma data (outside Zustand to prevent infinite loops)
@@ -987,6 +988,20 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
           }
           variablesByCollection[variable.collection].push(variable);
         }
+
+        const primitiveValidation = validatePrimitiveValuesBeforeSync(variablesByCollection);
+        if (!primitiveValidation.valid) {
+          set({ syncStatus: 'error' });
+          return {
+            success: false,
+            brandId,
+            timestamp: Date.now(),
+            variablesSynced: 0,
+            modesAdded: [],
+            errors: primitiveValidation.errors,
+            warnings: [],
+          };
+        }
         
         // Update sync status
         set({ syncStatus: 'syncing' });
@@ -1185,12 +1200,25 @@ export const useBrandStore = create<BrandStoreState>()((set, get) => ({
           }
           variablesByCollection[variable.collection].push(variable);
         }
+
+        const primitiveValidation = validatePrimitiveValuesBeforeSync(variablesByCollection);
+        if (!primitiveValidation.valid) {
+          set({ syncStatus: 'error' });
+          return {
+            success: false,
+            brandId: '__all__',
+            timestamp: Date.now(),
+            variablesSynced: 0,
+            modesAdded: [],
+            errors: primitiveValidation.errors,
+            warnings: [],
+          };
+        }
         
         // Update sync status
         set({ syncStatus: 'syncing' });
 
         try {
-          // Send message to plugin code with multi-brand structure
           window.parent.postMessage(
             {
               pluginMessage: {

@@ -16,6 +16,13 @@ import {
   figmaNativeToGraph,
   getFigmaNativeStats 
 } from './adapters/figmaNativeImporter';
+import {
+  partitionCollectionsForSync,
+  sortCollectionsByLayer,
+  isPrimitiveCollection,
+  PRIMITIVE_COLLECTION_NAMES,
+  type SyncVariablePayload,
+} from './utils/figma-sync-utils';
 
 // ============================================================================
 // Console Log Capture for UI Debugging
@@ -196,6 +203,105 @@ function hexToRGB(hex: string, context?: string): RGB {
   }
   
   return { r, g, b };
+}
+
+type SyncError = { variable: string; error: string };
+
+/**
+ * Find alias target variable, preferring primitive collections with resolved values.
+ */
+function findAliasTargetVariable(
+  targetName: string,
+  variableMap: Map<string, Variable>,
+  variableCache: Map<string, Variable>,
+  collectionMap: Map<string, VariableCollection>
+): Variable | undefined {
+  const primitiveCollectionNames = new Set([...PRIMITIVE_COLLECTION_NAMES]);
+
+  // Strategy 1: variableMap — prefer entries in primitive collections
+  let fallbackFromMap: Variable | undefined;
+  for (const [key, fVar] of variableMap.entries()) {
+    const [collName, vName] = key.split(':');
+    if (vName !== targetName) continue;
+
+    if (primitiveCollectionNames.has(collName.replace(/^ml_/, ''))) {
+      return fVar;
+    }
+    if (!fallbackFromMap) {
+      fallbackFromMap = fVar;
+    }
+  }
+  if (fallbackFromMap) return fallbackFromMap;
+
+  // Strategy 2: cache — search primitive collections first
+  for (const [collName, coll] of collectionMap.entries()) {
+    if (!isPrimitiveCollection(collName)) continue;
+    const found = findVariableInCache(variableCache, coll.id, targetName);
+    if (found) return found;
+  }
+
+  for (const [, coll] of collectionMap.entries()) {
+    const found = findVariableInCache(variableCache, coll.id, targetName);
+    if (found) return found;
+  }
+
+  return undefined;
+}
+
+/**
+ * Write RGB hex or alias to a Figma variable for a specific mode.
+ */
+function applySyncVariableValue(
+  figmaVar: Variable,
+  modeId: string,
+  variable: SyncVariablePayload,
+  variableMap: Map<string, Variable>,
+  variableCache: Map<string, Variable>,
+  collectionMap: Map<string, VariableCollection>,
+  errors: SyncError[],
+  logPrefix = ''
+): 'rgb' | 'alias' | 'skipped' {
+  if (variable.aliasTo) {
+    const targetName = variable.aliasTo.paletteName;
+    const targetVar = findAliasTargetVariable(
+      targetName,
+      variableMap,
+      variableCache,
+      collectionMap
+    );
+
+    if (targetVar) {
+      figmaVar.setValueForMode(modeId, {
+        type: 'VARIABLE_ALIAS',
+        id: targetVar.id,
+      });
+      if (logPrefix) {
+        console.log(`  ${logPrefix} Alias: ${variable.name} → ${targetName}`);
+      }
+      return 'alias';
+    }
+
+    errors.push({
+      variable: variable.name,
+      error: `Alias target not found: ${targetName}`,
+    });
+    return 'skipped';
+  }
+
+  if (variable.value) {
+    const rgb = hexToRGB(variable.value, `variable: ${variable.name}`);
+    figmaVar.setValueForMode(modeId, rgb);
+    if (logPrefix) {
+      console.log(`  ${logPrefix} RGB: ${variable.name} = ${variable.value}`);
+    }
+    return 'rgb';
+  }
+
+  errors.push({
+    variable: variable.name,
+    error: 'No value or alias target provided',
+  });
+  return 'skipped';
 }
 
 // ============================================================================
@@ -1669,12 +1775,9 @@ figma.ui.onmessage = async (msg) => {
       const variableMap = new Map<string, Variable>();
       
       // Sort collections by layer order
-      const sortedCollections = Object.entries(variablesByCollection)
-        .sort(([, varsA], [, varsB]) => {
-          const layerA = (varsA as any)[0]?.layer || 0;
-          const layerB = (varsB as any)[0]?.layer || 0;
-          return layerA - layerB;
-        });
+      const sortedCollections = sortCollectionsByLayer(
+        Object.entries(variablesByCollection) as [string, SyncVariablePayload[]][]
+      );
       
       console.log('Processing collections in order:', sortedCollections.map(([name]) => name));
       
@@ -1750,25 +1853,30 @@ figma.ui.onmessage = async (msg) => {
       const BATCH_SIZE = 50;
       const errors: Array<{ variable: string; error: string }> = [];
       
-      // Separate primitives from other collections
-      const primitivesEntry = Array.from(sortedCollections).find(([name]) => name === '00_Primitives');
-      const otherCollections = Array.from(sortedCollections).filter(([name]) => name !== '00_Primitives');
-      
-      // Process Primitives first
-      if (primitivesEntry) {
-        console.log('\n=== Processing Primitives ===');
-        const [collectionName, variables] = primitivesEntry;
+      const { primitiveCollections, aliasedCollections: otherCollections } =
+        partitionCollectionsForSync(sortedCollections);
+
+      console.log(
+        `\n=== Phase 1: Writing RGB for ${primitiveCollections.length} primitive collection(s) ===`
+      );
+      primitiveCollections.forEach(([name, vars]) => {
+        console.log(`  - ${name.replace(/^ml_/, '')}: ${vars.length} variables`);
+      });
+
+      // Process all primitive collections first (RGB values)
+      for (const [collectionName, variables] of primitiveCollections) {
+        console.log(`\n=== Processing Primitives: ${collectionName} ===`);
         const collection = collectionMap.get(collectionName)!;
-        const varsArray = variables as any[];
-        
+        const varsArray = variables;
+
         for (let i = 0; i < varsArray.length; i += BATCH_SIZE) {
           const batch = varsArray.slice(i, i + BATCH_SIZE);
-          
+
           for (const variable of batch) {
             try {
               const existingVar = findVariableInCache(variableCache, collection.id, variable.name);
               let figmaVar: Variable;
-              
+
               if (existingVar) {
                 figmaVar = existingVar;
                 totalUpdated++;
@@ -1777,26 +1885,37 @@ figma.ui.onmessage = async (msg) => {
                 variableCache.set(`${collection.id}:${variable.name}`, figmaVar);
                 totalCreated++;
               }
-              
-              // Set RGB value
-              if (variable.value) {
-                const rgb = hexToRGB(variable.value, `variable: ${variable.name}`);
-                figmaVar.setValueForMode(collection.defaultModeId, rgb);
-              }
-              
+
+              const mode = collection.modes.find(m => m.name === variable.mode);
+              const modeId = mode?.modeId ?? collection.defaultModeId;
+
+              applySyncVariableValue(
+                figmaVar,
+                modeId,
+                variable,
+                variableMap,
+                variableCache,
+                collectionMap,
+                errors,
+                '[Primitives]'
+              );
+
               variableMap.set(`${collectionName}:${variable.name}:${variable.mode}`, figmaVar);
             } catch (error) {
-              errors.push({ variable: variable.name, error: error instanceof Error ? error.message : 'Unknown error' });
+              errors.push({
+                variable: variable.name,
+                error: error instanceof Error ? error.message : 'Unknown error',
+              });
             }
           }
-          
+
           figma.ui.postMessage({
             type: 'sync-progress',
             data: {
-              message: `Creating primitives... ${Math.min(i + BATCH_SIZE, varsArray.length)}/${varsArray.length}`,
+              message: `Creating primitives (${collectionName})... ${Math.min(i + BATCH_SIZE, varsArray.length)}/${varsArray.length}`,
               currentVariables: totalCreated + totalUpdated,
-              totalVariables: totalVariablesToCreate
-            }
+              totalVariables: totalVariablesToCreate,
+            },
           });
         }
       }
@@ -1825,42 +1944,23 @@ figma.ui.onmessage = async (msg) => {
                 totalCreated++;
               }
               
-              // Find mode for this variable
               const mode = collection.modes.find(m => m.name === variable.mode);
               if (!mode) {
                 errors.push({ variable: variable.name, error: `Mode not found: ${variable.mode}` });
                 continue;
               }
-              
-              // Set alias
-              if (variable.aliasTo) {
-                const targetName = variable.aliasTo.paletteName;
-                let targetVar: Variable | undefined;
-                
-                // Search in variableMap
-                for (const [key, fVar] of variableMap.entries()) {
-                  const [, vName] = key.split(':');
-                  if (vName === targetName) {
-                    targetVar = fVar;
-                    break;
-                  }
-                }
-                
-                // Fallback to cache search
-                if (!targetVar) {
-                  for (const [, targetColl] of collectionMap.entries()) {
-                    targetVar = findVariableInCache(variableCache, targetColl.id, targetName);
-                    if (targetVar) break;
-                  }
-                }
-                
-                if (targetVar) {
-                  figmaVar.setValueForMode(mode.modeId, { type: 'VARIABLE_ALIAS', id: targetVar.id });
-                } else {
-                  errors.push({ variable: variable.name, error: `Alias target not found: ${targetName}` });
-                }
-              }
-              
+
+              applySyncVariableValue(
+                figmaVar,
+                mode.modeId,
+                variable,
+                variableMap,
+                variableCache,
+                collectionMap,
+                errors,
+                '[Alias]'
+              );
+
               variableMap.set(`${collectionName}:${variable.name}:${variable.mode}`, figmaVar);
             } catch (error) {
               errors.push({ variable: variable.name, error: error instanceof Error ? error.message : 'Unknown error' });
@@ -1931,12 +2031,9 @@ figma.ui.onmessage = async (msg) => {
       const variableMap = new Map<string, Variable>();
       
       // Sort collections by layer order to ensure dependencies are created first
-      const sortedCollections = Object.entries(variablesByCollection)
-        .sort(([, varsA], [, varsB]) => {
-          const layerA = (varsA as any)[0]?.layer || 0;
-          const layerB = (varsB as any)[0]?.layer || 0;
-          return layerA - layerB;
-        });
+      const sortedCollections = sortCollectionsByLayer(
+        Object.entries(variablesByCollection) as [string, SyncVariablePayload[]][]
+      );
       
       console.log('Processing collections in order:', sortedCollections.map(([name]) => name));
       
@@ -2051,111 +2148,105 @@ figma.ui.onmessage = async (msg) => {
       // Track errors for graceful degradation
       const errors: Array<{ variable: string; error: string }> = [];
       
-      // Separate primitives from other collections for two-pass processing
-      const primitivesEntry = Array.from(sortedCollections).find(([name]) => name === '00_Primitives');
-      const otherCollections = Array.from(sortedCollections).filter(([name]) => name !== '00_Primitives');
-      
-      // === PHASE 1: Process Primitives First ===
-      if (primitivesEntry) {
-        console.log('\n=== Phase 1: Creating Primitives (Layer 0) ===');
-        const [collectionName, variables] = primitivesEntry;
+      const { primitiveCollections, aliasedCollections: otherCollections } =
+        partitionCollectionsForSync(sortedCollections);
+
+      console.log(
+        `\n=== Phase 1: Writing RGB for ${primitiveCollections.length} primitive collection(s) ===`
+      );
+      primitiveCollections.forEach(([name, vars]) => {
+        console.log(`  - ${name.replace(/^ml_/, '')}: ${vars.length} variables`);
+      });
+
+      // === PHASE 1: Process all primitive collections (RGB values) ===
+      for (const [collectionName, variables] of primitiveCollections) {
         const collection = collectionMap.get(collectionName)!;
-        const varsArray = variables as any[];
-        const isLayerZero = true;
-        
+        const varsArray = variables;
+
         console.log(`\nCreating variables for ${collectionName}... (${varsArray.length} total)`);
-        console.log(`  isLayerZero: ${isLayerZero}`);
-        
-        // Process in batches with event loop yielding (WICG standard)
+
         for (let i = 0; i < varsArray.length; i += BATCH_SIZE) {
           const batch = varsArray.slice(i, i + BATCH_SIZE);
           const batchNum = Math.floor(i / BATCH_SIZE) + 1;
           const totalBatches = Math.ceil(varsArray.length / BATCH_SIZE);
-          
-          // Process batch with error handling
+
           let batchProcessed = 0;
           for (const variable of batch) {
             try {
               const varName = variable.name;
-              
-              // Use cached lookup (O(1) vs O(n) API call)
+
               let figmaVar = findVariableInCache(variableCache, collection.id, varName);
-              
+
               if (!figmaVar) {
                 figmaVar = figma.variables.createVariable(varName, collection, 'COLOR');
-                // Update cache with newly created variable
                 variableCache.set(`${collection.id}:${varName}`, figmaVar);
                 totalCreated++;
               } else {
                 totalUpdated++;
               }
-              
-              // Store variable for later alias resolution
-              const varKey = `${collectionName}:${varName}:${variable.mode}`;
-              variableMap.set(varKey, figmaVar);
-              
-              // Find the mode ID
+
+              variableMap.set(`${collectionName}:${varName}:${variable.mode}`, figmaVar);
+
               const mode = collection.modes.find(m => m.name === variable.mode);
               if (!mode) {
                 throw new Error(`Mode not found: ${variable.mode}`);
               }
-              
-              // Set value (RGB for Layer 0)
-              if (variable.value) {
-                console.log(`  [Layer 0] Setting color for ${varName}: ${variable.value}`);
-                const rgb = hexToRGB(variable.value);
-                console.log(`  [Layer 0] RGB result: r=${rgb.r.toFixed(3)}, g=${rgb.g.toFixed(3)}, b=${rgb.b.toFixed(3)}`);
-                figmaVar.setValueForMode(mode.modeId, rgb);
-              }
-              
+
+              applySyncVariableValue(
+                figmaVar,
+                mode.modeId,
+                variable,
+                variableMap,
+                variableCache,
+                collectionMap,
+                errors,
+                '[Layer 0]'
+              );
+
               batchProcessed++;
-              
-              // Yield to event loop every 10 variables (improved responsiveness)
+
               if (batchProcessed % 10 === 0) {
                 await new Promise(resolve => setTimeout(resolve, 0));
               }
             } catch (error) {
-              // Collect errors but continue processing
               errors.push({
                 variable: variable.name,
-                error: error instanceof Error ? error.message : String(error)
+                error: error instanceof Error ? error.message : String(error),
               });
               console.warn(`Error processing variable ${variable.name}:`, error);
             }
           }
-          
-          // Yield to event loop between batches (prevents UI freeze)
+
           if (i + BATCH_SIZE < varsArray.length) {
             await new Promise(resolve => setTimeout(resolve, 0));
           }
-          
-          // Update progress with detailed information
-          const progress = Math.round(((totalCreated + totalUpdated) / totalVariablesToCreate) * 100);
+
           figma.ui.postMessage({
             type: 'sync-progress',
             data: {
               message: `${collectionName} (batch ${batchNum}/${totalBatches})`,
               currentVariables: totalCreated + totalUpdated,
               totalVariables: totalVariablesToCreate,
-              errors: errors.length
-            }
+              errors: errors.length,
+            },
           });
         }
-        
+
         console.log(`  ✓ Created/updated ${varsArray.length} variables in ${collectionName}`);
-        
-        // Rebuild cache after primitives are created
+      }
+
+      if (primitiveCollections.length > 0) {
         console.log('\nRebuilding variable cache with new primitives...');
         const updatedCache = await buildVariableCache();
         variableCache.clear();
         updatedCache.forEach((v, k) => variableCache.set(k, v));
         console.log(`Cache rebuilt: ${variableCache.size} variables`);
-        
-        // Debug: Show variable map contents
+
         console.log('\n=== Variable Map Contents After Primitives ===');
         console.log(`Total entries: ${variableMap.size}`);
-        const sampleEntries = Array.from(variableMap.entries()).slice(0, 10);
-        sampleEntries.forEach(([key]) => console.log(`  - ${key}`));
+        Array.from(variableMap.entries())
+          .slice(0, 10)
+          .forEach(([key]) => console.log(`  - ${key}`));
       }
       
       // === PHASE 2: Process Aliased Variables (All Other Layers) ===
@@ -2209,64 +2300,18 @@ figma.ui.onmessage = async (msg) => {
               if (!mode) {
                 throw new Error(`Mode not found: ${variable.mode}`);
               }
-              
-              // Set alias (all non-primitive layers use aliases)
-              if (variable.aliasTo) {
-                const targetName = variable.aliasTo.paletteName;
-                
-                // Debug: Show what we're looking for
-                console.log(`  [Alias] Current: ${varName} (collection: ${collectionName}, mode: ${variable.mode})`);
-                console.log(`  [Alias] Looking for target: "${targetName}"`);
-                console.log(`  [Alias] variableMap size: ${variableMap.size}, cache size: ${variableCache.size}`);
-                
-                let targetVar: Variable | undefined;
-                let foundInMap = false;
-                
-                // Strategy 1: Try variableMap first (includes recently created variables)
-                for (const [key, fVar] of variableMap.entries()) {
-                  const [collName, vName, modeName] = key.split(':');
-                  if (vName === targetName) {
-                    targetVar = fVar;
-                    foundInMap = true;
-                    console.log(`  [Alias] ✓ Found in variableMap: ${collName} (mode: ${modeName})`);
-                    break;
-                  }
-                }
-                
-                // Strategy 2: Fallback to cache search (existing variables)
-                if (!targetVar) {
-                  for (const [targetCollName, targetColl] of collectionMap.entries()) {
-                    targetVar = findVariableInCache(variableCache, targetColl.id, targetName);
-                    if (targetVar) {
-                      console.log(`  [Alias] ✓ Found in cache: ${targetCollName}`);
-                      break;
-                    }
-                  }
-                }
-                
-                if (targetVar) {
-                  figmaVar.setValueForMode(mode.modeId, {
-                    type: 'VARIABLE_ALIAS',
-                    id: targetVar.id
-                  });
-                  console.log(`  [Alias] ✓ Success: ${varName} → ${targetName}`);
-                } else {
-                  console.warn(`  [Alias] ⚠️ Target not found: "${targetName}" - skipping`);
-                  console.warn(`  [Alias] Available in variableMap (first 5):`);
-                  const sampleMapKeys = Array.from(variableMap.keys()).slice(0, 5);
-                  sampleMapKeys.forEach(k => console.warn(`    - ${k}`));
-                  console.warn(`  [Alias] Available in cache (first 5):`);
-                  const sampleCacheKeys = Array.from(variableCache.keys()).slice(0, 5);
-                  sampleCacheKeys.forEach(k => console.warn(`    - ${k}`));
-                  
-                  // Don't throw - just skip this variable to allow sync to continue
-                  errors.push({
-                    variable: varName,
-                    error: `Alias target not found: ${targetName}`
-                  });
-                }
-              }
-              
+
+              applySyncVariableValue(
+                figmaVar,
+                mode.modeId,
+                variable,
+                variableMap,
+                variableCache,
+                collectionMap,
+                errors,
+                '[Alias]'
+              );
+
               batchProcessed++;
               
               // Yield to event loop every 10 variables (improved responsiveness)

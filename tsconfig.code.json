@@ -12,5 +12,5 @@
     "rootDir": "src",
     "typeRoots": ["./node_modules/@types", "./node_modules/@figma"]
   },
-  "include": ["src/code.ts", "src/globals.d.ts"]
+  "include": ["src/code.ts", "src/globals.d.ts", "src/utils/figma-sync-utils.ts"]
 }

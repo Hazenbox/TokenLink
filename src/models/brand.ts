@@ -147,6 +147,8 @@ export interface GeneratedVariable {
   sourceScale?: string;
   sourcePalette?: string;
   isAliased?: boolean; // Flag to indicate if this is an aliased variable
+  layer?: number;
+  generationType?: string;
 }
 
 /**
