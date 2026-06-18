@@ -70,7 +70,7 @@ export function SyncProgressModal({ progress }: SyncProgressModalProps) {
         </div>
 
         {/* Errors - only when they occur */}
-        {progress.errors && progress.errors > 0 && (
+        {(progress.errors ?? 0) > 0 && (
           <div className="flex items-center gap-1 text-xs text-amber-500 bg-amber-950/20 px-2 py-1 rounded">
             <AlertTriangle className="w-3 h-3" />
             <span>{progress.errors} error{progress.errors > 1 ? 's' : ''}</span>

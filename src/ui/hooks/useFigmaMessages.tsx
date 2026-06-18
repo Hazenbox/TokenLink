@@ -54,6 +54,11 @@ export function useFigmaMessages() {
     const msg = event.data.pluginMessage;
     if (!msg) return;
 
+    // Forwarded plugin logs are handled by useConsoleLogs — skip here to avoid console spam during sync
+    if (msg.type === 'console-log') {
+      return;
+    }
+
     console.log('[useFigmaMessages] Received message:', msg.type);
 
     switch (msg.type) {
